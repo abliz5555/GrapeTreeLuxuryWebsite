@@ -56,7 +56,8 @@
         </div>
 
     </section>
-    <section class="story" id="story">
+    
+<section class="story" id="story">
 
     <p class="small-title">
         OUR STORY
@@ -68,57 +69,60 @@
         A Vision for the Future.
     </h2>
 
+    <!-- ✅ ONLY 2 TIMELINE ITEMS -->
     <div class="timeline">
 
         <div class="item">
+            <h3>1982</h3>
+            <p>Budonomori Co. Ltd.<br>Founded in Japan</p>
+        </div>
 
-            <h3>
-                1982
-            </h3>
+        <div class="item">
+            <h3>2024</h3>
+            <p>Grape Tree FZE<br>Established in UAE</p>
+        </div>
+
+    </div>
+
+    <!-- ✅ STORY BELOW TIMELINE -->
+    <div class="story-images">
+
+        <div class="story-text-card">
+
+            <h3>Budonomori Co. Ltd. — Japan</h3>
 
             <p>
-                Budonomori Co. Ltd.
-                Founded in Japan
+                Founded in 1982 in Japan, Budonomori Co. Ltd. represents decades
+                of refined craftsmanship in confectionery and luxury gifting.
+
+                Rooted in Japanese tradition, the company focuses on precision,
+                elegance, and attention to detail in every creation.
+
+                Each product reflects a deep respect for heritage,
+                combining artisanal techniques with timeless presentation.
+
+                Over the years, Budonomori has become a symbol of quality
+                and cultural authenticity in Japan’s premium dessert industry.
             </p>
 
         </div>
 
-        <div class="item">
+        <div class="story-text-card">
 
-            <h3>
-                2024
-            </h3>
+            <h3>Grape Tree FZE — United Arab Emirates</h3>
 
             <p>
-                Grape Tree FZE
-                Established in UAE
-            </p>
+                Established in 2024, Grape Tree FZE brings Japanese craftsmanship
+                into the UAE luxury market.
 
-        </div>
+                We specialize in premium dessert artistry and luxury gifting experiences,
+                blending traditional Japanese heritage with modern international branding.
 
-        <div class="item">
+                Our mission is to create elegant, high-end gifting solutions
+                for customers across the Middle East and beyond.
 
-            <h3>
-                2 Brands
-            </h3>
-
-            <p>
-                Katanukiya
-                +
-                GildArt
-            </p>
-
-        </div>
-
-        <div class="item">
-
-            <h3>
-                Global
-            </h3>
-
-            <p>
-                Luxury gifting
-                for the world
+                Today, Grape Tree FZE continues to grow as a bridge between Japan
+                and the global luxury lifestyle industry.
             </p>
 
         </div>
@@ -246,9 +250,7 @@
 
 <section class="gallery">
 
-    <p class="small-title">
-        GALLERY
-    </p>
+    <p class="small-title">GALLERY</p>
 
     <h2>
         Crafted for Beauty.
@@ -258,21 +260,30 @@
 
     <div class="gallery-container">
 
-        <img src="images/gallery1.jpg" alt="Luxury Product 1">
+        <div class="gallery-card">
+            <img src="images/gallery1.jpg" alt="Luxury Product 1">
+        </div>
 
-        <img src="images/katanukiya-product3.jpg" alt="Luxury Product 2">
+        <div class="gallery-card">
+            <img src="images/katanukiya-product3.jpg" alt="Luxury Product 2">
+        </div>
 
-        <img src="images/gallery3.jpg" alt="Luxury Product 3">
+        <div class="gallery-card">
+            <img src="images/gallery3.jpg" alt="Luxury Product 3">
+        </div>
 
     </div>
-
 </section>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" onclick="closeLightbox()">
+    <img id="lightbox-img" alt="Preview">
+</div>
+
 
 <section class="follow-brands">
 
-    <p class="small-title">
-        FOLLOW OUR BRANDS
-    </p>
+    <p class="small-title">FOLLOW OUR BRANDS</p>
 
     <h2>
         Stay Connected
@@ -282,20 +293,23 @@
 
     <div class="qr-container">
 
-        <div class="qr-card">
-            <img src="images/katanukiya-qr.jpg" alt="Katanukiya Instagram QR">
-            <h3>Katanukiya_UAE</h3>
-            <p>Scan to follow our premium layer cake journey.</p>
-        </div>
+        <a href="https://www.instagram.com/katanukiya_uae" target="_blank" class="qr-link">
+            <div class="qr-card">
+                <img src="images/katanukiya-qr1.jpg" alt="Katanukiya Instagram QR">
+                <h3>Katanukiya_UAE</h3>
+                <p>Scan to follow our premium layer cake journey.</p>
+            </div>
+        </a>
 
-        <div class="qr-card">
-            <img src="images/gildart-qr.png" alt="GildArt Instagram QR">
-            <h3>GildArt_Official</h3>
-            <p>Scan to explore our luxury chocolate world.</p>
-        </div>
+        <a href="https://www.instagram.com/gildart_official" target="_blank" class="qr-link">
+            <div class="qr-card">
+                <img src="images/gildart-qr1.JPG" alt="GildArt Instagram QR">
+                <h3>GildArt_Official</h3>
+                <p>Scan to explore our luxury chocolate world.</p>
+            </div>
+        </a>
 
     </div>
-
 </section>
 
 <section class="contact" id="contact">
@@ -325,7 +339,7 @@
 
         <!-- Logo -->
         <div class="footer-logo">
-            <img src="images/logo.png" alt="Grape Tree FZE Logo">
+            <img src="images/logo2.svg" alt="Grape Tree FZE Logo">
         </div>
 
         <!-- Links -->

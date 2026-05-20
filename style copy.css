@@ -1302,12 +1302,14 @@ footer{
     background-position:center;
     background-repeat:no-repeat;
 }
-.hero.katanukiya-hero{
-    background:
-        linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
-        url('images/katanukiya-hero.jpg') !important;
+.timeline{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:50px; /* 🔥 this creates proper luxury spacing */
+    margin-top:60px;
+}
 
-    background-size: cover !important;
-    background-position: center !important;
-    background-repeat: no-repeat !important;
+/* ensures each card breathes */
+.timeline .item{
+    padding:30px;
 }

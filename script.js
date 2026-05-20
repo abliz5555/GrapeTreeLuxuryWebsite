@@ -54,3 +54,7 @@ document.querySelectorAll('#nav-menu a')
             navMenu.classList.remove('active');
         });
     });
+    document.addEventListener("DOMContentLoaded", () => {
+   
+    
+});
