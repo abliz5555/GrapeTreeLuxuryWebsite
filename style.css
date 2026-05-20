@@ -26,7 +26,7 @@ img{
 
 section{
     position:relative;
-    scroll-margin-top:110px;
+    scroll-margin-top:1px;
 }
 
 /* =========================
@@ -102,8 +102,13 @@ nav{
 nav a{
     text-decoration:none;
     color:#1A1A1A;
-    font-weight:500;
     position:relative;
+
+    font-family:'Cormorant Garamond', serif;
+    font-size:22px;
+    font-weight:500;
+    letter-spacing:0.4px;
+
     transition:0.3s ease;
 }
 
@@ -198,6 +203,52 @@ button:hover,
     background-repeat:no-repeat;
 }
 /* =========================
+   HERO
+========================= */
+.hero{
+    min-height:100vh;
+    width:100%;
+    display:flex;
+    align-items:center;
+    padding:clamp(30px, 6vw, 100px);
+
+    background:
+        linear-gradient(
+            rgba(0,0,0,0.35),
+            rgba(0,0,0,0.35)
+        ),
+        url('images/hero.jpg');
+
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+}
+
+/* Hero Heading */
+.hero h1{
+    font-family:'Playfair Display', serif;
+    font-size:clamp(52px, 7vw, 90px);
+    font-weight:600;
+    line-height:1.08;
+    letter-spacing:0.5px;
+    color:#ffffff;
+    margin-bottom:20px;
+    text-rendering:geometricPrecision;
+    -webkit-font-smoothing:antialiased;
+}
+
+/* Hero Sub Text */
+.hero p{
+    font-family:'Cormorant Garamond', serif;
+    font-size:clamp(24px, 2vw, 30px);
+    font-weight:500;
+    line-height:1.6;
+    letter-spacing:0.4px;
+    color:rgba(255,255,255,0.92);
+    max-width:650px;
+    margin-bottom:35px;
+}
+/* =========================
    GILDART HERO
 ========================= */
 .gildart-hero{
@@ -238,6 +289,16 @@ button:hover,
 /* =========================
    STORY
 ========================= */
+/* OUR STORY label */
+.small-title{
+    font-family:'Cormorant Garamond', serif;
+    font-size:18px;
+    font-weight:600;
+    letter-spacing:4px;
+    text-transform:uppercase;
+    color:#C9A86A;
+    margin-bottom:14px;
+}
 .story{
     padding:clamp(70px, 8vw, 140px) 8%;
     background:white;
@@ -248,6 +309,7 @@ button:hover,
     margin-bottom:80px;
 }
 
+/* Timeline */
 .timeline{
     display:flex;
     gap:30px;
@@ -255,26 +317,91 @@ button:hover,
     flex-wrap:wrap;
 }
 
+/* Cards */
 .item{
     flex:1;
     min-width:240px;
     padding:40px;
     background:#F8F5F0;
     border-radius:18px;
-    transition:0.3s ease;
+    position:relative;
+    overflow:hidden;
+    cursor:default;
+
+    border:1px solid rgba(201,168,106,0.15);
+
+    transition:
+        transform 0.4s ease,
+        box-shadow 0.4s ease,
+        border-color 0.4s ease,
+        background 0.4s ease;
 }
 
+/* Hover Effect */
 .item:hover{
-    transform:translateY(-10px);
+    transform:translateY(-12px) scale(1.02);
+    background:#FCFAF6;
+    border-color:rgba(201,168,106,0.35);
+
+    box-shadow:
+        0 14px 35px rgba(0,0,0,0.08),
+        0 6px 14px rgba(201,168,106,0.08);
 }
 
+/* Gold Shine Sweep */
+.item::before{
+    content:'';
+    position:absolute;
+    top:0;
+    left:-120%;
+    width:50%;
+    height:100%;
+    background:linear-gradient(
+        120deg,
+        transparent,
+        rgba(255,255,255,0.45),
+        transparent
+    );
+    transition:0.8s ease;
+}
+
+.item:hover::before{
+    left:130%;
+}
+
+/* Year */
 .item h3{
-    font-size:40px;
+    font-size:48px;
     color:#C9A86A;
-    margin-bottom:20px;
-    font-family:'Playfair Display';
+    margin-bottom:18px;
+    font-family:'Playfair Display', serif;
+    font-weight:600;
+    letter-spacing:1.5px;
+    line-height:1;
+    font-variant-numeric: lining-nums;
+    font-feature-settings:"lnum";
+    text-rendering:geometricPrecision;
+    -webkit-font-smoothing:antialiased;
+    transition:0.35s ease;
 }
 
+/* Number glow on hover */
+.item:hover h3{
+    transform:scale(1.06);
+    color:#B8924D;
+}
+
+/* Text */
+/* Card Text */
+.item p{
+    font-size:17px;
+    line-height:1.8;
+    color:#4A4A4A;
+    margin:0;
+    font-family:'Cormorant Garamond', serif;
+    font-weight:500;
+    letter-spacing:0.4px;
+}
 /* =========================
    BRANDS
 ========================= */
@@ -340,16 +467,25 @@ button:hover,
 
 /* If using text title */
 .brand-text h3{
-    font-size:32px;
-    margin-bottom:16px;
-    font-family:'Playfair Display';
+    font-size:34px;
+    margin-bottom:14px;
+    font-family:'Playfair Display', serif;
+    font-weight:600;
+    letter-spacing:0.5px;
+    line-height:1.2;
+    color:#1A1A1A;
 }
 
 /* Description */
 .brand-text p{
-    max-width:260px;
-    margin-bottom:24px;
+    font-size:18px;
+    margin-bottom:0;
+    font-family:'Cormorant Garamond', serif;
+    font-weight:500;
     line-height:1.7;
+    letter-spacing:0.3px;
+    color:#4A4A4A;
+    max-width:280px;
 }
 
 /* Button */
@@ -387,7 +523,7 @@ button:hover,
    STATS
 ========================= */
 .stats{
-    padding:100px 8%;
+    padding:40px 8%;
     background:#1A1A1A;
     color:white;
 
@@ -404,14 +540,26 @@ button:hover,
 }
 
 .stat-box h2{
-    font-size:60px;
+    font-size:clamp(56px, 6vw, 78px);
     color:#C9A86A;
     margin-bottom:10px;
+    font-family:'Playfair Display', serif;
+    font-weight:600;
+    line-height:1;
+    letter-spacing:1px;
+    font-variant-numeric: lining-nums;
+    font-feature-settings:"lnum";
+    text-rendering:geometricPrecision;
+    -webkit-font-smoothing:antialiased;
 }
 
 .stat-box p{
-    font-size:18px;
+    font-size:20px;
     margin-bottom:0;
+    font-family:'Cormorant Garamond', serif;
+    font-weight:500;
+    letter-spacing:0.5px;
+    color:rgba(255,255,255,0.92);
 }
 
 /* =========================
