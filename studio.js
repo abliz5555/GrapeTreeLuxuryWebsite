@@ -1424,14 +1424,16 @@
         return x;
     }
     function updateSummary() {
-        $('#sum-total').textContent = money(totalPrice());
-        $('#bar-total').textContent = money(totalPrice());
+        var started = ISCAKE ? S.versions.length > 0 : (function () { for (var z = 0; z < pieces(); z++) if (slotFilled(z)) return true; return false; })();
+        var shown = started ? totalPrice() : 0;                                  // nothing to price until the customer has a design
+        $('#sum-total').textContent = money(shown);
+        $('#bar-total').textContent = money(shown);
         $('#bar-step').textContent = T('Step') + ' ' + S.step + '/4';
         var rows;
-        if (ISCAKE) { var t = tier(); rows = [[T('Finish'), finishLabel()], [T('Quantity'), t.qty + ' ' + T('pcs')], [T('Box'), T(box().label)], [T('Per piece'), money(totalPrice() / t.qty)]]; }
+        if (ISCAKE) { var t = tier(); rows = [[T('Finish'), finishLabel()], [T('Quantity'), t.qty + ' ' + T('pcs')], [T('Box'), T(box().label)], [T('Per piece'), started ? money(totalPrice() / t.qty) : '\u2014']]; }
         else {
             var done = 0; for (var q = 0; q < pieces(); q++) if (slotFilled(q)) done++;
-            rows = [[T('Box'), T(boxSet().label)], [T('Designs ready'), done + ' / ' + pieces()], [T('Boxes'), S.nbox], [T('Pieces in total'), totalPieces()], [T('Thickness'), thick().label], [T('Per box'), money(boxUnit())]];
+            rows = [[T('Box'), T(boxSet().label)], [T('Designs ready'), done + ' / ' + pieces()], [T('Boxes'), S.nbox], [T('Pieces in total'), totalPieces()], [T('Thickness'), thick().label], [T('Per box'), started ? money(boxUnit()) : '\u2014']];
         }
         $('#sum-list').innerHTML = rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('');
         var ship = addBusinessDays(new Date(), LEAD);
@@ -1971,7 +1973,7 @@
                     var ink = bwToAlpha(c), f = new File([new Blob([''], { type: 'image/png' })], 'ai-drawing.png', { type: 'image/png' });
                     startDesign(f, ink, c.width, c.height, { kind: 'bw', label: 'AI drawing', src: ink, gen: true, ai: true, transparent: true });
                 })
-                .catch(function (e) { showErr(T(/limit/i.test(e && e.message) ? e.message : 'We could not draw this right now. Please try different words, or upload your own picture.')); })
+                .catch(function (e) { try { console.error('AI draw failed:', e && e.message, e && e.detail); } catch (_x) {} showErr(T(/limit|describe/i.test(e && e.message) ? e.message : 'We could not draw this right now. Please try different words, or upload your own picture.') + (S.test && e && (e.detail || e.message) ? ' [admin: ' + (e.detail || e.message) + ']' : '')); })
                 .then(function () { busy = false; go.disabled = false; st.hidden = true; });
         });
     }

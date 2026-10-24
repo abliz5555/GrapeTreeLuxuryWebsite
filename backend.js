@@ -217,6 +217,12 @@
 
     /* ------------------------------ studio AI (Supabase Edge Function 'studio-ai') ------------------------------ */
     /* kind: 'cutout' | 'cartoon' | 'bw'. blob: the customer's image (PNG). Resolves to a PNG Blob. */
+    /* the real reason an Edge Function failed (supabase-js only says "non-2xx status code") */
+    function fnError(r) {
+        var e = r.error, ctx = e && e.context;
+        if (ctx && typeof ctx.json === 'function') return ctx.json().then(function (j) { var x = new Error((j && j.error) || e.message || 'ai failed'); x.detail = j && j.detail; x.status = ctx.status; throw x; }, function () { var x = new Error(e.message || 'ai failed'); x.status = ctx.status; throw x; });
+        throw new Error((e && e.message) || (r.data && r.data.error) || 'ai failed');
+    }
     B.studioAI = function (kind, blob) {
         return B.ready.then(function (on) {
             if (!on) throw new Error('backend off');
@@ -224,7 +230,8 @@
         }).then(function (dataUrl) {
             return withTimeout(B.client.functions.invoke('studio-ai', { body: { kind: kind, image: dataUrl } }), 120000);
         }).then(function (r) {
-            if (r.error || !r.data || !r.data.image) throw new Error((r.error && r.error.message) || (r.data && r.data.error) || 'ai failed');
+            if (r.error) return fnError(r);
+            if (!r.data || !r.data.image) throw new Error((r.data && r.data.error) || 'ai failed');
             return fetch(r.data.image).then(function (x) { return x.blob(); });
         });
     };
@@ -235,7 +242,8 @@
             if (!on) throw new Error('backend off');
             return withTimeout(B.client.functions.invoke('studio-ai', { body: { kind: 'generate', prompt: prompt, style: style, product: product || 'chocolate' } }), 150000);
         }).then(function (r) {
-            if (r.error || !r.data || !r.data.image) throw new Error((r.data && r.data.error) || (r.error && r.error.message) || 'ai failed');
+            if (r.error) return fnError(r);
+            if (!r.data || !r.data.image) throw new Error((r.data && r.data.error) || 'ai failed');
             return fetch(r.data.image).then(function (x) { return x.blob(); });
         });
     };

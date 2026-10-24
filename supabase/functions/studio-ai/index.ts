@@ -106,7 +106,7 @@ export async function handle(req: Request, env: (k: string) => string, doFetch: 
       body: JSON.stringify({ model, prompt, size: '1024x1024', n: 1, ...(model.startsWith('gpt-image') ? { quality: 'medium', output_format: 'png', ...(body.product === 'cake' ? { background: 'transparent' } : {}) } : { response_format: 'b64_json' }) }),
     });
     const gj = await gr.json().catch(() => ({}));
-    if (!gr.ok) { console.error('openai', gr.status, JSON.stringify(gj).slice(0, 300)); return json({ error: 'AI could not draw this. Please try different words.' }, 502); }
+    if (!gr.ok) { console.error('openai', gr.status, JSON.stringify(gj).slice(0, 300)); return json({ error: 'AI could not draw this. Please try different words.', detail: 'OpenAI ' + gr.status + ': ' + String((gj && gj.error && gj.error.message) || '').slice(0, 240) }, 502); }
     const gb = gj && gj.data && gj.data[0] && gj.data[0].b64_json;
     if (!gb) return json({ error: 'AI returned nothing' }, 502);
     return json({ image: 'data:image/png;base64,' + gb });
@@ -125,7 +125,7 @@ export async function handle(req: Request, env: (k: string) => string, doFetch: 
   }
   const r = await doFetch('https://api.openai.com/v1/images/edits', { method: 'POST', headers: { Authorization: 'Bearer ' + env('OPENAI_API_KEY') }, body: fd });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) { console.error('openai', r.status, JSON.stringify(j).slice(0, 300)); return json({ error: 'AI could not process this image' }, 502); }
+  if (!r.ok) { console.error('openai', r.status, JSON.stringify(j).slice(0, 300)); return json({ error: 'AI could not process this image', detail: 'OpenAI ' + r.status + ': ' + String((j && j.error && j.error.message) || '').slice(0, 240) }, 502); }
   const b64 = j && j.data && j.data[0] && j.data[0].b64_json;
   if (!b64) return json({ error: 'AI returned nothing' }, 502);
   return json({ image: 'data:image/png;base64,' + b64 });
