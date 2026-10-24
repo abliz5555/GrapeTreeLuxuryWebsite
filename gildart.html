@@ -4,30 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GildArt | Grape Tree FZE</title>
+    <meta name="description" content="GildArt golden chocolate by Grape Tree FZE: luxury chocolate gifting with real gold leaf, inspired by Japanese craftsmanship and made for the UAE.">
+    <meta property="og:title" content="GildArt | Grape Tree FZE">
+    <meta property="og:description" content="GildArt golden chocolate by Grape Tree FZE: luxury chocolate gifting with real gold leaf, inspired by Japanese craftsmanship and made for the UAE.">
+    <meta property="og:image" content="https://grapetree.ae/images/gildart-hero.jpg">
 
+    <!-- Animation switch-on (runs before the page paints so nothing flashes) -->
+    <script>
+        (function(){var d=document.documentElement;d.classList.add('gt-js');try{if(matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('gt-ready')}else{setTimeout(function(){d.classList.add('gt-ready')},4500)}}catch(e){d.classList.add('gt-ready')}})();
+    </script>
+
+    <script src="shop-data.js"></script>
+    <script src="layout.js"></script>
+    <script src="i18n.js"></script>
+    <script src="track.js"></script>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="shop.css">
+    <link rel="stylesheet" href="animations.css">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="layout.css">
 
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Cormorant Garamond added: your CSS already uses it, but it was never loaded -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="theme-gild">
 
-    <!-- Header -->
-    <header>
-        <div class="logo">
-            <a href="index.html">
-                <img src="images/gildart-logo.svg" alt="GildArt Logo">
-            </a>
-        </div>
-
-        <nav>
-            <a href="index.html">Home</a>
-            <a href="#story">Story</a>
-            <a href="#products">Products</a>
-            <a href="#contact">Contact</a>
-        </nav>
-
-        <a href="index.html" class="header-btn">Back Home</a>
-    </header>
+    <script>GTLayout.header()</script>
 
     <!-- Hero -->
     <section class="hero gildart-hero">
@@ -49,9 +53,10 @@
                 designed for elegance, beauty, and unforgettable moments.
             </p>
 
-            <a href="#products" class="hero-btn">
-                Explore Collection
-            </a>
+            <div class="hero-actions">
+                <a href="#products" class="hero-btn">Explore Collection</a>
+                <a href="shop.html?brand=gildart" class="hero-btn-ghost">Shop GildArt</a>
+            </div>
         </div>
 
     </section>
@@ -70,21 +75,21 @@
         <div class="timeline">
 
             <div class="item">
-                <h3>Origin</h3>
+                <h3 class="year">Origin</h3>
                 <p>
                     GildArt was born from our journey to bring Japanese craftsmanship to the UAE, where luxury and hospitality hold deep meaning.
                 </p>
             </div>
 
             <div class="item">
-                <h3>Artistry</h3>
+                <h3 class="year">Artistry</h3>
                 <p>
                     Crafted with selected ingredients and real gold leaf, each chocolate is designed as edible art inspired by beauty and emotion.
                 </p>
             </div>
 
             <div class="item">
-                <h3>Legacy</h3>
+                <h3 class="year">Legacy</h3>
                 <p>
                     More than chocolate, GildArt celebrates gifting, craftsmanship, and unforgettable moments.
                 </p>
@@ -108,11 +113,11 @@
         <div class="brand-container">
 
             <div class="brand-card">
-                <img src="images/gallery1.jpg" alt="GildArt Premium Chocolate">
+                <img loading="lazy" decoding="async" src="images/gallery1.jpg" alt="GildArt Premium Chocolate">
 
                 <div class="brand-text">
                     <div class="brand-logo">
-                        <img src="images/gildart-logo.svg" alt="GildArt Logo">
+                        <img loading="lazy" decoding="async" src="images/gildart-logo.svg" alt="GildArt Logo">
                     </div>
 
                     <p>
@@ -122,11 +127,11 @@
             </div>
 
             <div class="brand-card">
-                <img src="images/gallery2.jpeg" alt="Luxury Chocolate Collection">
+                <img loading="lazy" decoding="async" src="images/gallery2.jpeg" alt="Luxury Chocolate Collection">
 
                 <div class="brand-text">
                     <div class="brand-logo">
-                        <img src="images/gildart-logo.svg" alt="GildArt Logo">
+                        <img loading="lazy" decoding="async" src="images/gildart-logo.svg" alt="GildArt Logo">
                     </div>
 
                     <p>
@@ -153,19 +158,19 @@
         <div class="showcase-grid">
 
             <div class="showcase-card">
-                <img src="images/gildart-product1.jpg" alt="Gold Chocolate Box">
+                <img loading="lazy" decoding="async" src="images/gildart-product1.jpg" alt="Gold Chocolate Box">
                 <h3>Gold Chocolate Box</h3>
                 <p>Elegant premium chocolate crafted for luxury gifting.</p>
             </div>
 
             <div class="showcase-card">
-                <img src="images/gildart-product2.jpg" alt="Luxury Gift Collection">
+                <img loading="lazy" decoding="async" src="images/gildart-product2.jpg" alt="Luxury Gift Collection">
                 <h3>Luxury Gift Collection</h3>
                 <p>Refined presentation designed for unforgettable moments.</p>
             </div>
 
             <div class="showcase-card">
-                <img src="images/gildart-product3.jpg" alt="Seasonal Premium Gifting">
+                <img loading="lazy" decoding="async" src="images/gildart-product3.jpg" alt="Seasonal Premium Gifting">
                 <h3>Seasonal Premium Gifting</h3>
                 <p>Exclusive gifting experiences inspired by craftsmanship.</p>
             </div>
@@ -205,117 +210,31 @@
         </div>
 
     </section>
-    <!-- Gallery -->
-    <section class="gallery">
+    
 
-        <p class="small-title">GALLERY</p>
+    
 
-        <h2>
-            Beauty in Every
-            <br>
-            Detail
-        </h2>
+    <!-- Shop + custom order call to action -->
+<section class="gt-band">
+    <p class="small-title">ORDER ONLINE</p>
+    <h2>Order GildArt.<br>Or Make It Personal.</h2>
+    <p>Choose from the GildArt collection, or build a custom order with your own message card or company logo.</p>
+    <div class="cta-buttons" style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+        <a href="shop.html?brand=gildart" class="gt-btn">Shop GildArt</a>
+        <a href="chocolate-studio.html" class="hero-btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.6)">Print Your Own Design</a>
+    </div>
+</section>
 
-        <div class="gallery-container">
-            <img src="images/gallery1.jpg" alt="GildArt Chocolate">
-            <img src="images/gallery2.jpeg" alt="Premium Chocolate Gift">
-            <img src="images/gallery3.jpg" alt="Luxury Chocolate Collection">
-        </div>
 
-    </section>
 
-    <!-- Follow GildArt -->
-    <section class="follow-brands">
+    <script>GTLayout.footer()</script>
 
-        <p class="small-title">FOLLOW GILDART</p>
 
-        <h2>
-            Stay Connected
-            <br>
-            With GildArt
-        </h2>
 
-        <div class="qr-container">
-
-            <div class="qr-card">
-
-                <a href="https://instagram.com/GildArt_official" target="_blank">
-                    <img src="images/gildart-qr1.JPG" alt="GildArt Instagram QR">
-                </a>
-
-                <h3>GildArt_Official</h3>
-
-                <p>
-                    Scan or tap to explore our luxury chocolate world.
-                </p>
-
-                <a href="https://instagram.com/GildArt_official"
-                   target="_blank"
-                   class="instagram-btn">
-                   Follow on Instagram
-                </a>
-
-            </div>
-
-        </div>
-
-    </section>
-
-    <!-- Contact -->
-    <section class="contact" id="contact">
-
-        <p class="small-title">CONTACT</p>
-
-        <h2>
-            Let’s Create Premium
-            <br>
-            Gifting Together
-        </h2>
-
-        <p class="contact-text">
-            GildArt brings refined chocolate gifting inspired by Japanese craftsmanship and luxury presentation.
-        </p>
-
-       <a href="contact.html" class="contact-btn">
-    Enquire Now
-</a>
-
-    </section>
-
-    <!-- Footer -->
-    <footer>
-
-        <div class="footer-container">
-
-            <div class="footer-logo">
-                GildArt
-            </div>
-
-            <div class="footer-links">
-                <a href="index.html">Home</a>
-                <a href="#story">Story</a>
-                <a href="#products">Products</a>
-                <a href="#contact">Contact</a>
-            </div>
-
-            <div class="footer-info">
-                <p>Grape Tree FZE</p>
-                <p>Dubai, UAE</p>
-                <p>Premium Chocolate Gifting</p>
-            </div>
-
-        </div>
-
-        <p class="copyright">
-            © 2026 GildArt. All Rights Reserved.
-        </p>
-
-    </footer>
-
-    <!-- WhatsApp -->
-    <a href="https://wa.me/971555577478" class="whatsapp-float" target="_blank">
-        <img src="images/whatsapp.png" alt="WhatsApp">
-    </a>
+<script src="cart.js"></script>
+<script src="backend.js"></script>
+<script src="script.js"></script>
+<script src="animations.js"></script>
 
 </body>
 </html>

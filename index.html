@@ -5,58 +5,94 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Grape Tree FZE</title>
+    <title>Grape Tree FZE | Japanese Craftsmanship. UAE Luxury.</title>
+    <meta name="description" content="Grape Tree FZE brings Japanese-inspired premium confectionery and luxury gifting to the UAE. Discover Katanukiya cut-out layer cakes and GildArt golden chocolate.">
+    <meta property="og:title" content="Grape Tree FZE | Japanese Craftsmanship. UAE Luxury.">
+    <meta property="og:description" content="Premium confectionery and gifting inspired by Japanese artistry.">
+    <meta property="og:image" content="https://grapetree.ae/images/hero.jpg">
+    <meta property="og:type" content="website">
 
+    <!-- Animation switch-on (runs before the page paints so nothing flashes) -->
+    <script>
+        (function(){var d=document.documentElement;d.classList.add('gt-js');try{if(matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('gt-ready')}else{if(d.hasAttribute('data-gt-home')&&!sessionStorage.getItem('gt-intro')&&!location.hash){d.classList.add('gt-intro-pending')}setTimeout(function(){d.classList.add('gt-ready');d.classList.remove('gt-intro-pending','gt-lock')},4500)}}catch(e){d.classList.add('gt-ready')}})();
+    </script>
+
+    <script src="shop-data.js"></script>
+    <script src="layout.js"></script>
+    <script src="i18n.js"></script>
+    <script src="track.js"></script>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="shop.css">
+    <link rel="stylesheet" href="animations.css">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="layout.css">
 
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Cormorant Garamond added: your CSS already uses it, but it was never loaded -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
 
 
 <body>
+
+
    
 
-   <header>
+   <script>GTLayout.header()</script>
 
-    <div class="logo">
-        <img src="images/logo.svg" alt="Grape Tree FZE Logo">
+    <!-- Two brands, side by side. Each one opens its own page. -->
+<section class="gt-home" id="brands" aria-label="Our brands">
+
+    <div class="gt-home-lead">
+        <p class="small-title">GRAPE TREE FZE</p>
+        <h1><span>Japanese Craftsmanship.</span> <span>UAE Luxury.</span></h1>
     </div>
 
-    <nav id="nav-menu">
-        <a href="#home">Home</a>
-        <a href="#brands">Brands</a>
-        <a href="#story">Our Story</a>
-        <a href="#contact">Contact</a>
-    </nav>
-
-    <div class="menu-toggle" id="menu-toggle">☰</div>
-
-    <a href="#contact" class="header-btn">Enquire Now</a>
-
-</header>
-
-    <section class="hero" id="home">
-
-        <div class="overlay">
-
-            <h1>
-                Japanese Craftsmanship.
-                <br>
-                UAE Luxury.
-            </h1>
-
-            <p>
-                Premium confectionery and gifting inspired by Japanese artistry.
-            </p>
-
-            <a href="#brands" class="hero-btn">
-    Explore Brands
-</a>
-
+    <article class="gt-panel gt-panel-kat">
+        <div class="gt-panel-bg" data-slot="hero_kat" style="--img:url('images/hero1.jpg')"></div>
+        <div class="gt-panel-in">
+            <img src="images/katanukiya-logo.svg" alt="Katanukiya">
+            <h2>Cut-Out Layer Cakes</h2>
+            <p>Premium layer cakes precision-cut into playful designs, made for gifting.</p>
+            <div class="gt-panel-actions">
+                <a href="katanukiya.html" class="gt-pbtn gt-go">Explore Katanukiya</a>
+                <a href="shop.html?brand=katanukiya" class="gt-pbtn gt-shop">Shop</a>
+            </div>
         </div>
+    </article>
 
-    </section>
-    
+    <article class="gt-panel gt-panel-gild">
+        <div class="gt-panel-bg" data-slot="hero_gild" style="--img:url('images/gildart-hero.jpg')"></div>
+        <div class="gt-panel-in">
+            <img src="images/gildart-logo.svg" alt="GildArt">
+            <h2>Golden Chocolate</h2>
+            <p>Refined chocolate gifts in premium presentation, inspired by Japanese artistry.</p>
+            <div class="gt-panel-actions">
+                <a href="gildart.html" class="gt-pbtn gt-go">Explore GildArt</a>
+                <a href="shop.html?brand=gildart" class="gt-pbtn gt-shop">Shop</a>
+            </div>
+        </div>
+    </article>
+
+</section>
+
+<!-- A few favourites (filled from the shop) -->
+<section class="gt-featured" id="featured" hidden>
+    <p class="small-title">FAVOURITES</p>
+    <h2>Ready to Gift</h2>
+    <div class="gt-feat-grid" id="gt-feat-grid"></div>
+    <div class="gt-feat-more"><a href="shop.html" class="gt-btn">View the Full Shop</a></div>
+</section>
+
+<!-- Custom orders -->
+<section class="gt-band">
+    <p class="small-title">CUSTOM ORDERS</p>
+    <h2>Your Design. Our Craftsmanship.</h2>
+    <p>Add a message card, your own design or your company logo. Ideal for corporate gifting, weddings and celebrations.</p>
+    <a href="shop.html#custom" class="gt-btn">Build a Custom Order</a>
+</section>
+
 <section class="story" id="story">
 
     <p class="small-title">
@@ -73,12 +109,12 @@
     <div class="timeline">
 
         <div class="item">
-            <h3>1982</h3>
+            <h3 class="year">1982</h3>
             <p>Budonomori Co. Ltd.<br>Founded in Japan</p>
         </div>
 
         <div class="item">
-            <h3>2024</h3>
+            <h3 class="year">2024</h3>
             <p>Grape Tree FZE<br>Established in UAE</p>
         </div>
 
@@ -130,80 +166,7 @@
     </div>
 
 </section>
-<section class="brands" id="brands">
 
-    <p class="small-title">
-        OUR BRANDS
-    </p>
-
-    <h2>
-        Discover Our Premium
-        Creations
-    </h2>
-
-    <div class="brand-container">
-
-        <div class="brand-card">
-
-            <img src="images/katanukiya-product3.jpg">
-
-            <div class="brand-text">
-
-                <div class="brand-logo">
-    <img src="images/katanukiya-logo.svg" alt="Katanukiya Logo">
-</div>
-
-                <p>
-                    Premium cut-out layer cakes crafted with Japanese creativity.
-                </p>
-
-                <a href="katanukiya.html" class="brand-btn">Explore</a>
-
-            </div>
-
-        </div>
-
-        <div class="brand-card">
-
-            <img src="images/gildart.jpg">
-
-            <div class="brand-text">
-
-                <div class="brand-logo">
-    <img src="images/gildart-logo.svg" alt="GildArt Logo">
-</div>
-
-                <p>
-                    Luxury chocolate gifting inspired by Japanese craftsmanship.
-                </p>
-
-                <a href="gildart.html" class="brand-btn">Explore</a>
-
-            </div>
-
-        </div>
-
-    </div>
-
-</section>
-<section class="stats">
-
-    <div class="stat-box">
-        <h2 class="counter" data-target="40">0</h2>
-        <p>Years Heritage</p>
-    </div>
-
-    <div class="stat-box">
-        <h2 class="counter" data-target="2">0</h2>
-        <p>Premium Brands</p>
-    </div>
-
-    <div class="stat-box">
-        <h2 class="counter" data-target="100">0</h2>
-        <p>Luxury Vision</p>
-    </div>
-
-</section>
 <section class="why-us">
 
     <p class="small-title">
@@ -248,129 +211,37 @@
 
 </section>
 
-<section class="gallery">
+<script>GTLayout.footer()</script>
 
-    <p class="small-title">GALLERY</p>
-
-    <h2>
-        Crafted for Beauty.
-        <br>
-        Designed for Gifting.
-    </h2>
-
-    <div class="gallery-container">
-
-        <div class="gallery-card">
-            <img src="images/gallery1.jpg" alt="Luxury Product 1">
-        </div>
-
-        <div class="gallery-card">
-            <img src="images/katanukiya-product3.jpg" alt="Luxury Product 2">
-        </div>
-
-        <div class="gallery-card">
-            <img src="images/gallery3.jpg" alt="Luxury Product 3">
-        </div>
-
-    </div>
-</section>
-
-<!-- LIGHTBOX -->
-<div id="lightbox" onclick="closeLightbox()">
-    <img id="lightbox-img" alt="Preview">
-</div>
-
-
-<section class="follow-brands">
-
-    <p class="small-title">FOLLOW OUR BRANDS</p>
-
-    <h2>
-        Stay Connected
-        <br>
-        With Our Brand Journey
-    </h2>
-
-    <div class="qr-container">
-
-        <a href="https://www.instagram.com/katanukiya_uae" target="_blank" class="qr-link">
-            <div class="qr-card">
-                <img src="images/katanukiya-qr1.jpg" alt="Katanukiya Instagram QR">
-                <h3>Katanukiya_UAE</h3>
-                <p>Scan to follow our premium layer cake journey.</p>
-            </div>
-        </a>
-
-        <a href="https://www.instagram.com/gildart_official" target="_blank" class="qr-link">
-            <div class="qr-card">
-                <img src="images/gildart-qr1.JPG" alt="GildArt Instagram QR">
-                <h3>GildArt_Official</h3>
-                <p>Scan to explore our luxury chocolate world.</p>
-            </div>
-        </a>
-
-    </div>
-</section>
-
-<section class="contact" id="contact">
-
-    <p class="small-title">
-        CONTACT US
-    </p>
-
-    <h2>
-        Let’s Create Something Premium Together
-    </h2>
-
-    <p class="contact-text">
-        Grape Tree FZE brings Japanese-inspired premium confectionery and gifting experiences to the UAE and beyond.
-    </p>
-
-    <a href="contact.html" class="contact-btn">
-    Enquire Now
-</a>
-
-</section>
-
-<!-- Footer -->
-<footer>
-
-    <div class="footer-container">
-
-        <!-- Logo -->
-        <div class="footer-logo">
-            <img src="images/logo2.svg" alt="Grape Tree FZE Logo">
-        </div>
-
-        <!-- Links -->
-        <div class="footer-links">
-            <a href="index.html">Home</a>
-            <a href="gildart.html">GildArt</a>
-            <a href="katanukiya.html">Katanukiya</a>
-            <a href="contact.html">Inquiry</a>
-        </div>
-
-        <!-- Info -->
-        <div class="footer-info">
-            <p>Grape Tree FZE</p>
-            <p>Dubai, UAE</p>
-            <p>Premium Gifting & Confectionery</p>
-            <p>Japanese Craftsmanship</p>
-        </div>
-
-    </div>
-
-    <p class="copyright">
-        © 2026 Grape Tree FZE. All Rights Reserved.
-    </p>
-
-</footer>
- <a href="https://wa.me/971555577478" class="whatsapp-float" target="_blank">
-    <img src="images/whatsapp.png" alt="WhatsApp">
-</a>
-
+    
+    <script src="cart.js"></script>
+<script src="backend.js"></script>
     <script src="script.js"></script>
+    <script src="animations.js"></script>
 
+<script>
+(function () {
+    document.querySelectorAll('.gt-panel').forEach(function (p) { p.addEventListener('click', function (e) { if (!e.target.closest('a')) p.querySelector('.gt-go').click(); }); });
+})();
+(function () {
+    var grid = document.getElementById('gt-feat-grid'), box = document.getElementById('featured');
+    if (!grid || !window.GT || !GT.data) return;
+    var money = GT.money;
+    GT.data.products().then(function (all) {
+        // the admin chooses these with the star in Admin > Products; if none is chosen, show the first two of each brand
+        var list = all.filter(function (p) { return p.featured; }).slice(0, 8);
+        if (!list.length) {
+            var k = all.filter(function (p) { return p.brand === 'katanukiya'; }).slice(0, 2), g = all.filter(function (p) { return p.brand === 'gildart'; }).slice(0, 2);
+            list = k.concat(g);
+        }
+        if (!list.length) return;
+        grid.innerHTML = list.map(function (p) {
+            return '<a class="gt-feat" href="shop.html?product=' + encodeURIComponent(p.id) + '"><img loading="lazy" src="' + GT.esc(p.img) + '" alt="' + GT.esc(p.name) + '"><div><b>' + GT.esc(p.name) + '</b><span>' + money(p.price) + '</span></div></a>';
+        }).join('');
+        box.hidden = false;
+    });
+})();
+</script>
 </body>
 
 </html>

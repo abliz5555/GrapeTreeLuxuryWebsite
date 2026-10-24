@@ -1,0 +1,65 @@
+/* =====================================================================
+   GRAPE TREE - ACCOUNT + ADMIN PAGES
+   ===================================================================== */
+.acct-wrap{ max-width:1100px; margin:0 auto; padding:10px var(--pad-x) 90px; }
+.page-title{ text-align:center; padding-block:clamp(36px,6vw,70px) 10px !important; }
+.acct-card{ background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); padding:clamp(22px,3vw,34px); box-shadow:none; }
+.acct-card h2{ font-size:clamp(24px,2.4vw,32px); margin:0 0 16px; }
+.acct-auth{ max-width:460px; margin:0 auto; }
+.acct-tabs{ display:flex; gap:6px; background:var(--cream-2); border-radius:999px; padding:5px; margin-bottom:24px; }
+.acct-tabs button{ flex:1; padding:11px 10px; border:0; background:transparent; border-radius:999px; cursor:pointer; font:600 13px/1 var(--sans); letter-spacing:.06em; color:var(--ink-soft); transition:background .3s,color .3s; }
+.acct-tabs button.on{ background:var(--ink); color:#fff; }
+.acct-lead{ margin:0 0 16px; font-size:15px; }
+.acct-card .field{ margin-bottom:16px; }
+.acct-card .field label{ display:block; font-size:13px; font-weight:600; margin-bottom:6px; color:var(--ink); }
+.acct-card .field .opt{ font-weight:400; color:var(--gt-muted); }
+.acct-card input,.acct-card select,.acct-card textarea{ width:100%; padding:13px 15px; border:1px solid var(--line); border-radius:12px; background:var(--cream); font:400 15px/1.4 var(--sans); color:var(--ink); transition:border-color .25s, box-shadow .25s; }
+.acct-card input:focus,.acct-card select:focus,.acct-card textarea:focus{ outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(var(--gold-rgb),.2); }
+.acct-card input:disabled{ opacity:.65; }
+.hint{ margin:6px 0 0 !important; font-size:12.5px !important; color:var(--gt-muted); }
+.acct-msg{ min-height:0; margin:0 0 12px !important; font-size:14px !important; line-height:1.5; color:#b3402a; display:none; }
+.acct-msg.show{ display:block; } .acct-msg.good{ color:#2f7a4a; }
+.acct-link{ display:inline-block; background:none; border:0; padding:0; margin-top:14px; cursor:pointer; color:var(--gt-gold-dark); font:500 14px/1.3 var(--sans); text-decoration:underline; text-underline-offset:4px; }
+.acct-auth .acct-link{ display:block; margin-inline:auto; }
+.gt-btn-block{ width:100%; }
+.acct-muted{ color:var(--gt-muted); font-size:15px !important; }
+.acct-loading{ color:var(--gt-muted); text-align:center; padding:30px 0; }
+.acct-done{ max-width:460px; margin:0 auto; text-align:center; }
+.acct-done .tick{ width:64px; height:64px; margin:0 auto 18px; border-radius:50%; background:var(--gold); position:relative; }
+.acct-done .tick::after{ content:""; position:absolute; left:23px; top:14px; width:14px; height:26px; border:solid #fff; border-width:0 3px 3px 0; transform:rotate(45deg); }
+
+.acct-grid{ display:grid; grid-template-columns:1.35fr 1fr; gap:24px; align-items:start; }
+.acct-side{ display:grid; gap:20px; }
+.acct-admin{ display:block; text-decoration:none; background:var(--ink); border-color:var(--ink); color:#fff; transition:transform .3s; }
+.acct-admin:hover{ transform:translateY(-3px); }
+.acct-admin strong{ display:block; font-size:17px; margin-bottom:4px; color:var(--gold-light); }
+.acct-admin span{ font-size:14px; color:rgba(255,255,255,.8); }
+.acct-out{ justify-self:start; }
+.ord{ border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin-bottom:14px; background:var(--cream); }
+.ord header{ position:static; display:flex; justify-content:space-between; align-items:flex-start; gap:10px; background:none !important; border:0; padding:0 !important; backdrop-filter:none; box-shadow:none !important; width:auto; }
+.ord header strong{ display:block; color:var(--ink); } .ord header span:not(.chip){ font-size:13px; color:var(--gt-muted); }
+.ord ul{ list-style:none; margin:12px 0; padding:0; display:grid; gap:6px; }
+.ord li{ display:flex; justify-content:space-between; gap:12px; font-size:14.5px; } .ord li em{ font-style:normal; color:var(--gt-muted); white-space:nowrap; }
+.ord footer{ display:flex; justify-content:space-between; align-items:center; font-weight:600; color:var(--ink); border-top:1px solid var(--line); padding-top:12px; background:none !important; padding-inline:0 !important; }
+.ord footer .acct-link{ margin:0; }
+.chip{ display:inline-block; padding:5px 12px; border-radius:999px; font-size:12px; font-weight:600; background:var(--cream-2); color:var(--ink); white-space:nowrap; }
+.st-new{ background:#fdf0cf; color:#7a5a10; } .st-confirmed,.st-preparing{ background:#e3eefc; color:#1f4f8f; } .st-delivering{ background:#ece3fb; color:#5a2f9a; }
+.st-delivered{ background:#dff3e6; color:#1f6a3f; } .st-cancelled{ background:#f7dedb; color:#9a2f20; }
+.addr{ display:flex; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); }
+.addr p{ margin:3px 0 0; font-size:14px; }
+.addr .acct-link{ margin:0; align-self:center; }
+#a-addr{ margin-top:18px; }
+@media (max-width:900px){ .acct-grid{ grid-template-columns:1fr; } }
+
+/* checkout: payment choice */
+.co-pay{ border:0; padding:0; margin:22px 0 4px; min-width:0; }
+.co-pay legend{ font-weight:600; color:var(--ink); margin-bottom:10px; padding:0; font-size:15px; }
+.co-opt{ display:flex; gap:12px; align-items:flex-start; padding:14px 16px; border:1px solid var(--line); border-radius:14px; margin-bottom:10px; cursor:pointer; background:var(--paper); transition:border-color .25s, background .25s; }
+.co-opt:hover{ border-color:var(--gold); }
+.co-opt:has(input:checked){ border-color:var(--gold); background:rgba(var(--gold-rgb),.08); }
+.co-opt input{ margin-top:4px; accent-color:var(--gold); width:auto !important; }
+.co-opt strong{ display:block; color:var(--ink); font-size:15px; } .co-opt small{ display:block; color:var(--gt-muted); font-size:13px; margin-top:2px; line-height:1.5; }
+.co-bank{ background:var(--cream-2); border-radius:14px; padding:16px 18px; margin:6px 0 12px; text-align:start; }
+.co-bank pre{ white-space:pre-wrap; font:500 14px/1.7 ui-monospace,Menlo,Consolas,monospace; margin:8px 0; color:var(--ink); }
+.co-bank p{ margin:0 !important; font-size:13.5px !important; }
+.co-no{ font-size:17px !important; margin:0 0 6px !important; color:var(--ink); }

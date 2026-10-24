@@ -5,32 +5,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Katanukiya | Grape Tree FZE</title>
+    <meta name="description" content="Katanukiya cut-out layer cakes by Grape Tree FZE: precision-cut Japanese layer cakes with playful Dubai designs, made for gifting in the UAE.">
+    <meta property="og:title" content="Katanukiya | Grape Tree FZE">
+    <meta property="og:description" content="Katanukiya cut-out layer cakes by Grape Tree FZE: precision-cut Japanese layer cakes with playful Dubai designs, made for gifting in the UAE.">
+    <meta property="og:image" content="https://grapetree.ae/images/katanukiya-hero.jpg">
 
+    <!-- Animation switch-on (runs before the page paints so nothing flashes) -->
+    <script>
+        (function(){var d=document.documentElement;d.classList.add('gt-js');try{if(matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('gt-ready')}else{setTimeout(function(){d.classList.add('gt-ready')},4500)}}catch(e){d.classList.add('gt-ready')}})();
+    </script>
+
+    <script src="shop-data.js"></script>
+    <script src="layout.js"></script>
+    <script src="i18n.js"></script>
+    <script src="track.js"></script>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="shop.css">
+    <link rel="stylesheet" href="animations.css">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="layout.css">
 
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Cormorant Garamond added: your CSS already uses it, but it was never loaded -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
 
-<body>
+<body class="theme-kat">
 
-<!-- Header -->
-<header>
-    <div class="logo">
-        <a href="index.html">
-            <img src="images/katanukiya-logo.svg" alt="Katanukiya Logo">
-        </a>
-    </div>
-
-    <nav>
-        <a href="index.html">Home</a>
-        <a href="#story">Story</a>
-        <a href="#products">Products</a>
-        <a href="#videos">Production</a>
-        <a href="#contact">Contact</a>
-    </nav>
-
-    <a href="index.html" class="header-btn">Back Home</a>
-</header>
+<script>GTLayout.header()</script>
 
 <!-- Hero -->
 <section class="hero katanukiya-hero">
@@ -48,7 +51,10 @@
             Katanukiya transforms premium layer cakes into creative gifting experiences through precision cutting, playful design, and Japanese craftsmanship.
         </p>
 
-        <a href="#products" class="hero-btn">Explore Collection</a>
+        <div class="hero-actions">
+            <a href="#products" class="hero-btn">Explore Collection</a>
+            <a href="shop.html?brand=katanukiya" class="hero-btn-ghost">Shop Katanukiya</a>
+        </div>
 
     </div>
 
@@ -68,17 +74,17 @@
     <div class="timeline">
 
         <div class="item">
-            <h3>4M+</h3>
+            <h3 class="year">4M+</h3>
             <p>Annual Production</p>
         </div>
 
         <div class="item">
-            <h3>1500+</h3>
+            <h3 class="year">1500+</h3>
             <p>Retail Partner Locations</p>
         </div>
 
         <div class="item">
-            <h3>Duty Free</h3>
+            <h3 class="year">Duty Free</h3>
             <p>Official Presence</p>
         </div>
 
@@ -96,19 +102,19 @@
     <div class="brand-container">
 
         <div class="brand-card">
-            <img src="images/katanukiya-product4.jpg">
+            <img loading="lazy" decoding="async" src="images/katanukiya-product4.jpg" alt="Katanukiya cut-out layer cake with a playful camel design">
 
             <div class="brand-text">
-                <img src="images/katanukiya-logo.svg" style="height:40px;">
+                <img loading="lazy" decoding="async" src="images/katanukiya-logo.svg" alt="Katanukiya" style="height:40px;">
                 <p>Precision-cut layer cakes with playful design.</p>
             </div>
         </div>
 
         <div class="brand-card">
-            <img src="images/katanukiya-product1.jpg">
+            <img loading="lazy" decoding="async" src="images/katanukiya-product1.jpg" alt="Katanukiya cut-out layer cake in the shape of the Burj Khalifa">
 
             <div class="brand-text">
-                <img src="images/katanukiya-logo.svg" style="height:40px;">
+                <img loading="lazy" decoding="async" src="images/katanukiya-logo.svg" alt="Katanukiya" style="height:40px;">
                 <p>Premium gifting cakes for special moments.</p>
             </div>
         </div>
@@ -185,104 +191,30 @@
 
 </section>
 
-<!-- Gallery -->
-<section class="gallery">
 
-    <p class="small-title">GALLERY</p>
+ 
 
-    <h2>Crafted with Joy<br>Designed to Surprise</h2>
-
-    <div class="gallery-container">
-        <img src="images/katanukiya-product4.jpg">
-        <img src="images/katanukiya-product3.jpg">
-        <img src="images/katanukiya-product2.jpg">
+<!-- Shop + custom order call to action -->
+<section class="gt-band">
+    <p class="small-title">ORDER ONLINE</p>
+    <h2>Order Katanukiya.<br>Or Design Your Own.</h2>
+    <p>Choose from the Katanukiya collection, or build a custom order with your own message card or company logo.</p>
+    <div class="cta-buttons" style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+        <a href="shop.html?brand=katanukiya" class="gt-btn">Shop Katanukiya</a>
+        <a href="cake-studio.html" class="hero-btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.6)">Design Your Own Cake</a>
     </div>
-
-</section>
- <!-- Follow katanukiya -->
-    <section class="follow-brands">
-
-        <p class="small-title">FOLLOW KATANUKIYA</p>
-
-        <h2>
-            Stay Connected
-            <br>
-            With Katanukiya
-        </h2>
-
-        <div class="qr-container">
-
-            <div class="qr-card">
-
-                <a href="https://instagram.com/Katanukiya_UAE" target="_blank">
-                    <img src="images/katanukiya-qr1.jpg" alt="Katanukiya Instagram QR">
-                </a>
-
-                <h3>Katanukiya_UAE</h3>
-
-                <p>
-                    Scan or tap to explore our Cut Out Cakes.
-                </p>
-
-                <a href="https://instagram.com/Katanukiya_UAE"
-                   target="_blank"
-                   class="instagram-btn">
-                   Follow on Instagram
-                </a>
-
-            </div>
-
-        </div>
-
-    </section>
-
-<!-- Contact -->
-<section class="contact" id="contact">
-
-    <p class="small-title">CONTACT</p>
-
-    <h2>Let’s Create Sweet<br>Moments Together</h2>
-
-    <p class="contact-text">
-        Premium Japanese-inspired cake gifting in UAE.
-    </p>
-
-    <a href="contact.html" class="contact-btn">Enquire Now</a>
-
 </section>
 
-<!-- Footer -->
-<footer>
 
-    <div class="footer-container">
 
-        <div class="footer-logo">Katanukiya</div>
+<script>GTLayout.footer()</script>
 
-        <div class="footer-links">
-            <a href="index.html">Home</a>
-            <a href="#story">Story</a>
-            <a href="#products">Products</a>
-            <a href="#videos">Production</a>
-            <a href="#contact">Contact</a>
-        </div>
 
-        <div class="footer-info">
-            <p>Grape Tree FZE</p>
-            <p>Dubai, UAE</p>
-        </div>
 
-    </div>
-
-    <p class="copyright">
-        © 2026 Katanukiya. All Rights Reserved.
-    </p>
-
-</footer>
-
-<!-- WhatsApp -->
-<a href="https://wa.me/971555577478" class="whatsapp-float" target="_blank">
-    <img src="images/whatsapp.png">
-</a>
+<script src="cart.js"></script>
+<script src="backend.js"></script>
+<script src="script.js"></script>
+<script src="animations.js"></script>
 
 </body>
 </html>

@@ -13,8 +13,8 @@ html{
 
 body{
     font-family:'Inter', sans-serif;
-    background:#F8F5F0;
-    color:#1A1A1A;
+    background:var(--cream);
+    color:var(--ink);
     padding-top:90px;
     overflow-x:hidden;
 }
@@ -52,7 +52,7 @@ p{
 }
 
 .small-title{
-    color:#C9A86A;
+    color:var(--gold);
     letter-spacing:3px;
     font-size:14px;
     margin-bottom:20px;
@@ -109,7 +109,7 @@ nav {
 
 nav a {
     text-decoration: none;
-    color: #1A1A1A;
+    color: var(--ink);
 
     font-family: 'Playfair Display', serif;
     font-size: 20px;
@@ -125,12 +125,12 @@ nav a::after {
     bottom: -6px;
     width: 0;
     height: 2px;
-    background: #C9A86A;
+    background: var(--gold);
     transition: 0.3s ease;
 }
 
 nav a:hover {
-    color: #C9A86A;
+    color: var(--gold);
 }
 
 nav a:hover::after {
@@ -140,8 +140,8 @@ nav a:hover::after {
 /* BUTTON */
 .header-btn {
     padding: 12px 24px;
-    background: #C9A86A;
-    color: #1A1A1A;
+    background: var(--gold);
+    color: var(--ink);
     text-decoration: none;
     border-radius: 8px;
     font-weight: 500;
@@ -202,8 +202,8 @@ nav a:hover::after {
 .hero-btn {
     display: inline-block;
     padding: 14px 28px;
-    background: #C9A86A;
-    color: #1A1A1A;
+    background: var(--gold);
+    color: var(--ink);
     text-decoration: none;
     border-radius: 8px;
     transition: 0.3s ease;
@@ -245,8 +245,8 @@ nav a:hover::after {
 .hero-btn{
     display:inline-block;
     padding:15px 40px;
-    background:#C9A86A;
-    color:#1A1A1A;
+    background:var(--gold);
+    color:var(--ink);
     text-decoration:none;
     border-radius:8px;
     font-weight:500;
@@ -263,7 +263,7 @@ nav a:hover::after {
     font-weight:600;
     letter-spacing:4px;
     text-transform:uppercase;
-    color:#C9A86A;
+    color:var(--gold);
     margin-bottom:14px;
 }
 
@@ -296,10 +296,10 @@ nav a:hover::after {
     min-width:240px;
     padding:32px;
 
-    background:linear-gradient(135deg, #F8F5F0, #FCFAF6);
+    background:linear-gradient(135deg, var(--cream), var(--cream-2));
     border-radius:18px;
 
-    border:1px solid rgba(201,168,106,0.18);
+    border:1px solid rgba(var(--gold-rgb),0.18);
     box-shadow:0 10px 25px rgba(0,0,0,0.06);
 
     position:relative;
@@ -312,7 +312,7 @@ nav a:hover::after {
 .item:hover{
     transform:translateY(-10px);
     box-shadow:0 18px 45px rgba(0,0,0,0.10);
-    border-color:rgba(201,168,106,0.35);
+    border-color:rgba(var(--gold-rgb),0.35);
 }
 
 /* soft glow */
@@ -320,7 +320,7 @@ nav a:hover::after {
     content:'';
     position:absolute;
     inset:0;
-    background:radial-gradient(circle at top left, rgba(201,168,106,0.08), transparent 60%);
+    background:radial-gradient(circle at top left, rgba(var(--gold-rgb),0.08), transparent 60%);
     opacity:0;
     transition:0.4s ease;
 }
@@ -332,7 +332,7 @@ nav a:hover::after {
 /* YEAR (FIXED TYPOGRAPHY) */
 .item h3{
     font-size:46px;
-    color:#C9A86A;
+    color:var(--gold);
     margin-bottom:18px;
 
     font-family:'Playfair Display', serif;
@@ -349,7 +349,7 @@ nav a:hover::after {
 .item p{
     font-size:17px;
     line-height:1.8;
-    color:#4A4A4A;
+    color:var(--ink-soft);
     font-family:'Cormorant Garamond', serif;
 }
 
@@ -370,11 +370,11 @@ nav a:hover::after {
 
 /* STORY CARD */
 .story-text-card{
-    background:linear-gradient(135deg, #F8F5F0, #FCFAF6);
+    background:linear-gradient(135deg, var(--cream), var(--cream-2));
     padding:40px;
     border-radius:20px;
 
-    border:1px solid rgba(201,168,106,0.18);
+    border:1px solid rgba(var(--gold-rgb),0.18);
     box-shadow:0 10px 25px rgba(0,0,0,0.06);
 
     transition:0.4s ease;
@@ -383,14 +383,14 @@ nav a:hover::after {
 .story-text-card:hover{
     transform:translateY(-10px);
     box-shadow:0 18px 45px rgba(0,0,0,0.10);
-    border-color:rgba(201,168,106,0.35);
+    border-color:rgba(var(--gold-rgb),0.35);
 }
 
 /* TITLE */
 .story-text-card h3{
     font-family:'Playfair Display', serif;
     font-size:26px;
-    color:#C9A86A;
+    color:var(--gold);
     margin-bottom:18px;
 }
 
@@ -399,14 +399,14 @@ nav a:hover::after {
     font-family:'Cormorant Garamond', serif;
     font-size:17px;
     line-height:1.9;
-    color:#4A4A4A;
+    color:var(--ink-soft);
 }
 /* =========================
    BRANDS
 ========================= */
 .brands{
     padding:clamp(70px, 8vw, 140px) 8%;
-    background:#F8F5F0;
+    background:var(--cream);
     text-align:center;
 }
 
@@ -472,7 +472,7 @@ nav a:hover::after {
     font-weight:600;
     letter-spacing:0.5px;
     line-height:1.2;
-    color:#1A1A1A;
+    color:var(--ink);
 }
 
 /* Description */
@@ -483,14 +483,14 @@ nav a:hover::after {
     font-weight:500;
     line-height:1.7;
     letter-spacing:0.3px;
-    color:#4A4A4A;
+    color:var(--ink-soft);
     max-width:280px;
 }
 
 /* Button */
 .brand-text button{
     padding:13px 28px;
-    background:#C9A86A;
+    background:var(--gold);
     border:none;
     cursor:pointer;
     border-radius:8px;
@@ -523,7 +523,7 @@ nav a:hover::after {
 ========================= */
 .stats{
     padding:40px 8%;
-    background:#1A1A1A;
+    background:var(--ink);
     color:white;
 
     display:flex;
@@ -540,7 +540,7 @@ nav a:hover::after {
 
 .stat-box h2{
     font-size:clamp(56px, 6vw, 78px);
-    color:#C9A86A;
+    color:var(--gold);
     margin-bottom:10px;
     font-family:'Playfair Display', serif;
     font-weight:600;
@@ -581,7 +581,7 @@ nav a:hover::after {
 }
 
 .why-card{
-    background:#F8F5F0;
+    background:var(--cream);
     padding:50px;
     border-radius:20px;
     transition:0.3s ease;
@@ -595,7 +595,7 @@ nav a:hover::after {
 .why-card h3{
     font-size:28px;
     margin-bottom:20px;
-    color:#C9A86A;
+    color:var(--gold);
     font-family:'Playfair Display';
 }
 
@@ -604,7 +604,7 @@ nav a:hover::after {
 ========================= */
 .gallery{
     padding:clamp(70px, 8vw, 140px) 8%;
-    background:#F8F5F0;
+    background:var(--cream);
     text-align:center;
     position:relative;
     z-index:1;
@@ -693,7 +693,7 @@ nav a:hover::after {
 
 /* QR CARD (SINGLE CLEAN VERSION ONLY) */
 .qr-card{
-    background:#F8F5F0;
+    background:var(--cream);
     padding:40px;
     border-radius:20px;
     box-shadow:0 8px 25px rgba(0,0,0,0.06);
@@ -710,13 +710,13 @@ nav a:hover::after {
     border-radius:12px;
     box-shadow:
         0 10px 25px rgba(0,0,0,0.08),
-        0 2px 8px rgba(201,168,106,0.15);
+        0 2px 8px rgba(var(--gold-rgb),0.15);
 }
 
 .qr-card h3{
     font-size:28px;
     font-family:'Playfair Display';
-    color:#C9A86A;
+    color:var(--gold);
     margin-bottom:15px;
 }
 
@@ -753,8 +753,8 @@ nav a:hover::after {
 .contact-btn{
     display:inline-block;
     padding:16px 40px;
-    background:#C9A86A;
-    color:#1A1A1A;
+    background:var(--gold);
+    color:var(--ink);
     text-decoration:none;
     border-radius:8px;
     font-weight:500;
@@ -764,7 +764,7 @@ nav a:hover::after {
    FOOTER
 ========================= */
 footer{
-    background:#1A1A1A;
+    background:var(--ink);
     color:white;
     padding:70px 8% 30px;
 }
@@ -805,7 +805,7 @@ footer{
 }
 
 .footer-links a:hover{
-    color:#C9A86A;
+    color:var(--gold);
 }
 
 /* Footer info */
@@ -1010,8 +1010,8 @@ footer{
 .brand-btn{
     display:inline-block;
     padding:13px 28px;
-    background:#C9A86A;
-    color:#1A1A1A;
+    background:var(--gold);
+    color:var(--ink);
     text-decoration:none;
     border-radius:8px;
     font-weight:500;
@@ -1043,7 +1043,7 @@ footer{
 }
 
 .showcase-card{
-    background:#F8F5F0;
+    background:var(--cream);
     padding:25px;
     border-radius:20px;
     box-shadow:0 8px 25px rgba(0,0,0,0.06);
@@ -1065,7 +1065,7 @@ footer{
 .showcase-card h3{
     font-size:28px;
     font-family:'Playfair Display';
-    color:#C9A86A;
+    color:var(--gold);
     margin-bottom:15px;
 }
 
@@ -1077,7 +1077,7 @@ footer{
 ========================= */
 .why-gildart{
     padding:clamp(70px, 8vw, 140px) 8%;
-    background:#F8F5F0;
+    background:var(--cream);
     text-align:center;
 }
 
@@ -1106,7 +1106,7 @@ footer{
 .why-box h3{
     font-size:28px;
     font-family:'Playfair Display';
-    color:#C9A86A;
+    color:var(--gold);
     margin-bottom:18px;
 }
 
@@ -1118,8 +1118,8 @@ footer{
     display:inline-block;
     margin-top:20px;
     padding:12px 26px;
-    background:#C9A86A;
-    color:#1A1A1A;
+    background:var(--gold);
+    color:var(--ink);
     text-decoration:none;
     border-radius:8px;
     font-weight:500;
@@ -1310,4 +1310,122 @@ footer{
     background-size: cover !important;
     background-position: center !important;
     background-repeat: no-repeat !important;
+}
+/* =========================================================
+   ADDED: CONTACT FORM STYLES
+   contact.html used these class names, but the CSS for them
+   did not exist, so the form was showing unstyled.
+========================================================= */
+[hidden]{
+    display:none !important;
+}
+
+.contact-form-section{
+    padding:clamp(70px, 8vw, 140px) 8%;
+    background:var(--cream);
+    text-align:center;
+}
+
+.contact-form-section h2{
+    margin-bottom:60px;
+}
+
+.form-wrapper{
+    max-width:780px;
+    margin:0 auto;
+    padding:clamp(28px, 4vw, 50px);
+    background:#fff;
+    border-radius:20px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.07);
+    text-align:left;
+}
+
+.inquiry-form{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+}
+
+.inquiry-form input,
+.inquiry-form select,
+.inquiry-form textarea{
+    width:100%;
+    padding:15px 18px;
+    font-size:16px;
+    color:var(--ink);
+    background:#fff;
+    border:1px solid rgba(var(--ink-rgb),0.2);
+    border-radius:12px;
+    transition:border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.inquiry-form textarea{
+    resize:vertical;
+    line-height:1.6;
+}
+
+.inquiry-form input::placeholder,
+.inquiry-form textarea::placeholder{
+    color:#8a8a8a;
+}
+
+.inquiry-form input:focus,
+.inquiry-form select:focus,
+.inquiry-form textarea:focus{
+    outline:none;
+    border-color:var(--gold);
+    box-shadow:0 0 0 4px rgba(var(--gold-rgb),0.22);
+}
+
+.inquiry-form select,
+.inquiry-form textarea,
+.inquiry-form .submit-btn{
+    grid-column:1 / -1;
+}
+
+.submit-btn{
+    padding:16px 40px;
+    background:var(--gold);
+    color:var(--ink);
+    border:none;
+    border-radius:8px;
+    font-size:16px;
+    font-weight:500;
+    cursor:pointer;
+}
+
+.submit-btn:disabled{
+    opacity:0.6;
+    cursor:wait;
+}
+
+.hp-field{
+    position:absolute;
+    left:-9999px;
+    width:1px;
+    height:1px;
+    opacity:0;
+}
+
+.form-success{
+    padding:30px 10px;
+    text-align:center;
+}
+
+.form-success h3{
+    font-family:'Playfair Display', serif;
+    font-size:30px;
+    font-weight:600;
+    color:var(--gold);
+    margin-bottom:14px;
+}
+
+.form-success p{
+    margin-bottom:28px;
+}
+
+@media (max-width:620px){
+    .inquiry-form{
+        grid-template-columns:1fr;
+    }
 }

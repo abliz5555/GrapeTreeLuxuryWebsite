@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Custom Order | Grape Tree FZE</title>
+    <meta name="description" content="Build a custom order: choose your Katanukiya cut-out cake design or GildArt golden chocolate gift, add a message card or company logo, and set your delivery date.">
+    <meta property="og:title" content="Custom Order | Grape Tree FZE">
+    <meta property="og:description" content="Design your own Katanukiya cake or GildArt chocolate gift, step by step.">
+    <meta property="og:image" content="https://grapetree.ae/images/hero1.jpg">
+
+    <script>
+        (function(){var d=document.documentElement;d.classList.add('gt-js');try{if(matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('gt-ready')}else{setTimeout(function(){d.classList.add('gt-ready')},4500)}}catch(e){d.classList.add('gt-ready')}})();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <script src="shop-data.js"></script>
+    <script src="layout.js"></script>
+    <script src="i18n.js"></script>
+    <script src="track.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="shop.css">
+    <link rel="stylesheet" href="animations.css">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="layout.css">
+</head>
+
+<body data-shop data-builder>
+
+<script>GTLayout.header()</script>
+
+<!-- Hero -->
+<section class="hero custom-hero">
+    <div class="overlay">
+        <p class="small-title">CUSTOM ORDERS</p>
+        <h1>
+            Create a Gift
+            <br>
+            That Is Yours
+        </h1>
+        <p>
+            Choose a design, set the quantity and make it personal. Perfect for corporate gifting, weddings and celebrations.
+        </p>
+        <a href="#builder" class="hero-btn">Start Building</a>
+    </div>
+</section>
+
+<!-- Builder -->
+<section class="builder" id="builder">
+
+    <div class="builder-intro">
+        <a class="builder-back" href="shop.html#custom">&larr; Back to Shop</a>
+        <p class="small-title">YOUR ORDER</p>
+        <h2>Build It Step by Step</h2>
+        <p>Pick a product line, then follow the steps. Your estimate updates as you go, and nothing is charged until we confirm with you.</p>
+    </div>
+
+    <div class="builder-switch" id="builder-switch" role="group" aria-label="Choose a product line"></div>
+
+    <div class="builder-grid">
+        <div id="steps"></div>
+
+        <aside class="builder-summary" aria-label="Order summary">
+            <div class="sum-preview"><img id="sum-img" src="images/katanukiya-product3.jpg" alt=""></div>
+            <h3 id="sum-title"></h3>
+            <ul class="sum-list" id="sum-list"></ul>
+            <div class="sum-total"><span>Estimated total</span><strong id="sum-total"></strong></div>
+            <p class="sum-note" id="sum-note"></p>
+            <button type="button" class="gt-btn gt-btn-block" id="sum-add">Add to cart</button>
+            <p class="sum-missing" id="sum-missing" aria-live="polite"></p>
+            <a class="gt-link sum-wa" id="sum-wa" href="https://wa.me/971555577478" target="_blank" rel="noopener">Prefer WhatsApp? Send this order directly</a>
+        </aside>
+    </div>
+
+    <noscript><p style="text-align:center">Please enable JavaScript to use the order builder, or <a href="contact.html">send us an inquiry</a>.</p></noscript>
+</section>
+
+<div class="builder-bar" id="builder-bar">
+    <div><small>Estimated total</small><strong id="bar-total"></strong></div>
+    <button type="button" class="gt-btn" id="bar-add">Add to cart</button>
+</div>
+
+<script>GTLayout.footer()</script>
+
+
+<script src="cart.js"></script>
+<script src="backend.js"></script>
+<script src="script.js"></script>
+<script src="animations.js"></script>
+<script src="customize.js"></script>
+
+</body>
+
+</html>

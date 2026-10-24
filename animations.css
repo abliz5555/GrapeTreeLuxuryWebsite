@@ -1,0 +1,409 @@
+/* =====================================================================
+   GRAPE TREE - ANIMATION LAYER
+   ---------------------------------------------------------------------
+   All motion lives in this file + animations.js.
+   Your design (colors, fonts, layout) stays in style.css.
+   To switch every animation off: remove the <link> to this file and the
+   <script> for animations.js from the pages. Nothing else breaks.
+   ===================================================================== */
+
+:root{
+    --gt-ease: cubic-bezier(.22,.8,.24,1);   /* smooth, slow-out "luxury" easing */
+    --gt-gold: var(--gold);
+}
+
+/* ---------------------------------------------------------------------
+   1. INTRO CURTAIN  (home page, first visit of each session)
+   --------------------------------------------------------------------- */
+.gt-intro{ display:none; }
+
+html.gt-intro-pending .gt-intro{
+    position:fixed;
+    inset:0;
+    z-index:10000;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:26px;
+    background:var(--ink);
+    box-shadow:0 2px 0 var(--gt-gold);
+    cursor:pointer;
+    transition:transform 1.05s var(--gt-ease);
+}
+
+html.gt-intro-pending .gt-intro.gt-intro-leave{
+    transform:translateY(-101%);
+}
+
+.gt-intro-logo{
+    width:min(320px, 62vw);
+    height:auto;
+    opacity:0;
+    filter:blur(10px);
+    transform:scale(.96);
+    animation:gt-logo-in 1.2s var(--gt-ease) .2s forwards;
+}
+
+.gt-intro-line{
+    display:block;
+    width:min(240px, 46vw);
+    height:1px;
+    background:linear-gradient(90deg, transparent, var(--gt-gold), transparent);
+    transform:scaleX(0);
+    animation:gt-line-in 1.2s var(--gt-ease) .9s forwards;
+}
+
+.gt-intro-tag{
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    letter-spacing:4px;
+    text-transform:uppercase;
+    color:var(--gt-gold);
+    opacity:0;
+    animation:gt-fade-in 1s ease 1.4s forwards;
+}
+
+@keyframes gt-logo-in { to{ opacity:1; filter:blur(0); transform:none; } }
+@keyframes gt-line-in { to{ transform:scaleX(1); } }
+@keyframes gt-fade-in { to{ opacity:.9; } }
+
+html.gt-lock,
+html.gt-lock body{ overflow:hidden; }
+
+/* ---------------------------------------------------------------------
+   2. HERO  (background parallax, headline reveal, staggered text)
+   --------------------------------------------------------------------- */
+.hero{
+    position:relative;
+    overflow:hidden;
+    isolation:isolate;
+}
+
+/* The hero image is repeated on a taller layer so it can drift on scroll */
+.hero::before{
+    content:"";
+    position:absolute;
+    inset:-14% 0;
+    z-index:-1;
+    background:inherit;
+    transform:translate3d(0, var(--gt-hero-y, 0px), 0);
+    will-change:transform;
+}
+
+html.gt-js:not(.gt-ready) .hero::before{ scale:1.14; }
+html.gt-ready .hero::before{ scale:1; transition:scale 2.8s var(--gt-ease); }
+
+.hero .overlay{
+    position:relative;
+    z-index:1;
+    translate:0 var(--gt-text-y, 0px);
+    opacity:var(--gt-text-o, 1);
+}
+
+/* headline lines slide up out of a mask */
+.gt-line{
+    display:block;
+    /* clips top/bottom only, so long words are never cut off at the sides */
+    clip-path:inset(0 -100vw 0 -100vw);
+    padding:.06em 0 .14em;
+    margin:-.06em 0 -.14em;
+}
+.gt-line,
+.gt-line > span{
+    font-family:inherit;   /* style.css has "* { font-family: Inter }", which would override the headline font */
+}
+.gt-line > span{
+    display:block;
+    transform:translateY(112%);
+    transition:transform 1.15s var(--gt-ease);
+    transition-delay:calc(180ms + var(--gt-l, 0) * 140ms);
+}
+html.gt-ready .gt-line > span{ transform:none; }
+
+/* other hero text (label, paragraph, button) fades up after the headline */
+.hero .overlay > :not(h1){
+    transition:opacity 1s var(--gt-ease), transform 1s var(--gt-ease);
+    transition-delay:calc(520ms + var(--gt-i, 0) * 150ms);
+}
+html.gt-js:not(.gt-ready) .hero .overlay > :not(h1){
+    opacity:0;
+    transform:translateY(22px);
+}
+
+/* ---------------------------------------------------------------------
+   3. SCROLL REVEAL  (added by animations.js, removed again after playing)
+   --------------------------------------------------------------------- */
+.gt-reveal{
+    opacity:0;
+    transform:translate3d(0, 30px, 0);
+    transition:opacity .9s var(--gt-ease), transform 1.05s var(--gt-ease);
+    transition-delay:var(--gt-d, 0ms);
+}
+.gt-reveal.gt-in{
+    opacity:1;
+    transform:none;
+}
+
+/* images inside cards settle from slightly zoomed-in */
+.gt-reveal.gt-settle > img,
+.gt-reveal.gt-settle img.gt-main{ scale:1.14; }
+.gt-reveal.gt-settle.gt-in > img,
+.gt-reveal.gt-settle.gt-in img.gt-main{
+    scale:1;
+    transition:scale 1.7s var(--gt-ease);
+    transition-delay:var(--gt-d, 0ms);
+}
+
+/* ---------------------------------------------------------------------
+   4. PARALLAX  (images float at slightly different speeds)
+   --------------------------------------------------------------------- */
+[data-gt-px]{ will-change:translate; }
+
+/* ---------------------------------------------------------------------
+   5. HEADER + SCROLL PROGRESS
+   --------------------------------------------------------------------- */
+header{
+    transition:padding .45s var(--gt-ease), box-shadow .45s var(--gt-ease);
+}
+header .logo img{
+    transition:height .45s var(--gt-ease);
+}
+header.gt-scrolled{
+    padding-top:12px;
+    padding-bottom:12px;
+    box-shadow:0 8px 30px rgba(0,0,0,.10);
+}
+header.gt-scrolled .logo img{ height:44px; }
+
+@media (max-width:768px){
+    header.gt-scrolled .logo img{ height:36px; }
+}
+
+.gt-progress{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:3px;
+    z-index:1001;
+    background:linear-gradient(90deg, var(--gold), #E8D5A8);
+    transform-origin:0 50%;
+    transform:scaleX(var(--gt-p, 0));
+    pointer-events:none;
+}
+
+/* ---------------------------------------------------------------------
+   6. HOVER EFFECTS
+   --------------------------------------------------------------------- */
+
+/* gold buttons: a soft light sweeps across on hover */
+.header-btn,
+.hero-btn,
+.contact-btn,
+.brand-btn,
+.instagram-btn,
+.submit-btn{
+    position:relative;
+    overflow:hidden;
+    isolation:isolate;
+}
+.header-btn::after,
+.hero-btn::after,
+.contact-btn::after,
+.brand-btn::after,
+.instagram-btn::after,
+.submit-btn::after{
+    content:"";
+    position:absolute;
+    top:0;
+    left:-90%;
+    width:55%;
+    height:100%;
+    background:linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
+    transform:skewX(-20deg);
+    transition:left .9s var(--gt-ease);
+    pointer-events:none;
+    z-index:-1;
+}
+.header-btn:hover::after,
+.hero-btn:hover::after,
+.contact-btn:hover::after,
+.brand-btn:hover::after,
+.instagram-btn:hover::after,
+.submit-btn:hover::after{
+    left:140%;
+}
+.hero-btn,
+.contact-btn,
+.submit-btn{
+    transition:transform .35s var(--gt-ease), box-shadow .35s var(--gt-ease);
+}
+.contact-btn:hover,
+.submit-btn:hover{
+    transform:translateY(-4px);
+    box-shadow:0 10px 24px rgba(0,0,0,.14);
+}
+
+/* cards: lift + warm gold glow */
+.brand-card,
+.why-card,
+.why-box,
+.showcase-card,
+.qr-card,
+.item,
+.story-text-card{
+    transition:transform .6s var(--gt-ease), box-shadow .6s var(--gt-ease), border-color .6s ease;
+}
+.brand-card:hover,
+.showcase-card:hover,
+.why-card:hover,
+.why-box:hover{
+    box-shadow:0 24px 50px rgba(var(--gold-rgb),.22), 0 6px 16px rgba(0,0,0,.06);
+}
+
+/* gold line draws across the top of the "why" cards */
+.why-card,
+.why-box{
+    position:relative;
+    overflow:hidden;
+}
+.why-card::before,
+.why-box::before{
+    content:"";
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:3px;
+    background:var(--gt-gold);
+    transform:scaleX(0);
+    transform-origin:left;
+    transition:transform .8s var(--gt-ease);
+}
+.why-card:hover::before,
+.why-box:hover::before{
+    transform:scaleX(1);
+}
+
+/* photos zoom slowly inside their frame */
+.brand-card img,
+.showcase-card img,
+.gallery-container img,
+.gallery-card img{
+    transition:transform 1.4s var(--gt-ease) !important;
+}
+.brand-card:hover > img,
+.gallery-card:hover img,
+.gallery-container img:hover{
+    transform:scale(1.07);
+}
+.showcase-card:hover img{ transform:scale(1.03); }   /* these sit inside padding, so a gentler zoom */
+/* brand LOGOS inside the card must not zoom */
+.brand-card .brand-logo img{ transform:none !important; }
+
+/* video cards */
+.video-card video{ transition:transform 1.6s var(--gt-ease); }
+.video-card:hover video{ transform:scale(1.05); }
+
+/* QR cards */
+.qr-link:hover .qr-card{
+    box-shadow:0 22px 46px rgba(var(--gold-rgb),.22), 0 6px 16px rgba(0,0,0,.06);
+}
+
+/* footer links slide a little on hover */
+.footer-links a{ display:inline-block; }
+.footer-links a:hover{ transform:translateX(5px); }
+
+/* WhatsApp button: one soft pulse every few seconds */
+.whatsapp-float::before{
+    content:"";
+    position:absolute;
+    inset:4px;
+    border-radius:50%;
+    border:2px solid #25D366;
+    opacity:0;
+    animation:gt-pulse 5.5s ease-out 3s infinite;
+    pointer-events:none;
+}
+.whatsapp-float:hover::before{ animation:none; }
+@keyframes gt-pulse{
+    0%{ transform:scale(.85); opacity:.65; }
+    35%,100%{ transform:scale(1.55); opacity:0; }
+}
+
+/* ---------------------------------------------------------------------
+   7. LIGHTBOX  (click a gallery photo)
+   --------------------------------------------------------------------- */
+#lightbox{
+    opacity:0;
+    transition:opacity .4s ease;
+}
+#lightbox.gt-open{ opacity:1; }
+#lightbox img{
+    transform:scale(.9);
+    transition:transform .6s var(--gt-ease);
+    cursor:zoom-out;
+}
+#lightbox.gt-open img{ transform:none; }
+
+.gt-lb-btn{
+    position:absolute;
+    width:52px;
+    height:52px;
+    border:1px solid rgba(255,255,255,.35);
+    border-radius:50%;
+    background:rgba(0,0,0,.35);
+    color:#fff;
+    font-size:26px;
+    line-height:1;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:background .3s ease, border-color .3s ease, transform .3s var(--gt-ease);
+}
+.gt-lb-btn:hover{
+    background:var(--gt-gold);
+    border-color:var(--gt-gold);
+    color:var(--ink);
+    transform:scale(1.08);
+}
+.gt-lb-close{ top:24px; right:24px; }
+.gt-lb-prev{ left:24px; top:50%; margin-top:-26px; }
+.gt-lb-next{ right:24px; top:50%; margin-top:-26px; }
+
+.gallery-container .gallery-card,
+.gallery-container > img{ cursor:zoom-in; }
+
+@media (max-width:600px){
+    .gt-lb-btn{ width:44px; height:44px; font-size:22px; }
+    .gt-lb-prev{ left:10px; }
+    .gt-lb-next{ right:10px; }
+    .gt-lb-close{ top:14px; right:14px; }
+}
+
+/* ---------------------------------------------------------------------
+   8. PAGE CHANGE  (quick fade when you click to another page)
+   --------------------------------------------------------------------- */
+html.gt-leaving body{
+    opacity:0;
+    transition:opacity .25s ease;
+}
+
+/* ---------------------------------------------------------------------
+   9. RESPECT "REDUCE MOTION" SETTINGS  (accessibility)
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce){
+    html.gt-intro-pending .gt-intro{ display:none; }
+    html.gt-lock, html.gt-lock body{ overflow:auto; }
+    .hero::before{ transform:none !important; scale:1 !important; }
+    .hero .overlay{ translate:none !important; opacity:1 !important; }
+    .gt-line > span{ transform:none !important; transition:none !important; }
+    .hero .overlay > :not(h1){ opacity:1 !important; transform:none !important; transition:none !important; }
+    .gt-reveal{ opacity:1 !important; transform:none !important; transition:none !important; }
+    [data-gt-px]{ translate:none !important; }
+    .whatsapp-float::before{ display:none; }
+    .gt-progress{ display:none; }
+    *{ scroll-behavior:auto !important; }
+}

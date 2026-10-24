@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Checkout | Grape Tree FZE</title>
+    <meta name="description" content="Review your order and send your order request to Grape Tree FZE.">
+    <meta name="robots" content="noindex">
+
+    <script>
+        (function(){var d=document.documentElement;d.classList.add('gt-js');try{if(matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('gt-ready')}else{setTimeout(function(){d.classList.add('gt-ready')},4500)}}catch(e){d.classList.add('gt-ready')}})();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <script src="shop-data.js"></script>
+    <script src="layout.js"></script>
+    <script src="i18n.js"></script>
+    <script src="track.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="shop.css">
+    <link rel="stylesheet" href="animations.css">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="layout.css">
+    <link rel="stylesheet" href="app.css">
+</head>
+
+<body data-shop data-checkout>
+
+<script>GTLayout.header()</script>
+
+<section class="page-title">
+    <p class="small-title">CHECKOUT</p>
+    <h1>Your Order Request</h1>
+</section>
+
+<div class="checkout-wrap">
+    <div class="checkout" id="checkout">
+
+        <div id="co-main">
+
+            <form class="co-card" id="co-form" novalidate>
+                <h2>Delivery details</h2>
+
+                <div class="f-grid">
+                    <div class="field">
+                        <label for="f-name">Full name</label>
+                        <input type="text" id="f-name" name="name" autocomplete="name" required>
+                        <p class="err">Please enter your name.</p>
+                    </div>
+                    <div class="field">
+                        <label for="f-phone">Phone / WhatsApp</label>
+                        <input type="tel" id="f-phone" name="phone" autocomplete="tel" placeholder="+971 5X XXX XXXX" required>
+                        <p class="err">Please enter a phone number we can reach you on.</p>
+                    </div>
+                    <div class="field">
+                        <label for="f-email">Email <span class="opt">(we send your order confirmation here)</span></label>
+                        <input type="email" id="f-email" name="email" autocomplete="email" required>
+                        <p class="err">That email address does not look right.</p>
+                    </div>
+                    <div class="field">
+                        <label for="f-emirate">Emirate</label>
+                        <select id="f-emirate" name="emirate" required></select>
+                        <p class="err">Please choose an emirate.</p>
+                    </div>
+                    <div class="field full">
+                        <label for="f-address">Delivery address</label>
+                        <textarea id="f-address" name="address" rows="3" autocomplete="street-address" placeholder="Building, street, area, landmark" required></textarea>
+                        <p class="err">Please enter the delivery address.</p>
+                    </div>
+                    <div class="field">
+                        <label for="f-date">Preferred delivery date</label>
+                        <input type="date" id="f-date" name="delivery_date" required>
+                        <p class="err">Please choose a delivery date.</p>
+                    </div>
+                    <div class="field full">
+                        <label for="f-notes">Notes <span class="opt">(optional)</span></label>
+                        <textarea id="f-notes" name="notes" rows="3" placeholder="Gift message, delivery instructions, anything we should know"></textarea>
+                    </div>
+                    <input type="text" name="_gotcha" class="co-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+                </div>
+
+                <fieldset class="co-pay" id="co-pay">
+                    <legend>How would you like to pay?</legend>
+                    <div id="co-pay-options"></div>
+                    <div class="co-bank" id="co-bank" hidden></div>
+                </fieldset>
+
+                <p class="co-note" id="co-note"></p>
+
+                <button type="submit" class="gt-btn gt-btn-block" id="co-submit">Send order request</button>
+            </form>
+
+            <div class="co-card" id="co-empty" hidden>
+                <div class="gt-empty">
+                    <p>Your cart is empty.</p>
+                    <a class="gt-btn" href="shop.html">Browse the shop</a>
+                    <a class="gt-link" href="customize.html">or build a custom order</a>
+                </div>
+            </div>
+
+            <div class="co-card" id="co-done" hidden></div>
+        </div>
+
+        <aside class="co-card co-summary" id="co-summary" aria-label="Order summary">
+            <h2>Order summary</h2>
+            <div id="co-lines"></div>
+            <div class="co-totals" id="co-totals"></div>
+        </aside>
+
+    </div>
+</div>
+
+<script>GTLayout.footer()</script>
+
+
+<script src="cart.js"></script>
+<script src="backend.js"></script>
+<script src="script.js"></script>
+<script src="animations.js"></script>
+<script src="studio-store.js"></script>
+<script src="checkout.js"></script>
+
+</body>
+
+</html>

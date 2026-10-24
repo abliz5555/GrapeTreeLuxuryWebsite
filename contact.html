@@ -4,23 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inquiry | Grape Tree FZE</title>
+    <meta name="description" content="Send an inquiry to Grape Tree FZE: retail, distribution, corporate gifting and partnership enquiries for Katanukiya and GildArt.">
+    <meta property="og:title" content="Inquiry | Grape Tree FZE">
+    <meta property="og:description" content="Send an inquiry to Grape Tree FZE: retail, distribution, corporate gifting and partnership enquiries for Katanukiya and GildArt.">
+    <meta property="og:image" content="https://grapetree.ae/images/contact-hero2.jpg">
 
+    <!-- Animation switch-on (runs before the page paints so nothing flashes) -->
+    <script>
+        (function(){var d=document.documentElement;d.classList.add('gt-js');try{if(matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('gt-ready')}else{setTimeout(function(){d.classList.add('gt-ready')},4500)}}catch(e){d.classList.add('gt-ready')}})();
+    </script>
+
+    <script src="shop-data.js"></script>
+    <script src="layout.js"></script>
+    <script src="i18n.js"></script>
+    <script src="track.js"></script>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="shop.css">
+    <link rel="stylesheet" href="animations.css">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="layout.css">
 
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Cormorant Garamond added: your CSS already uses it, but it was never loaded -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <!-- Header -->
-    <header>
-        <div class="logo">
-            <a href="index.html">
-                <img src="images/logo.svg" alt="Grape Tree FZE Logo">
-            </a>
-        </div>
-
-        <a href="index.html" class="header-btn">Back Home</a>
-    </header>
+    <script>GTLayout.header()</script>
 
     <!-- Hero -->
     <section class="hero contact-hero">
@@ -104,6 +115,8 @@
                 class="inquiry-form"
             >
 
+                <input type="text" name="_gotcha" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true">
+
                 <input
                     type="text"
                     name="full_name"
@@ -162,40 +175,14 @@
 
     </section>
 
-    <!-- Footer -->
-    <footer>
+    <script>GTLayout.footer()</script>
 
-        <div class="footer-container">
 
-            <div class="footer-logo">
-                Grape Tree FZE
-            </div>
 
-            <div class="footer-links">
-                <a href="index.html">Home</a>
-                <a href="gildart.html">GildArt</a>
-                <a href="katanukiya.html">Katanukiya</a>
-                <a href="#form">Inquiry</a>
-            </div>
-
-            <div class="footer-info">
-                <p>Dubai, UAE</p>
-                <p>Premium Gifting & Confectionery</p>
-                <p>Japanese Craftsmanship</p>
-            </div>
-
-        </div>
-
-        <p class="copyright">
-            © 2026 Grape Tree FZE. All Rights Reserved.
-        </p>
-
-    </footer>
-
-    <!-- WhatsApp -->
-    <a href="https://wa.me/971555577478" class="whatsapp-float" target="_blank">
-        <img src="images/whatsapp.png" alt="WhatsApp">
-    </a>
+<script src="cart.js"></script>
+<script src="backend.js"></script>
+<script src="script.js"></script>
+<script src="animations.js"></script>
 
 </body>
 </html>

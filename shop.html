@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Shop | Grape Tree FZE</title>
+    <meta name="description" content="Shop Katanukiya cut-out layer cakes and GildArt golden chocolate gifting from Grape Tree FZE. Japanese craftsmanship, delivered in the UAE.">
+    <meta property="og:title" content="Shop | Grape Tree FZE">
+    <meta property="og:description" content="Premium cut-out layer cakes and golden chocolate gifting inspired by Japanese craftsmanship.">
+    <meta property="og:image" content="https://grapetree.ae/images/header2.jpg">
+
+    <script>
+        (function(){var d=document.documentElement;d.classList.add('gt-js');try{if(matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('gt-ready')}else{setTimeout(function(){d.classList.add('gt-ready')},4500)}}catch(e){d.classList.add('gt-ready')}})();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <script src="shop-data.js"></script>
+    <script src="layout.js"></script>
+    <script src="i18n.js"></script>
+    <script src="track.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="shop.css">
+    <link rel="stylesheet" href="animations.css">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="layout.css">
+</head>
+
+<body data-shop>
+
+<script>GTLayout.header()</script>
+
+<!-- Top -->
+<section class="hero shop-hero">
+    <div class="overlay">
+        <p class="small-title">SHOP</p>
+        <h1>Japanese Craftsmanship,<br>Ready to Gift</h1>
+        <p>Choose from the collection, or design a gift that is entirely your own.</p>
+        <div class="shop-tabs" role="tablist" aria-label="Shop sections">
+            <button type="button" role="tab" id="tab-ready" aria-selected="true" aria-controls="pane-ready" data-pane="ready">Ready-made</button>
+            <button type="button" role="tab" id="tab-custom" aria-selected="false" aria-controls="pane-custom" data-pane="custom">Custom order</button>
+        </div>
+    </div>
+</section>
+
+<!-- Ready-made -->
+<div class="shop-pane" id="pane-ready" role="tabpanel" aria-labelledby="tab-ready">
+<section class="shop-section" id="collection">
+
+    <h2>Choose Your Gift</h2>
+
+    <div class="shop-toolbar" role="group" aria-label="Filter by brand">
+        <button type="button" class="chip active" data-filter="all">All</button>
+        <button type="button" class="chip" data-filter="katanukiya">Katanukiya</button>
+        <button type="button" class="chip" data-filter="gildart">GildArt</button>
+    </div>
+    <p class="shop-count" id="shop-count" aria-live="polite"></p>
+
+    <div class="product-grid" id="product-grid"></div>
+
+    <noscript><p>Please enable JavaScript to browse and order, or <a href="contact.html">send us an inquiry</a>.</p></noscript>
+</section>
+</div>
+
+<!-- Custom order -->
+<div class="shop-pane" id="pane-custom" role="tabpanel" aria-labelledby="tab-custom" hidden>
+<section class="custom-pane" id="custom">
+    <p class="small-title">CUSTOM ORDERS</p>
+    <h2>Your Design. Our Craftsmanship.</h2>
+    <p class="lead">Choose a design, set the quantity, add a message card or your company logo. Ideal for corporate gifting, weddings and special occasions.</p>
+
+    <div class="custom-cards">
+        <a class="custom-card" href="cake-studio.html">
+            <img class="bg" src="images/katanukiya-product3.jpg" alt="" loading="lazy">
+            <div><h3>Katanukiya: Your Artwork</h3><p>Upload your logo or character, let AI prepare it, see it at real size and order. From 120 pieces.</p><span>Open the cake studio</span></div>
+        </a>
+        <a class="custom-card" href="chocolate-studio.html">
+            <img class="bg" src="images/gildart.jpg" alt="" loading="lazy">
+            <div><h3>GildArt: Your Artwork</h3><p>Upload your logo or character. AI makes a black and white drawing printed on gold chocolate. 5 mm or 12 mm.</p><span>Open the chocolate studio</span></div>
+        </a>
+    </div>
+
+    <div class="custom-steps">
+        <div><b>1. Design</b>Pick a product line and follow the steps. The estimate updates as you go.</div>
+        <div><b>2. Confirm</b>We check availability, final price and delivery with you on WhatsApp.</div>
+        <div><b>3. Receive</b>Pay with the secure link we send, and we arrange your delivery.</div>
+    </div>
+    <p style="margin-top:30px"><a class="hero-btn-ghost" style="color:var(--ink);border-color:var(--ink)" href="https://wa.me/971555577478" target="_blank" rel="noopener">Ask us on WhatsApp</a></p>
+</section>
+</div>
+
+<script>GTLayout.footer()</script>
+
+
+<script src="cart.js"></script>
+<script src="backend.js"></script>
+<script src="script.js"></script>
+<script src="animations.js"></script>
+<script src="shop.js"></script>
+
+<script>
+(function () {
+    var tabs = document.querySelectorAll('.shop-tabs button'), panes = { ready: document.getElementById('pane-ready'), custom: document.getElementById('pane-custom') };
+    function show(k, scroll) {
+        tabs.forEach(function (b) { b.setAttribute('aria-selected', b.getAttribute('data-pane') === k ? 'true' : 'false'); });
+        Object.keys(panes).forEach(function (n) { panes[n].hidden = n !== k; });
+        try { history.replaceState(null, '', k === 'custom' ? '#custom' : location.pathname + location.search); } catch (e) {}
+        if (scroll) { var t = document.querySelector('.shop-tabs'); if (t) window.scrollTo({ top: t.getBoundingClientRect().top + window.pageYOffset - 100, behavior: 'smooth' }); }
+    }
+    tabs.forEach(function (b) { b.addEventListener('click', function () { show(b.getAttribute('data-pane'), true); }); });
+    if (location.hash === '#custom') show('custom', false);
+    window.addEventListener('hashchange', function () { if (location.hash === '#custom') show('custom', true); });
+})();
+</script>
+</body>
+
+</html>

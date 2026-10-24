@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | Grape Tree FZE</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="app.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body data-admin>
+
+<header class="adm-top">
+    <a class="adm-brand" href="index.html" aria-label="Grape Tree website"><img src="images/logo.svg" alt="Grape Tree"><span>Admin</span></a>
+    <nav class="adm-tabs" id="adm-tabs" role="tablist" hidden>
+        <button type="button" role="tab" data-tab="orders" class="on">Orders <b id="adm-new" hidden></b></button>
+        <button type="button" role="tab" data-tab="products">Products</button>
+        <button type="button" role="tab" data-tab="website">Website images</button>
+        <button type="button" role="tab" data-tab="studio">Studio prices</button>
+        <button type="button" role="tab" data-tab="test">Test studio</button>
+        <button type="button" role="tab" data-tab="settings">Settings</button>
+    </nav>
+    <div class="adm-right">
+        <a class="adm-view" href="index.html" target="_blank" rel="noopener">View website</a>
+        <button type="button" id="adm-out" class="adm-view" hidden>Sign out</button>
+    </div>
+</header>
+
+<main id="adm-root" class="adm-main"><p class="adm-loading">Loading...</p></main>
+<div id="adm-toast" class="adm-toast" role="status" aria-live="polite"></div>
+
+<script src="shop-data.js"></script>
+<script src="cart.js"></script>
+<script src="backend.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

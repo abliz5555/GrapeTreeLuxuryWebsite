@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Design Your Cut-Out Cake | Katanukiya by Grape Tree</title>
+    <meta name="description" content="Upload your logo or character, let AI prepare it, see it at real size on a Katanukiya cut-out cake and order online.">
+    <meta property="og:title" content="Design Your Cut-Out Cake | Katanukiya by Grape Tree">
+    <meta property="og:description" content="Upload your logo or character, let AI prepare it, see it at real size on a Katanukiya cut-out cake and order online.">
+    <meta property="og:image" content="https://grapetree.ae/images/katanukiya-hero.jpg">
+
+    <script>
+        (function(){var d=document.documentElement;d.classList.add('gt-js');try{if(matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('gt-ready')}else{setTimeout(function(){d.classList.add('gt-ready')},4500)}}catch(e){d.classList.add('gt-ready')}})();
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:wght@500;600;700&family=Fredoka:wght@500;600&family=Baloo+2:wght@600&family=Chewy&family=Bangers&family=Righteous&family=Lobster&family=Pacifico&family=Dancing+Script:wght@600&family=Great+Vibes&family=Satisfy&family=Caveat:wght@600&family=Kalam:wght@700&family=Permanent+Marker&family=Amatic+SC:wght@700&family=Abril+Fatface&family=Cinzel:wght@600&family=Press+Start+2P&family=Cairo:wght@600&family=Amiri:wght@700&family=Reem+Kufi:wght@600&family=Lemonada:wght@600&family=Aref+Ruqaa:wght@700&family=Bodoni+Moda:wght@500;600&family=Italiana&family=Marcellus&family=Tenor+Sans&family=Libre+Baskerville:wght@400;700&family=Montserrat:wght@400;600&family=Allura&family=Pinyon+Script&display=swap" rel="stylesheet">
+
+    <script src="shop-data.js"></script>
+    <script src="layout.js"></script>
+    <script src="i18n.js"></script>
+    <script src="track.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="shop.css">
+    <link rel="stylesheet" href="animations.css">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="layout.css">
+    <link rel="stylesheet" href="studio.css">
+</head>
+
+<body class="theme-kat" data-shop data-studio data-product="cake">
+
+<script>GTLayout.header()</script>
+
+<section class="st-hero">
+<p class="small-title">KATANUKIYA CUSTOM CAKES</p>
+<h1>Turn your artwork into a cut-out cake</h1>
+<p class="st-lead">Upload a logo or character. AI can remove the background or turn it into a cute cartoon, and you see it at real size on the cake. We check every design and send a proof if anything needs adjusting.</p>
+<ul class="st-chips"><li>Cake surface 63 &times; 48 mm</li><li>From 120 pieces</li><li>Printed &amp; cut in the UAE</li></ul>
+</section>
+
+<input type="file" id="st-file2" accept="image/png,image/jpeg,image/webp,image/gif" class="st-hidden-file" tabindex="-1" aria-hidden="true">
+<main class="st" id="studio">
+<div class="st-test" id="st-test" hidden><b>Admin test mode</b><span>You are signed in as admin. Orders from this page are marked TEST and can be deleted in the admin panel. Everything else works exactly like a customer order.</span></div>
+<ol class="st-steps" id="st-steps" aria-label="Progress"></ol>
+<div class="st-grid">
+<div class="st-main">
+<section class="st-card" data-step="1">
+<p class="st-kicker">STEP 1</p>
+
+<h2 id="st-piece-h">Upload your artwork</h2>
+<p class="st-sub">Logos and characters work best. Next you will see it at real size and AI will help make it print-ready.</p>
+<label class="st-drop" id="st-drop" for="st-file">
+<input type="file" id="st-file" accept="image/png,image/jpeg,image/webp,image/gif">
+<span class="st-drop-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span>
+<strong>Choose an image or drop it here</strong>
+<small>PNG, JPG, WebP or GIF &middot; up to 15 MB</small>
+</label>
+<div class="st-or"><span>or</span></div>
+<p class="st-pick-l">Pick a cute character to print</p>
+<div class="st-friends" id="st-friends" aria-label="Characters"></div>
+<button type="button" class="st-create" id="st-create"><span class="st-create-ic" aria-hidden="true">&#10024;</span><span><b>Create your own design</b><small>Add names, shapes, emojis and flowers. No file needed.</small></span></button>
+<button type="button" class="st-create st-create-ai" id="st-aidraw-open"><span class="st-create-ic" aria-hidden="true">&#10024;</span><span><b>Describe it &ndash; AI draws it for you</b><small>Colourful, clean and ready to cut and print on the cake. Try &ldquo;a smiling astronaut bear&rdquo;.</small></span></button>
+<div class="st-aidraw" id="st-aidraw" hidden>
+<label class="st-lbl" for="st-aidraw-text">What should we draw?</label>
+<textarea id="st-aidraw-text" rows="3" maxlength="240" placeholder="e.g. a happy dinosaur holding a birthday balloon"></textarea>
+<div class="st-aidraw-ex" id="st-aidraw-ex"><button type="button" class="st-chip">Happy dinosaur with a balloon</button><button type="button" class="st-chip">Astronaut bear on the moon</button><button type="button" class="st-chip">Princess with a golden crown</button><button type="button" class="st-chip">Football star in a stadium</button><button type="button" class="st-chip">Arabian oryx with a party hat</button></div>
+<p class="st-pick-l">Drawing style</p>
+<div class="st-aidraw-styles" id="st-aidraw-styles" role="radiogroup">
+<button type="button" class="st-sty on" data-style="cute" role="radio" aria-checked="true"><b>Cute &amp; kawaii</b><small>Soft, round and friendly</small></button>
+<button type="button" class="st-sty" data-style="cartoon" role="radio" aria-checked="false"><b>Bold cartoon</b><small>Strong outlines, bright colours</small></button>
+<button type="button" class="st-sty" data-style="pastel" role="radio" aria-checked="false"><b>Soft pastel</b><small>Gentle colours, dreamy look</small></button>
+<button type="button" class="st-sty" data-style="elegant" role="radio" aria-checked="false"><b>Elegant illustration</b><small>Refined, for grown-up occasions</small></button>
+</div>
+<button type="button" class="st-btn st-btn-primary" id="st-aidraw-go">Draw it</button>
+<p class="st-fine" id="st-aidraw-note">Always a clean shape on a transparent background, with flat colours and no tiny details, so it cuts and prints well. Takes about 20&ndash;40 seconds.</p>
+<p class="st-ai-status" id="st-aidraw-status" role="status" hidden></p>
+<p class="st-error" id="st-aidraw-err" role="alert" hidden></p>
+</div>
+
+
+<p class="st-center"><button type="button" class="st-link" id="st-sample">Or try the sample character</button></p>
+<p class="st-error" id="st-up-err" role="alert" hidden></p>
+<div class="st-loaded" id="st-loaded" hidden>
+<div class="st-thumb"><img id="st-up-thumb" alt="Your uploaded artwork"></div>
+<div><strong id="st-up-name"></strong><p class="st-fine" id="st-up-info"></p><p class="st-warn" id="st-up-warn" hidden></p>
+<button type="button" class="st-link" id="st-up-change">Choose a different image</button> &middot; <button type="button" class="st-link" id="st-up-remove">Remove</button></div>
+</div>
+<div class="st-tips">
+<div><b>Best results</b><span>Logo shapes and cartoon characters. High-resolution files (1000 px or more).</span></div>
+<div><b>Photo of a person?</b><span>Use the cartoon button in the next step, or let our designer draw it for you.</span></div>
+<div><b>Your rights</b><span>Upload artwork you own or have permission to reproduce.</span></div>
+</div>
+<div class="st-nav"><span></span><button type="button" class="gt-btn" data-go="2" id="st-next1" disabled>Continue</button></div>
+</section>
+<section class="st-card" data-step="2" hidden>
+<p class="st-kicker">STEP 2</p>
+<h2>Design it at real size</h2>
+<p class="st-sub">Your image is shown on a surface the same size as the cake, so what you see is what is made. Drag to move, scroll or pinch to resize.</p>
+<div class="st-photo-row"><span id="st-photo-name"></span><button type="button" class="st-btn" id="st-photo-change">Change photo</button><button type="button" class="st-btn" id="st-chars">Use a character instead</button><button type="button" class="st-btn" id="st-photo-remove">Remove &amp; start over</button></div>
+<div class="st-ai-card">
+<div class="st-ai-head"><h3 class="st-h3">Let AI help</h3><span class="st-aimode" id="ai-mode"></span></div>
+<div class="st-ai-btns" id="ai-btns">
+<button type="button" class="st-btn st-ai" data-kind="cutout"><b>Remove background</b><small>Keeps your design, removes the rest</small></button>
+<button type="button" class="st-btn st-ai" data-kind="cartoon"><b>Make it a cartoon</b><small>Cute character style</small></button>
+</div>
+<p class="st-ai-status" id="ai-status" role="status" hidden></p>
+<p class="st-note" id="ai-note" hidden>AI is not connected yet, so a quick built-in tool was used. Results are simpler. You can always ask our designer.</p>
+<div class="st-vers"><div class="st-vers-top"><b>Your versions</b><button type="button" class="st-link" id="ai-retry" hidden>Not happy? Try again</button></div>
+<div class="st-ver-strip" id="ver-strip" aria-label="Versions"></div><p class="st-fine">Tap any version to switch back to it. Your original is always kept.</p></div>
+<button type="button" class="st-create st-create-sm" id="st-decor"><span class="st-create-ic" aria-hidden="true">&#127912;</span><span><b>Add text, shapes, emojis &amp; flowers</b><small>Decorate your design or build one from scratch.</small></span></button>
+<label class="st-check st-designer"><input type="checkbox" id="st-designer"><span><b>Not what you wanted? Ask our designer to do it</b><small>We prepare the artwork by hand and send you a proof to approve before anything is produced.</small></span></label>
+<div id="st-dnote-wrap" hidden><textarea id="st-dnote" rows="2" placeholder="Anything we should know? (optional)"></textarea></div>
+</div>
+<div class="st-finish" id="st-finish" role="radiogroup" aria-label="Cut style">
+<label><input type="radio" name="finish" value="around" checked><span class="st-fi"><svg viewBox="0 0 48 48"><path d="M24 6c6 0 7 5 11 7s9 4 7 11-8 4-9 10-6 8-12 6-6-8-11-11-9-6-6-13 9-5 12-8 5-2 8-2z" fill="currentColor"/></svg></span><b>Cut around artwork</b><small>The cut follows your design. Best for logos and characters.</small></label>
+<label><input type="radio" name="finish" value="shape"><span class="st-fi"><svg viewBox="0 0 48 48"><circle cx="15" cy="15" r="9" fill="currentColor"/><rect x="27" y="7" width="16" height="16" fill="currentColor"/><path d="M15 43c-9-6-11-10-11-14a6 6 0 0 1 11-3 6 6 0 0 1 11 3c0 4-2 8-11 14z" fill="currentColor"/></svg></span><b>Cut a simple shape</b><small>Circle, heart, star and more with your design inside.</small></label>
+<label><input type="radio" name="finish" value="print"><span class="st-fi"><svg viewBox="0 0 48 48"><rect x="6" y="11" width="36" height="26" fill="none" stroke="currentColor" stroke-width="3"/></svg></span><b>Print only</b><small>Your image exactly as it is. May look less cute than a character.</small></label>
+</div>
+<div class="st-place">
+<div class="st-stage" id="st-stage">
+<canvas id="st-scene" aria-label="Cake surface at real proportions"></canvas>
+<div class="st-stage-tools">
+<button type="button" class="st-btn" id="pl-center">Centre</button>
+<button type="button" class="st-btn" id="pl-fit">Fit</button>
+<label class="st-chip-toggle" id="pl-move-wrap" hidden><input type="radio" name="move" value="art" checked><span>Move artwork</span></label>
+<label class="st-chip-toggle" id="pl-move-wrap2" hidden><input type="radio" name="move" value="shape"><span>Move cut shape</span></label>
+</div>
+<p class="st-fine st-hint">The red dashed line is the 5 mm clear zone. Nothing can go past it, so we can cut the cake safely.</p>
+</div>
+<div class="st-panel">
+<div id="pl-shapes-wrap" hidden><h4>Cut-out shape</h4><div class="st-shapes" id="pl-shapes" role="radiogroup" aria-label="Shape"></div>
+<label class="st-range"><span>Shape size</span><input type="range" id="pl-ssize" min="12" max="60" step="0.5" value="38"><output id="pl-ssize-o"></output></label>
+<label class="st-range"><span>Shape proportion</span><input type="range" id="pl-sprop" min="60" max="140" value="100"><output id="pl-sprop-o"></output></label></div>
+<div id="pl-around-wrap"><h4>Cut line</h4>
+<label class="st-range"><span>Space around artwork</span><input type="range" id="pl-off" min="1.2" max="5" step="0.1" value="2"><output id="pl-off-o"></output></label>
+<label class="st-range"><span>Smooth outline</span><input type="range" id="pl-smooth" min="0" max="6" step="0.25" value="1.5"><output id="pl-smooth-o"></output></label></div>
+<h4>Artwork</h4>
+<label class="st-range"><span>Size</span><input type="range" id="pl-size" min="4" max="100" step="0.5" value="30"><output id="pl-size-o"></output></label>
+<label class="st-range"><span>Rotation</span><input type="range" id="pl-rot" min="-180" max="180" step="1" value="0"><output id="pl-rot-o"></output></label>
+<h4>Cake orientation</h4>
+<div class="st-seg" id="pl-orient" role="radiogroup" aria-label="Orientation"><label><input type="radio" name="orient" value="landscape" checked><span>Landscape</span></label><label><input type="radio" name="orient" value="portrait"><span>Portrait</span></label></div>
+<div class="st-rules"><p>Keep faces and text 2 mm inside the cut line (dotted).</p></div>
+<ul class="st-checks" id="pl-checks" aria-live="polite"></ul>
+</div>
+</div>
+<div class="st-nav"><button type="button" class="st-btn" data-go="1">Back</button><button type="button" class="gt-btn" data-go="3">Preview</button></div>
+</section>
+<section class="st-card" data-step="3" hidden>
+<p class="st-kicker">STEP 3</p>
+<h2>Preview the finished cake</h2>
+<p class="st-sub">This is how yours will be made.</p>
+<div class="st-sim"><span class="st-sim-badge">80%</span><div><b>Shown with soft ink on an ivory cake</b><p>Printing on cake is softer than paper and is affected by the ivory colour. White ink is not printed, so white areas show the cake colour. Screen colours will not match exactly.</p></div></div>
+<div class="st-prev"><div class="st-prev-main"><canvas id="st-preview" aria-label="Finished preview"></canvas><div class="st-pvpieces" id="pv-pieces" hidden></div></div>
+<div class="st-prev-side"><dl class="st-dl" id="st-prev-dl"></dl>
+<label class="st-chip-toggle st-tol" id="pv-tolwrap"><input type="checkbox" id="pv-tol"><span>Show print &amp; cut tolerance (&plusmn;1.5 mm)</span></label>
+<ul class="st-checks" id="pv-checks"></ul></div></div>
+<div class="st-info" id="pv-conn"><b>Production connector</b><p>A thin connector joins the cut shape to the outer edge so the cut can be completed in one continuous path. It is part of the production design.</p></div>
+<div class="st-nav"><button type="button" class="st-btn" data-go="2">Edit design</button><button type="button" class="gt-btn" data-go="4">Continue</button></div>
+</section>
+<section class="st-card" data-step="4" hidden>
+<p class="st-kicker">STEP 4</p>
+<h2>Quantity &amp; options</h2>
+<p class="st-sub">The price per piece decreases at higher quantities. Prices include the first die setup and UAE delivery.</p>
+<h3 class="st-h3">Quantity</h3>
+<div class="st-tiers" id="st-tiers" role="radiogroup" aria-label="Quantity"></div>
+<div id="st-extras"></div>
+<div class="st-approve">
+<label class="st-check"><input type="checkbox" class="st-ap"><span><b>I have reviewed the finished preview.</b> I approve production with the displayed design, quantity and options.</span></label>
+<label class="st-check"><input type="checkbox" class="st-ap"><span><b>I have the right to use this artwork.</b> I own it or have permission to reproduce it on commercial products.</span></label>
+<label class="st-check"><input type="checkbox" class="st-ap"><span><b>I understand the tolerance.</b> Print and cut alignment may vary by up to about 1.5 mm. Approved tolerances and changes requested after approval are not eligible for return or replacement.</span></label>
+</div>
+<p class="st-fine">After you order, our team checks your artwork. If anything needs adjusting, we fix it and send you a proof to approve before production starts.</p>
+<p class="st-error" id="st-add-err" role="alert" hidden></p>
+<div class="st-nav"><button type="button" class="st-btn" data-go="3">Back</button><button type="button" class="gt-btn" id="st-add" disabled>Add to cart &amp; continue</button></div>
+</section>
+</div>
+<aside class="st-side" aria-label="Order summary"><div class="st-sum">
+<p class="st-sum-k">Current estimate</p><strong class="st-sum-t" id="sum-total">AED 0</strong>
+<p class="st-fine" id="sum-note">Final price confirmed by our team</p>
+<dl class="st-dl" id="sum-list"></dl>
+<div class="st-ship"><small>Estimated shipping date</small><b id="sum-ship"></b><span id="sum-ship-n"></span></div>
+<a class="st-link" href="#" id="st-guide-open">Tolerance, returns &amp; replacements</a>
+</div></aside>
+</div>
+</main>
+<div class="st-bar" id="st-bar"><div><small>Estimate</small><strong id="bar-total"></strong></div><span id="bar-step"></span></div>
+
+<div class="st-modal" id="st-guide" hidden>
+    <div class="st-modal-box" role="dialog" aria-modal="true" aria-labelledby="st-guide-t">
+        <button type="button" class="st-x" id="st-guide-close" aria-label="Close">&times;</button>
+        <p class="st-kicker">GUIDE</p>
+        <h2 id="st-guide-t">Tolerance, returns &amp; replacements</h2>
+        <p class="st-fine">Print and cut alignment may vary by up to about 1.5 mm. That is why a 2 mm safe margin is shown between important artwork and the cut line.</p>
+        <div class="st-two">
+            <div class="ok"><h4>Eligible for remake or replacement</h4><ul>
+                <li>Print or cut misalignment clearly beyond the stated tolerance</li>
+                <li>A product or quantity different from the confirmed order</li>
+                <li>Print or cut defects caused by us</li>
+                <li>Significant damage during delivery</li>
+                <li>Food-quality defects, including abnormal baking colour</li></ul></div>
+            <div class="no"><h4>Not eligible for return or replacement</h4><ul>
+                <li>Artwork approved in the finished preview</li>
+                <li>Alignment within the stated tolerance</li>
+                <li>Colour differences within the range explained before ordering</li>
+                <li>Changes requested for customer reasons</li>
+                <li>Deterioration caused by improper storage after delivery</li></ul></div>
+        </div>
+        <p class="st-fine">Full terms are confirmed with your order.</p>
+    </div>
+</div>
+<div class="mk" id="mk" hidden role="dialog" aria-modal="true" aria-label="Create your design">
+<div class="mk-top"><button type="button" class="st-btn" id="mk-cancel">Cancel</button><b>Create your design</b><button type="button" class="gt-btn" id="mk-done">Done</button></div>
+<div class="mk-body">
+<div class="mk-stage"><canvas id="mk-cv" aria-label="Design area"></canvas><p class="st-fine mk-hint">Tap an item to select it. Drag to move, pinch to resize. The red dashed line is the clear zone.</p></div>
+<div class="mk-panel"><div class="mk-tabs" id="mk-tabs" role="tablist"></div><div class="mk-tabbody" id="mk-tabbody"></div><div class="mk-sel" id="mk-sel" hidden></div></div>
+</div></div>
+
+<script>GTLayout.footer()</script>
+
+<script src="cart.js"></script>
+<script src="studio-store.js"></script>
+<script src="backend.js"></script>
+<script src="script.js"></script>
+<script src="animations.js"></script>
+<script src="studio.js"></script>
+
+</body>
+
+</html>

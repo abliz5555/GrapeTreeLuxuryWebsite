@@ -1,0 +1,37 @@
+ORDER EMAILS - SETUP (about 30 minutes, one time)
+=================================================
+Result: every new order sends (1) a branded "New order" email to you and (2) an "Order received" email to the customer.
+
+STEP 1 - Resend account (the email sender)
+ 1. Go to resend.com and create a free account.
+ 2. Domains -> Add Domain -> grapetree.ae. Resend shows a few DNS records.
+ 3. Add those records where your domain's DNS is managed (your domain provider). Wait until Resend says "Verified".
+    (Without this step, Resend can only email yourself, not customers.)
+ 4. API Keys -> Create API Key -> copy it (starts with re_).
+
+STEP 2 - Create the function in Supabase
+ 1. Supabase dashboard -> Edge Functions -> Deploy a new function -> "Via Editor".
+ 2. Name it exactly:  order-email
+ 3. Delete the sample code, paste ALL of index.ts from this folder, click Deploy.
+ 4. Open the function's settings and TURN OFF "Verify JWT" (the webhook uses its own secret instead). Save.
+
+STEP 3 - Secrets
+ Edge Functions -> Secrets -> add:
+   RESEND_API_KEY = (the re_... key)
+   FROM_EMAIL     = Grape Tree <orders@grapetree.ae>
+   ADMIN_EMAILS   = your email (add more separated by commas)
+   WEBHOOK_SECRET = any long random text, e.g. mix of 30 letters and numbers (remember it)
+   SITE_URL       = https://grapetree.ae
+   REPLY_TO       = your support email (optional)
+
+STEP 4 - Webhook (the trigger)
+ Supabase -> Database -> Webhooks -> Create a new hook:
+   Name: order-email
+   Table: orders      Events: Insert only
+   Type: Supabase Edge Functions -> choose order-email
+   HTTP Headers: add   x-webhook-secret  =  (the same WEBHOOK_SECRET text)
+ Save.
+
+STEP 5 - Test
+ Place a test order with your own email. You and the customer email should arrive within a minute.
+ If not: Edge Functions -> order-email -> Logs shows the reason.
