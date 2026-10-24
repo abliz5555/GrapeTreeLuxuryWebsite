@@ -387,7 +387,12 @@
     }
 
     /* --- AI (server) with the quick built-in tools as a fallback --- */
-    function aiOn() { var B = backend(); return !!(B && B.enabled && B.studioAI && (ALL.ai || {}).enabled !== false); }
+    function aiConnected() { var B = backend(); return !!(B && B.enabled && B.studioAI && (ALL.ai || {}).enabled !== false); }
+    function needLogin() { var B = backend(); return aiConnected() && !(B.session && B.session.user); }       // AI is only for signed-in customers (it costs us money)
+    function aiOn() { return aiConnected() && !needLogin(); }
+    var LOGIN_HTML = '<a href="account.html">Sign in or create a free account</a>';
+    function aiModeText() { return needLogin() ? T('Sign in (free) to use AI') : aiOn() ? T('AI is on') : T('Quick tools mode (AI is not connected)'); }
+    function refreshAiMode() { var m = $('#ai-mode'); if (!m) return; m.textContent = aiModeText(); m.className = 'st-aimode ' + (aiOn() ? 'on' : ''); }
     var KIND_LABEL = { cutout: 'Cut out', cartoon: 'Cartoon', bw: 'Black & white', engrave: 'Engraving style' };
 
     function generate(kind, quiet) {
@@ -410,6 +415,7 @@
             addVersion(v);
             S.busy = false; setBusy(null);
             if (source === 'local' && !useAI && !quiet) showAiNote(true);
+            if (source === 'ai') showAiNote(false);
         }).catch(function (e) { S.busy = false; setBusy(null); toastMsg(T('Something went wrong. Please try again.')); });
     }
     function B_ready() { var B = backend(); return B && B.ready ? B.ready : Promise.resolve(false); }
@@ -421,7 +427,11 @@
         s.textContent = kind ? (T('Working on your') + ' ' + T(KIND_LABEL[kind]).toLowerCase() + '...') : '';
         $('#st-stage').classList.toggle('busy', !!kind);
     }
-    function showAiNote(local) { $('#ai-note').hidden = !local; }
+    function showAiNote(local) {
+        var n = $('#ai-note'); n.hidden = !local; if (!local) return;
+        if (needLogin()) { n.innerHTML = esc(T('AI is free for signed-in customers.')) + ' ' + LOGIN_HTML + ' ' + esc(T('A quick built-in tool was used for now.')); }
+        else n.textContent = T('AI is not connected yet, so a quick built-in tool was used. Results are simpler. You can always ask our designer.');
+    }
     function scaleTo(c, max) {
         var k = Math.min(1, max / Math.max(c.width, c.height)), o = makeCanvas(c.width * k, c.height * k), x = o.getContext('2d');
         x.fillStyle = '#fff'; x.fillRect(0, 0, o.width, o.height); x.drawImage(c, 0, 0, o.width, o.height);
@@ -1953,7 +1963,7 @@
     function setupAiDraw() {
         var open = $('#st-aidraw-open'); if (!open) return;
         var box = $('#st-aidraw'), txt = $('#st-aidraw-text'), go = $('#st-aidraw-go'), err = $('#st-aidraw-err'), st = $('#st-aidraw-status'), style = ISCAKE ? 'cute' : 'sketch', busy = false;
-        function showErr(m) { err.textContent = m || ''; err.hidden = !m; }
+        function showErr(m, html) { if (html) err.innerHTML = m; else err.textContent = m || ''; err.hidden = !m; }
         open.addEventListener('click', function () { box.hidden = !box.hidden; if (!box.hidden) { txt.focus(); box.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } });
         $('#st-aidraw-ex').addEventListener('click', function (e) { var b = e.target.closest('.st-chip'); if (b) { txt.value = b.textContent; txt.focus(); } });
         $('#st-aidraw-styles').addEventListener('click', function (e) {
@@ -1964,6 +1974,7 @@
             var q = txt.value.trim(); showErr('');
             if (busy) return;
             if (q.length < 3) return showErr(T('Please describe what you would like to see.'));
+            if (needLogin()) return showErr(esc(T('AI drawing is free for signed-in customers.')) + ' ' + LOGIN_HTML, true);
             if (!aiOn()) return showErr(T('AI drawing is not available right now. Please upload your own picture, or choose "Write a message or monogram".'));
             busy = true; go.disabled = true; st.hidden = false; st.textContent = T('Drawing your design... this takes about 30 seconds.');
             B_ready().then(function () { return backend().studioGenerate(q, style, PRODUCT); })
@@ -1973,7 +1984,7 @@
                     var ink = bwToAlpha(c), f = new File([new Blob([''], { type: 'image/png' })], 'ai-drawing.png', { type: 'image/png' });
                     startDesign(f, ink, c.width, c.height, { kind: 'bw', label: 'AI drawing', src: ink, gen: true, ai: true, transparent: true });
                 })
-                .catch(function (e) { try { console.error('AI draw failed:', e && e.message, e && e.detail); } catch (_x) {} showErr(T(/limit|describe/i.test(e && e.message) ? e.message : 'We could not draw this right now. Please try different words, or upload your own picture.') + (S.test && e && (e.detail || e.message) ? ' [admin: ' + (e.detail || e.message) + ']' : '')); })
+                .catch(function (e) { try { console.error('AI draw failed:', e && e.message, e && e.detail); } catch (_x) {} showErr(T(/limit|describe|sign in|used your|busy/i.test(e && e.message) ? e.message : 'We could not draw this right now. Please try different words, or upload your own picture.') + (S.test && e && (e.detail || e.message) ? ' [admin: ' + (e.detail || e.message) + ']' : '')); })
                 .then(function () { busy = false; go.disabled = false; st.hidden = true; });
         });
     }
@@ -2026,7 +2037,7 @@
 
         window.addEventListener('resize', function () { if (S.step === 2) schedScene(); });
         var B = backend();
-        if (B) { B.ready.then(function () { updateTest(); if (B.onAuth) B.onAuth(updateTest); $('#ai-mode').textContent = aiOn() ? T('AI is on') : T('Quick tools mode (AI is not connected)'); $('#ai-mode').className = 'st-aimode ' + (aiOn() ? 'on' : ''); }); }
+        if (B) { B.ready.then(function () { updateTest(); if (B.onAuth) { B.onAuth(updateTest); B.onAuth(refreshAiMode); } refreshAiMode(); }); }
         applyText();
         if (B && B.ready && B.content) B.ready.then(function () { return B.content(); }).then(function (c) {
             if (!c || !c.studio) return;

@@ -10,8 +10,11 @@
 
    SECRETS (Supabase > Edge Functions > Secrets):
      OPENAI_API_KEY    required. Never put this key in the website files.
-     AI_MODEL          optional, default gpt-image-1
-     AI_DAILY_LIMIT    optional, images per visitor per day, default 12
+     AI_MODEL          optional, default gpt-image-1.5 (gpt-image-1-mini is cheaper, gpt-image-1 is being retired)
+     AI_QUALITY        optional: low | medium | high. Default medium (about US$0.034 per picture). low is about US$0.009.
+     AI_DAILY_LIMIT    optional, pictures per SIGNED-IN customer per day, default 10
+     AI_GLOBAL_LIMIT   optional, pictures for the whole website per day, default 150 (a safety cap on your spending)
+   Only signed-in customers can use the AI (the function checks their login itself, so keep "Verify JWT" OFF).
    Supabase provides SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY by itself.
    Deploy with "Verify JWT" ON (the website sends its public key).
    ===================================================================== */
@@ -70,26 +73,32 @@ function dataUrlToBlob(u: string): Blob {
   return new Blob([a], { type: m[1] });
 }
 
-async function underLimit(env: (k: string) => string, ip: string): Promise<boolean> {
-  const url = env('SUPABASE_URL'), key = env('SUPABASE_SERVICE_ROLE_KEY');
-  if (!url || !key) return true;
-  const limit = parseInt(env('AI_DAILY_LIMIT') || '12', 10) || 12;
-  const day = new Date().toISOString().slice(0, 10);
-  const h = { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' };
+const day = () => new Date().toISOString().slice(0, 10);
+function sbHeaders(env: (k: string) => string) { const key = env('SUPABASE_SERVICE_ROLE_KEY'); return { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' }; }
+async function usedToday(env: (k: string) => string, who: string, doFetch: typeof fetch): Promise<number> {
+  const url = env('SUPABASE_URL'); if (!url || !env('SUPABASE_SERVICE_ROLE_KEY')) return 0;
+  try { const r = await doFetch(`${url}/rest/v1/ai_usage?day=eq.${day()}&ip=eq.${encodeURIComponent(who)}&select=n`, { headers: sbHeaders(env) }); const rows = await r.json(); return rows && rows[0] ? rows[0].n : 0; } catch (_e) { return 0; }
+}
+async function addUse(env: (k: string) => string, who: string, doFetch: typeof fetch): Promise<void> {
+  const url = env('SUPABASE_URL'); if (!url || !env('SUPABASE_SERVICE_ROLE_KEY')) return;
+  try { const n = await usedToday(env, who, doFetch); await doFetch(`${url}/rest/v1/ai_usage`, { method: 'POST', headers: { ...sbHeaders(env), Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify({ day: day(), ip: who, n: n + 1 }) }); } catch (_e) { /* a counting problem must never block a customer */ }
+}
+/* who is calling? Returns the signed-in customer's id, or null for visitors who are not signed in */
+async function signedInUser(req: Request, env: (k: string) => string, doFetch: typeof fetch): Promise<string | null> {
+  const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  const url = env('SUPABASE_URL'); if (!token || !url) return null;
   try {
-    const r = await fetch(`${url}/rest/v1/ai_usage?day=eq.${day}&ip=eq.${encodeURIComponent(ip)}&select=n`, { headers: h });
-    const rows = await r.json();
-    const n = rows && rows[0] ? rows[0].n : 0;
-    if (n >= limit) return false;
-    await fetch(`${url}/rest/v1/ai_usage`, { method: 'POST', headers: { ...h, Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify({ day, ip, n: n + 1 }) });
-  } catch (_e) { /* never block customers because of a counting problem */ }
-  return true;
+    const r = await doFetch(url + '/auth/v1/user', { headers: { Authorization: 'Bearer ' + token, apikey: req.headers.get('apikey') || env('SUPABASE_ANON_KEY') } });
+    if (!r.ok) return null;
+    const u = await r.json(); return (u && u.id) || null;
+  } catch (_e) { return null; }
 }
 
 export async function handle(req: Request, env: (k: string) => string, doFetch: typeof fetch = fetch): Promise<Response> {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   let body: any; try { body = await req.json(); } catch (_e) { return json({ error: 'bad request' }, 400); }
-  const model = env('AI_MODEL') || 'gpt-image-1';
+  const model = env('AI_MODEL') || 'gpt-image-1.5';
+  const q = ['low', 'medium', 'high'].includes(env('AI_QUALITY')) ? env('AI_QUALITY') : 'medium';
   if (body.kind === 'ping') return json({ ok: true, key: !!env('OPENAI_API_KEY'), model });
   const gen = body.kind === 'generate';
   if (gen && (typeof body.prompt !== 'string' || body.prompt.trim().length < 3)) return json({ error: 'Please describe what you would like to see.' }, 400);
@@ -97,18 +106,23 @@ export async function handle(req: Request, env: (k: string) => string, doFetch: 
   if (!prompt || (!gen && typeof body.image !== 'string')) return json({ error: 'bad request' }, 400);
   if (!env('OPENAI_API_KEY')) return json({ error: 'AI is not configured' }, 503);
   if (!gen && body.image.length > 8_000_000) return json({ error: 'image too large' }, 413);
-  const ip = (req.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim();
-  if (!(await underLimit(env, ip))) return json({ error: 'Daily AI limit reached. Please try again tomorrow or send it to our designer.' }, 429);
+  const uid = await signedInUser(req, env, doFetch);
+  if (!uid) return json({ error: 'Please sign in (it is free) to use AI.' }, 401);
+  const who = 'u:' + uid;
+  const perUser = parseInt(env('AI_DAILY_LIMIT') || '10', 10) || 10, global = parseInt(env('AI_GLOBAL_LIMIT') || '150', 10) || 150;
+  if ((await usedToday(env, who, doFetch)) >= perUser) return json({ error: 'You have used your ' + perUser + ' AI pictures for today. Please come back tomorrow, or send it to our designer.' }, 429);
+  if ((await usedToday(env, 'global', doFetch)) >= global) return json({ error: 'AI is very busy today. Please try again tomorrow, or send it to our designer.' }, 429);
 
   if (gen) {
     const gr = await doFetch('https://api.openai.com/v1/images/generations', {
       method: 'POST', headers: { Authorization: 'Bearer ' + env('OPENAI_API_KEY'), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, prompt, size: '1024x1024', n: 1, ...(model.startsWith('gpt-image') ? { quality: 'medium', output_format: 'png', ...(body.product === 'cake' ? { background: 'transparent' } : {}) } : { response_format: 'b64_json' }) }),
+      body: JSON.stringify({ model, prompt, size: '1024x1024', n: 1, ...(model.startsWith('gpt-image') ? { quality: q, output_format: 'png', ...(body.product === 'cake' ? { background: 'transparent' } : {}) } : { response_format: 'b64_json' }) }),
     });
     const gj = await gr.json().catch(() => ({}));
     if (!gr.ok) { console.error('openai', gr.status, JSON.stringify(gj).slice(0, 300)); return json({ error: 'AI could not draw this. Please try different words.', detail: 'OpenAI ' + gr.status + ': ' + String((gj && gj.error && gj.error.message) || '').slice(0, 240) }, 502); }
     const gb = gj && gj.data && gj.data[0] && gj.data[0].b64_json;
     if (!gb) return json({ error: 'AI returned nothing' }, 502);
+    await addUse(env, who, doFetch); await addUse(env, 'global', doFetch);
     return json({ image: 'data:image/png;base64,' + gb });
   }
   let blob: Blob; try { blob = dataUrlToBlob(body.image); } catch (_e) { return json({ error: 'bad image' }, 400); }
@@ -119,7 +133,7 @@ export async function handle(req: Request, env: (k: string) => string, doFetch: 
   fd.append('size', '1024x1024');
   fd.append('n', '1');
   if (model.startsWith('gpt-image')) {
-    fd.append('quality', 'medium');
+    fd.append('quality', q);
     fd.append('output_format', 'png');
     if (body.kind !== 'bw' && body.kind !== 'engrave') fd.append('background', 'transparent');
   }
@@ -128,6 +142,7 @@ export async function handle(req: Request, env: (k: string) => string, doFetch: 
   if (!r.ok) { console.error('openai', r.status, JSON.stringify(j).slice(0, 300)); return json({ error: 'AI could not process this image', detail: 'OpenAI ' + r.status + ': ' + String((j && j.error && j.error.message) || '').slice(0, 240) }, 502); }
   const b64 = j && j.data && j.data[0] && j.data[0].b64_json;
   if (!b64) return json({ error: 'AI returned nothing' }, 502);
+  await addUse(env, who, doFetch); await addUse(env, 'global', doFetch);
   return json({ image: 'data:image/png;base64,' + b64 });
 }
 
