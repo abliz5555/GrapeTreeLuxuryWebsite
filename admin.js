@@ -58,11 +58,16 @@
             return;
         }
         if (!B.isStaff()) {
-            root.innerHTML = card('<h2>This account has no admin access</h2><p>You are signed in as <strong>' + esc(B.user().email) + '</strong>, which is not an admin or staff account. Sign out and use your admin or staff email.</p>');
+            root.innerHTML = card('<h2>This account has no admin access</h2><p>You are signed in as <strong>' + esc(B.user().email) + '</strong>, which is not an admin or team account. Sign out and use your admin or team email.</p>');
             return;
         }
-        $$('[data-tab]', tabsEl).forEach(function (b) { b.hidden = !B.isAdmin() && b.getAttribute('data-tab') !== 'orders'; });   // staff see the Orders tab only
-        $$('.adm-grp', tabsEl).forEach(function (g) { g.hidden = !B.isAdmin(); });
+        if (!allowedTabs().length) {
+            root.innerHTML = card('<h2>No pages are open for this account yet</h2><p>You are signed in as <strong>' + esc(B.user().email) + '</strong>, but the administrator has not given you access to any page. Please ask them to open the pages you need.</p>');
+            tabsEl.hidden = true; menuBtn.hidden = true; return;
+        }
+        $$('[data-tab]', tabsEl).forEach(function (b) { b.hidden = !tabOk(b.getAttribute('data-tab')); });   // each person sees only the pages they were given
+        $$('.adm-grp', tabsEl).forEach(function (g) { var n = g.nextElementSibling, any = false; while (n && !n.classList.contains('adm-grp')) { if (!n.hidden) any = true; n = n.nextElementSibling; } g.hidden = !any; });
+        if (!tabOk(tab)) tab = allowedTabs()[0];
         tabsEl.hidden = false; menuBtn.hidden = false; show(tab);
     }
     function card(html) { return '<div class="adm-card narrow">' + html + '</div>'; }
@@ -72,8 +77,11 @@
     tabsEl.addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (b) { show(b.getAttribute('data-tab')); closeMenu(); } });
     function closeMenu() { var t = doc.querySelector('.adm-top'); t.classList.remove('open'); menuBtn.setAttribute('aria-expanded', 'false'); }
     menuBtn.addEventListener('click', function () { var t = doc.querySelector('.adm-top'), on = !t.classList.contains('open'); t.classList.toggle('open', on); menuBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); });
+    var TAB_PERM = { dashboard: 'orders', orders: 'orders', customers: 'customers', products: 'products', studio: 'studio', website: 'website', settings: 'settings', legal: 'legal', business: 'business', team: '*', test: '*' };
+    function tabOk(t) { var p = TAB_PERM[t]; return !!p && (p === '*' ? B.isAdmin() : B.can(p)); }
+    function allowedTabs() { return Object.keys(TAB_PERM).filter(tabOk); }
     function show(t) {
-        if (!B.isAdmin()) t = 'orders';
+        if (!tabOk(t)) t = allowedTabs()[0] || 'orders';
         tab = t;
         $$('[data-tab]', tabsEl).forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === t); });
         ({ dashboard: viewDashboard, customers: viewCustomers, team: viewTeam, business: viewBusiness, legal: viewLegal, orders: viewOrders, products: viewProducts, website: viewWebsite, studio: viewStudio, test: viewTest, settings: viewSettings })[t]();
@@ -1029,24 +1037,82 @@
             });
         });
     }
+    var ACCESS = [
+        ['orders', 'Orders and dashboard', 'See and update orders, check customer designs and download files.'],
+        ['customers', 'Customers', 'See customer details, help with passwords, stop a sign-in. Cannot delete accounts.'],
+        ['products', 'Products', 'Items, photos and prices in the shop.'],
+        ['studio', 'Custom design prices', 'Prices and quantities for the cake and chocolate design pages.'],
+        ['website', 'Edit website', 'Texts, fonts and pictures.'],
+        ['settings', 'Top bar and bank', 'Announcement bar and bank details.'],
+        ['business', 'Business info', 'Contact, TRN, VAT and delivery prices.'],
+        ['legal', 'Legal pages', 'Terms, privacy and copyright texts.']
+    ];
+    var ROLES = [
+        ['Order handler', ['orders']],
+        ['Customer support', ['orders', 'customers']],
+        ['Shop manager', ['orders', 'customers', 'products', 'studio']],
+        ['Content editor', ['website', 'settings', 'legal']]
+    ];
+    function accessHtml(sel, pre) {
+        return '<div class="ac-presets"><span>Quick choice:</span>' + ROLES.map(function (r, i) { return '<button type="button" class="adm-btn ghost" data-preset="' + i + '">' + esc(r[0]) + '</button>'; }).join('') + '</div>' +
+            '<div class="ac-grid">' + ACCESS.map(function (a) {
+                return '<label class="ac-item"><input type="checkbox" data-ac="' + a[0] + '"' + (sel.indexOf(a[0]) >= 0 ? ' checked' : '') + '><span><b>' + esc(a[1]) + '</b><small>' + esc(a[2]) + '</small></span></label>';
+            }).join('') + '</div><p class="adm-fine">Only the administrator can manage the team, delete orders or customers, and use the test tools.</p>';
+    }
+    function bindAccess(scope) {
+        $$('[data-preset]', scope).forEach(function (b) {
+            b.addEventListener('click', function () {
+                var r = ROLES[+b.getAttribute('data-preset')];
+                $$('[data-ac]', scope).forEach(function (c) { c.checked = r[1].indexOf(c.getAttribute('data-ac')) >= 0; });
+                var t = $('[data-title]', scope); if (t && !t.value) t.value = r[0];
+            });
+        });
+    }
+    function readAccess(scope) { return $$('[data-ac]', scope).filter(function (c) { return c.checked; }).map(function (c) { return c.getAttribute('data-ac'); }); }
+    function askAccess(p) {
+        return new Promise(function (resolve) {
+            var d = doc.createElement('div'); d.className = 'adm-modal open';
+            d.innerHTML = '<div class="adm-dialog"><h3 style="margin:0 0 4px">Access for ' + esc(p.name || p.email) + '</h3><p class="adm-fine">' + esc(p.email) + '</p>' +
+                '<label>Job title (optional)<input type="text" data-title maxlength="80" value="' + esc(p.title || '') + '" placeholder="For example: Order coordinator"></label>' +
+                '<h4 style="margin:12px 0 6px">Pages this person can use</h4>' + accessHtml(p.perms || [], '') +
+                '<div class="adm-row end"><button class="adm-btn ghost" data-no>Cancel</button><button class="adm-btn" data-yes>Save access</button></div></div>';
+            doc.body.appendChild(d); bindAccess(d);
+            d.addEventListener('click', function (e) {
+                if (e.target.closest('[data-yes]')) { var r = { perms: readAccess(d), title: $('[data-title]', d).value.trim() }; d.remove(); resolve(r); }
+                else if (e.target.closest('[data-no]') || e.target === d) { d.remove(); resolve(null); }
+            });
+        });
+    }
     function viewTeam() {
         root.innerHTML = '<div class="adm-bar"><h2>Team</h2></div>' +
-            '<section class="adm-card"><h3>Create a staff account</h3>' +
-            '<p class="adm-fine">You choose the email and the password, then give both to your staff member. Staff can see and update orders and customer designs only. They cannot change products, prices, website content, business info or legal texts, delete orders, or add other staff.</p>' +
+            '<section class="adm-card"><h3>Add a team member</h3>' +
+            '<p class="adm-fine">You choose the email and a password, then give both to the team member. Then choose exactly which pages they can open.</p>' +
             '<form id="t-form" novalidate><div class="adm-grid2"><label>Name<input type="text" id="t-name" autocomplete="off"></label>' +
-            '<label>Email (their sign-in)<input type="email" id="t-email" placeholder="name@example.com" autocomplete="off" required></label></div>' +
-            '<label>Password (at least 8 characters)<input type="text" id="t-pass" autocomplete="off" spellcheck="false" required></label>' +
-            '<p class="adm-err" id="t-err" role="alert"></p><div class="adm-row"><button class="adm-btn" type="submit">Create staff account</button><span class="grow"></span></div></form>' +
-            '<p class="adm-fine">They sign in at <strong>grapetree.ae/admin.html</strong> with this email and password, and see the Orders page only.</p></section>' +
+            '<label>Job title (optional)<input type="text" id="t-title" data-title maxlength="80" autocomplete="off" placeholder="For example: Order coordinator"></label></div>' +
+            '<div class="adm-grid2"><label>Email (their sign-in)<input type="email" id="t-email" placeholder="name@example.com" autocomplete="off" required></label>' +
+            '<label>Password (at least 8 characters)<input type="text" id="t-pass" autocomplete="off" spellcheck="false" required></label></div>' +
+            '<h4 style="margin:12px 0 6px">Pages this person can use</h4><div id="t-acc">' + accessHtml(['orders'], '') + '</div>' +
+            '<p class="adm-err" id="t-err" role="alert"></p><div class="adm-row"><button class="adm-btn" type="submit">Add team member</button><span class="grow"></span></div></form>' +
+            '<p class="adm-fine">They sign in at <strong>grapetree.ae/admin.html</strong> and see only the pages you chose.</p></section>' +
             '<section class="adm-card"><h3>People with access</h3><div id="t-list"><p class="adm-loading">Loading...</p></div></section>';
+        bindAccess($('#t-form'));
+        function accNames(p) { return (p.perms || []).map(function (k) { var a = ACCESS.filter(function (x) { return x[0] === k; })[0]; return a ? a[1] : k; }); }
         function draw() {
             B.teamList().then(function (rows) {
+                var byEmail = {}; (rows || []).forEach(function (p) { byEmail[p.email] = p; });
                 $('#t-list').innerHTML = (rows && rows.length) ? '<ul class="adm-team">' + rows.map(function (p) {
-                    var staff = p.role === 'staff';
-                    return '<li><div><strong>' + esc(p.name || p.email) + '</strong>' + (p.name ? '<br><small>' + esc(p.email) + '</small>' : '') + '</div>' +
-                        '<span class="chip ' + (staff ? 'st-confirmed' : 'st-preparing') + '">' + (staff ? (p.pending ? 'Staff - not signed up yet' : 'Staff') : 'Admin') + '</span>' +
-                        (staff ? '<span class="adm-row">' + (p.pending ? '' : '<button class="adm-btn ghost" type="button" data-pw="' + esc(p.email) + '">Change password</button>') + '<button class="adm-btn danger" type="button" data-rm="' + esc(p.email) + '">Delete</button></span>' : '<span></span>') + '</li>';
+                    var tm = p.role === 'staff';
+                    return '<li><div><strong>' + esc(p.name || p.email) + '</strong>' + (p.name ? '<br><small>' + esc(p.email) + '</small>' : '') +
+                        (tm ? '<div class="ac-chips">' + (p.perms && p.perms.length ? accNames(p).map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') : '<em>No pages yet</em>') + '</div>' : '<div class="ac-chips"><span>Everything</span></div>') + '</div>' +
+                        '<span class="chip ' + (tm ? 'st-confirmed' : 'st-preparing') + '">' + (tm ? (p.pending ? 'Not signed up yet' : esc(p.title || 'Team member')) : 'Administrator') + '</span>' +
+                        (tm ? '<span class="adm-row">' + (p.pending ? '' : '<button class="adm-btn" type="button" data-ac-edit="' + esc(p.email) + '">Change access</button><button class="adm-btn ghost" type="button" data-pw="' + esc(p.email) + '">Change password</button>') + '<button class="adm-btn danger" type="button" data-rm="' + esc(p.email) + '">Remove</button></span>' : '<span></span>') + '</li>';
                 }).join('') + '</ul>' : '<p class="adm-empty">No one yet.</p>';
+                $$('[data-ac-edit]', $('#t-list')).forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        var p = byEmail[b.getAttribute('data-ac-edit')];
+                        askAccess(p).then(function (r) { if (r) team({ action: 'access', email: p.email, perms: r.perms, title: r.title }).then(function () { toast('Access saved for ' + p.email); draw(); }).catch(fail); });
+                    });
+                });
                 $$('[data-pw]', $('#t-list')).forEach(function (b) {
                     b.addEventListener('click', function () {
                         var em = b.getAttribute('data-pw');
@@ -1056,21 +1122,23 @@
                 $$('[data-rm]', $('#t-list')).forEach(function (b) {
                     b.addEventListener('click', function () {
                         var em = b.getAttribute('data-rm');
-                        confirmBox('Delete the staff account ' + em + '? They will not be able to sign in any more. Orders they handled are kept.', 'Delete account').then(function (yes) {
-                            if (yes) team({ action: 'delete', email: em }).then(function () { toast('Account deleted'); draw(); }).catch(fail);
+                        confirmBox('Remove the team member ' + em + '? They will not be able to sign in any more. Orders they handled are kept.', 'Remove account').then(function (yes) {
+                            if (yes) team({ action: 'delete', email: em }).then(function () { toast('Account removed'); draw(); }).catch(fail);
                         });
                     });
                 });
-            }).catch(function (e) { $('#t-list').innerHTML = '<p class="adm-err">Could not load the team: ' + esc(e.message || e) + '<br>Run supabase/v10-update.sql in the Supabase SQL Editor first.</p>'; });
+            }).catch(function (e) { $('#t-list').innerHTML = '<p class="adm-err">Could not load the team: ' + esc(e.message || e) + '<br>Run supabase/v14-update.sql in the Supabase SQL Editor first.</p>'; });
         }
         $('#t-form').addEventListener('submit', function (e) {
             e.preventDefault();
-            var em = $('#t-email').value.trim(), pw = $('#t-pass').value, err = $('#t-err'), btn = $('button', e.target); err.textContent = '';
+            var em = $('#t-email').value.trim(), pw = $('#t-pass').value, err = $('#t-err'), btn = $('button[type=submit]', e.target); err.textContent = '';
             if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { err.textContent = 'Please type a valid email address.'; return; }
             if (pw.length < 8) { err.textContent = 'The password needs at least 8 characters.'; return; }
+            var perms = readAccess($('#t-acc'));
+            if (!perms.length) { err.textContent = 'Please choose at least one page this person can use.'; return; }
             btn.disabled = true;
-            team({ action: 'create', email: em, password: pw, name: $('#t-name').value.trim() }).then(function () {
-                toast('Staff account created for ' + em); $('#t-email').value = ''; $('#t-pass').value = ''; $('#t-name').value = ''; draw();
+            team({ action: 'create', email: em, password: pw, name: $('#t-name').value.trim(), title: $('#t-title').value.trim(), perms: perms }).then(function () {
+                toast('Team member added: ' + em); $('#t-email').value = ''; $('#t-pass').value = ''; $('#t-name').value = ''; $('#t-title').value = ''; draw();
             }).catch(function (x) { err.textContent = x.message || String(x); }).then(function () { btn.disabled = false; });
         });
         draw();
@@ -1131,7 +1199,7 @@
                 '<button type="button" class="adm-btn ghost" data-cu="reset">Send password reset link</button><small>Emails them a link to choose a new password.</small>' +
                 '<button type="button" class="adm-btn ghost" data-cu="pw">Set a temporary password</button><small>You choose it and tell the customer. They can change it after signing in.</small>' +
                 '<button type="button" class="adm-btn ghost" data-cu="suspend">' + (sp.suspended ? 'Allow sign-in again' : 'Stop sign-in') + '</button><small>' + (sp.suspended ? 'This customer cannot sign in now.' : 'Blocks sign-in. Their orders and data are kept. You can allow it again any time.') + '</small>' +
-                '<button type="button" class="adm-btn danger" data-cu="delete">Delete account</button><small>Removes the account and saved addresses. Past orders stay in Orders for your records.</small></div></div>' +
+                (B.isAdmin() ? '<button type="button" class="adm-btn danger" data-cu="delete">Delete account</button><small>Removes the account and saved addresses. Past orders stay in Orders for your records.</small>' : '<small>Only the administrator can delete an account.</small>') + '</div></div>' +
                 '<h4>Orders (' + os.length + ')</h4>' + (os.length ? '<ul class="cu-orders">' + os.map(function (o) {
                     return '<li><strong>#' + esc(o.order_no) + '</strong> <span class="chip st-' + esc(o.status) + '">' + esc(STATUS_NAME[o.status] || o.status) + '</span> ' + esc(money(otot(o))) + ' <small>' + esc(dt(o.created_at)) + '</small>' +
                         (o.status === 'cancelled' ? '<br><small>Cancelled' + (o.cancelled_at ? ' ' + esc(dt(o.cancelled_at)) : '') + ' &mdash; reason: ' + esc(o.cancel_reason || 'not recorded') + '</small>' : '') + '</li>';
@@ -1215,7 +1283,7 @@
     }
 
     /* ------------------------------ start ------------------------------ */
-    B.ready.then(function () { gate(); if (B.isStaff()) loadOrders(); });
-    B.onAuth(function () { gate(); if (B.isStaff() && tab !== 'orders') loadOrders(); else if (B.isStaff()) { /* orders view loads itself */ } });
-    setInterval(function () { if (B.isStaff() && !doc.hidden && (tab === 'orders' || tab === 'dashboard') && !$('.adm-order [aria-expanded=true]')) loadOrders(); }, 90000);
+    B.ready.then(function () { gate(); if (B.can('orders')) loadOrders(); });
+    B.onAuth(function () { gate(); if (B.can('orders') && tab !== 'orders') loadOrders(); });
+    setInterval(function () { if (B.can('orders') && !doc.hidden && (tab === 'orders' || tab === 'dashboard') && !$('.adm-order [aria-expanded=true]')) loadOrders(); }, 90000);
 })();

@@ -82,6 +82,7 @@
         }, function () { B.profile = { id: B.session.user.id, email: B.session.user.email, role: 'customer' }; return B.profile; });
     }
     B.isAdmin = function () { return !!(B.profile && B.profile.role === 'admin'); };
+    B.can = function (k) { if (!B.profile) return false; if (B.profile.role === 'admin') return true; return B.profile.role === 'staff' && (B.profile.perms || []).indexOf(k) >= 0; };
     B.isStaff = function () { return !!(B.profile && (B.profile.role === 'admin' || B.profile.role === 'staff')); };   // admin or staff: may manage orders
     B.user = function () { return B.session ? B.session.user : null; };
     function ok(r) { if (r && r.error) throw r.error; return r ? r.data : null; }

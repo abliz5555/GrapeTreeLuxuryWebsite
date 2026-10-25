@@ -33,11 +33,13 @@ export async function handle(req: Request, env: (k: string) => string, doFetch: 
   const ur = await doFetch(url + '/auth/v1/user', { headers: { Authorization: 'Bearer ' + token, apikey: req.headers.get('apikey') || key } });
   if (!ur.ok) return json({ error: 'Please sign in again.' }, 401);
   const me = await ur.json();
-  const pr = await doFetch(url + '/rest/v1/profiles?select=role&id=eq.' + encodeURIComponent(me.id), { headers: svc });
+  const pr = await doFetch(url + '/rest/v1/profiles?select=role,perms&id=eq.' + encodeURIComponent(me.id), { headers: svc });
   const pj = pr.ok ? await pr.json() : [];
-  if (!pj[0] || pj[0].role !== 'admin') return json({ error: 'Only an admin can do this.' }, 403);
-
+  const isAdm = !!pj[0] && pj[0].role === 'admin';
   const action0 = String(body.action || '');
+  // team members with the "customers" access may help customers (not delete accounts); everything else is admin only
+  const custOk = !!pj[0] && pj[0].role === 'staff' && Array.isArray(pj[0].perms) && pj[0].perms.indexOf('customers') >= 0 && ['c_status', 'c_password', 'c_update', 'c_suspend'].indexOf(action0) >= 0;
+  if (!isAdm && !custOk) return json({ error: 'Only an admin can do this.' }, 403);
   if (action0.indexOf('c_') === 0) {
     if (action0 === 'c_status') {
       const lr = await doFetch(url + '/auth/v1/admin/users?per_page=1000', { headers: svc });
@@ -80,6 +82,9 @@ export async function handle(req: Request, env: (k: string) => string, doFetch: 
     return json({ error: 'Unknown action' }, 400);
   }
 
+  const PERMS = ['orders', 'customers', 'products', 'studio', 'website', 'settings', 'business', 'legal'];
+  const cleanPerms = (a: any) => (Array.isArray(a) ? a : []).map((x: any) => String(x)).filter((x: string, i: number, r: string[]) => PERMS.indexOf(x) >= 0 && r.indexOf(x) === i);
+  const cleanTitle = (t: any) => String(t || '').trim().slice(0, 80);
   const email = String(body.email || '').trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'Please enter a valid email address.' }, 400);
   const action = String(body.action || '');
@@ -99,8 +104,14 @@ export async function handle(req: Request, env: (k: string) => string, doFetch: 
     const cr = await doFetch(url + '/auth/v1/admin/users', { method: 'POST', headers: svc, body: JSON.stringify({ email, password: pw, email_confirm: true, user_metadata: { full_name: String(body.name || '').slice(0, 120) } }) });
     const cj = await cr.json().catch(() => ({}));
     if (!cr.ok) return json({ error: /already|registered|exists/i.test(JSON.stringify(cj)) ? 'This email already has an account.' : 'Could not create the account.', detail: String(cj.msg || cj.message || cj.error_description || '').slice(0, 200) }, 400);
-    await doFetch(url + '/rest/v1/profiles?id=eq.' + encodeURIComponent(cj.id), { method: 'PATCH', headers: svc, body: JSON.stringify({ role: 'staff', full_name: String(body.name || '').slice(0, 120) }) });
+    await doFetch(url + '/rest/v1/profiles?id=eq.' + encodeURIComponent(cj.id), { method: 'PATCH', headers: svc, body: JSON.stringify({ role: 'staff', full_name: String(body.name || '').slice(0, 120), job_title: cleanTitle(body.title), perms: body.perms === undefined ? ['orders'] : cleanPerms(body.perms) }) });
     return json({ ok: true });
+  }
+
+  if (action === 'access') {
+    if (!found || found.role !== 'staff') return json({ error: 'Team member not found.' }, 404);
+    const r = await doFetch(url + '/rest/v1/profiles?id=eq.' + encodeURIComponent(found.id), { method: 'PATCH', headers: svc, body: JSON.stringify({ perms: cleanPerms(body.perms), job_title: cleanTitle(body.title) }) });
+    return r.ok ? json({ ok: true }) : json({ error: 'Could not save the access.' }, 400);
   }
 
   if (action === 'password') {

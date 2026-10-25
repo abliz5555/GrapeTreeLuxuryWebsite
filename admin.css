@@ -379,3 +379,18 @@ body[data-admin] header.adm-top .adm-tabs button{ white-space:normal; text-align
 @media (max-width:999px){
   body[data-admin] header.adm-top .adm-brand span{ display:inline-block; font:700 .64rem/1 var(--sans,Inter,sans-serif); letter-spacing:.14em; text-transform:uppercase; color:#fff; background:#2a1810; border-radius:999px; padding:4px 8px; }
 }
+
+/* v30: team access */
+body[data-admin] header.adm-top .adm-tabs [hidden], body[data-admin] header.adm-top .adm-grp[hidden]{ display:none !important; }
+.ac-presets{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:6px 0 10px; }
+.ac-presets span{ font-size:.82rem; color:#6b5d52; font-weight:600; }
+.ac-presets .adm-btn{ padding:6px 12px; font-size:.85rem; }
+.ac-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.ac-item{ display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid rgba(0,0,0,.12); border-radius:12px; background:#fff; cursor:pointer; }
+.ac-item input{ margin-top:3px; flex:none; width:18px; height:18px; }
+.ac-item b{ display:block; font-size:.92rem; } .ac-item small{ display:block; color:#6b5d52; font-size:.78rem; line-height:1.3; margin-top:2px; }
+.ac-item:has(input:checked){ border-color:#8a6a1f; background:#fbf6ea; }
+.ac-chips{ display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+.ac-chips span{ font-size:.72rem; padding:3px 8px; border-radius:999px; background:#f1ebe0; color:#4a3b2c; }
+.ac-chips em{ font-size:.78rem; color:#a33; }
+@media (max-width:640px){ .ac-grid{ grid-template-columns:1fr; } }
