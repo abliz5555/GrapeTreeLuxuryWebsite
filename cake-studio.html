@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="animations.css?v=20">
     <link rel="stylesheet" href="theme.css?v=20">
     <link rel="stylesheet" href="layout.css?v=20">
-    <link rel="stylesheet" href="studio.css?v=20">
+    <link rel="stylesheet" href="studio.css?v=21">
 </head>
 
 <body class="theme-kat" data-shop data-studio data-product="cake">
@@ -52,19 +52,28 @@
 <section class="st-card" data-step="1">
 <p class="st-kicker">STEP 1</p>
 
-<h2 id="st-piece-h">Upload your artwork</h2>
-<p class="st-sub">Logos and characters work best. Next you will see it at real size and AI will help make it print-ready.</p>
+<h2 id="st-piece-h">Choose your design</h2>
+<p class="st-sub">Pick one way to start. You can change it at any time.</p>
+<div id="st-uploadpane">
+<div class="st-tiles" id="st-tiles" role="tablist" aria-label="How do you want to start?">
+<button type="button" class="st-tile on" role="tab" aria-selected="true" data-pane="upload"><span class="st-ti" aria-hidden="true">&#128247;</span><b>Upload a picture</b><small>Logo, drawing or photo</small></button>
+<button type="button" class="st-tile" role="tab" aria-selected="false" data-pane="chars"><span class="st-ti" aria-hidden="true">&#128049;</span><b>Pick a character</b><small>Ready-made, no file needed</small></button>
+<button type="button" class="st-tile" role="tab" aria-selected="false" data-pane="ai"><span class="st-ti" aria-hidden="true">&#10024;</span><b>Describe it</b><small>AI draws it for you</small></button>
+<button type="button" class="st-tile" role="tab" aria-selected="false" data-pane="build"><span class="st-ti" aria-hidden="true">&#127912;</span><b>Build your own</b><small>Names, shapes, emojis</small></button>
+</div>
+<div class="st-pane" data-pane="upload">
 <label class="st-drop" id="st-drop" for="st-file">
 <input type="file" id="st-file" accept="image/png,image/jpeg,image/webp,image/gif">
 <span class="st-drop-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></span>
 <strong>Choose an image or drop it here</strong>
 <small>PNG, JPG, WebP or GIF &middot; up to 15 MB</small>
 </label>
-<div class="st-or"><span>or</span></div>
-<p class="st-pick-l">Pick a cute character to print</p>
+</div>
+<div class="st-pane" data-pane="chars" hidden>
 <div class="st-friends" id="st-friends" aria-label="Characters"></div>
-<button type="button" class="st-create" id="st-create"><span class="st-create-ic" aria-hidden="true">&#10024;</span><span><b>Create your own design</b><small>Add names, shapes, emojis and flowers. No file needed.</small></span></button>
-<button type="button" class="st-create st-create-ai" id="st-aidraw-open"><span class="st-create-ic" aria-hidden="true">&#10024;</span><span><b>Describe it &ndash; AI draws it for you</b><small>Colourful, clean and ready to cut and print on the cake. Try &ldquo;a smiling astronaut bear&rdquo;.</small></span></button>
+</div>
+<div class="st-pane" data-pane="ai" hidden>
+<span class="st-hidden-open"><button type="button" class="st-create st-create-ai" id="st-aidraw-open"><span class="st-create-ic" aria-hidden="true">&#10024;</span><span><b>Describe it &ndash; AI draws it for you</b><small>Colourful, clean and ready to cut and print on the cake. Try &ldquo;a smiling astronaut bear&rdquo;.</small></span></button></span>
 <div class="st-aidraw" id="st-aidraw" hidden>
 <label class="st-lbl" for="st-aidraw-text">What should we draw?</label>
 <textarea id="st-aidraw-text" rows="3" maxlength="240" placeholder="e.g. a happy dinosaur holding a birthday balloon"></textarea>
@@ -81,45 +90,43 @@
 <p class="st-ai-status" id="st-aidraw-status" role="status" hidden></p>
 <p class="st-error" id="st-aidraw-err" role="alert" hidden></p>
 </div>
-
-
-<p class="st-center"><button type="button" class="st-link" id="st-sample">Or try the sample character</button></p>
+</div>
+<div class="st-pane" data-pane="build" hidden>
+<p class="st-fine">Start with an empty design and add names, shapes, emojis and flowers. No file needed.</p>
+<button type="button" class="st-create" id="st-create"><span class="st-create-ic" aria-hidden="true">&#10024;</span><span><b>Create your own design</b><small>Add names, shapes, emojis and flowers. No file needed.</small></span></button>
+</div>
+</div>
 <p class="st-error" id="st-up-err" role="alert" hidden></p>
 <div class="st-loaded" id="st-loaded" hidden>
 <div class="st-thumb"><img id="st-up-thumb" alt="Your uploaded artwork"></div>
 <div><strong id="st-up-name"></strong><p class="st-fine" id="st-up-info"></p><p class="st-warn" id="st-up-warn" hidden></p>
 <button type="button" class="st-link" id="st-up-change">Choose a different image</button> &middot; <button type="button" class="st-link" id="st-up-remove">Remove</button></div>
 </div>
+<p class="st-center"><button type="button" class="st-link" id="st-sample">Or try the sample character</button></p>
+<details class="st-more"><summary>Tips for best results</summary>
 <div class="st-tips">
 <div><b>Best results</b><span>Logo shapes and cartoon characters. High-resolution files (1000 px or more).</span></div>
 <div><b>Photo of a person?</b><span>Use the cartoon button in the next step, or let our designer draw it for you.</span></div>
 <div><b>Your rights</b><span>Upload artwork you own or have permission to reproduce.</span></div>
 </div>
+</details>
 <div class="st-nav"><span></span><button type="button" class="gt-btn" data-go="2" id="st-next1" disabled>Continue</button></div>
 </section>
 <section class="st-card" data-step="2" hidden>
 <p class="st-kicker">STEP 2</p>
 <h2>Design it at real size</h2>
-<p class="st-sub">Your image is shown on a surface the same size as the cake, so what you see is what is made. Drag to move, scroll or pinch to resize.</p>
-<div class="st-photo-row"><span id="st-photo-name"></span><button type="button" class="st-btn" id="st-photo-change">Change photo</button><button type="button" class="st-btn" id="st-chars">Use a character instead</button><button type="button" class="st-btn" id="st-photo-remove">Remove &amp; start over</button></div>
-<div class="st-ai-card">
-<div class="st-ai-head"><h3 class="st-h3">Let AI help</h3><span class="st-aimode" id="ai-mode"></span></div>
-<div class="st-ai-btns" id="ai-btns">
-<button type="button" class="st-btn st-ai" data-kind="cutout"><b>Remove background</b><small>Keeps your design, removes the rest</small></button>
-<button type="button" class="st-btn st-ai" data-kind="cartoon"><b>Make it a cartoon</b><small>Cute character style</small></button>
+<p class="st-sub">Drag to move, pinch or scroll to resize. What you see is what is made.</p>
+<div class="st-toolbar">
+<span id="st-photo-name"></span>
+<button type="button" class="st-btn st-btn-accent" id="st-decor-btn" data-decor="1">&#127912; Add text, shapes, emojis</button>
+<button type="button" class="st-btn" id="st-photo-change">Change picture</button>
+<details class="st-menu"><summary class="st-btn">More</summary><div class="st-menu-box"><button type="button" class="st-btn" id="st-chars">Use a character instead</button><button type="button" class="st-btn" id="st-photo-remove">Remove &amp; start over</button></div></details>
 </div>
-<p class="st-ai-status" id="ai-status" role="status" hidden></p>
-<p class="st-note" id="ai-note" hidden>AI is not connected yet, so a quick built-in tool was used. Results are simpler. You can always ask our designer.</p>
-<div class="st-vers"><div class="st-vers-top"><b>Your versions</b><button type="button" class="st-link" id="ai-retry" hidden>Not happy? Try again</button></div>
-<div class="st-ver-strip" id="ver-strip" aria-label="Versions"></div><p class="st-fine">Tap any version to switch back to it. Your original is always kept.</p></div>
-<button type="button" class="st-create st-create-sm" id="st-decor"><span class="st-create-ic" aria-hidden="true">&#127912;</span><span><b>Add text, shapes, emojis &amp; flowers</b><small>Decorate your design or build one from scratch.</small></span></button>
-<label class="st-check st-designer"><input type="checkbox" id="st-designer"><span><b>Not what you wanted? Ask our designer to do it</b><small>We prepare the artwork by hand and send you a proof to approve before anything is produced.</small></span></label>
-<div id="st-dnote-wrap" hidden><textarea id="st-dnote" rows="2" placeholder="Anything we should know? (optional)"></textarea></div>
-</div>
-<div class="st-finish" id="st-finish" role="radiogroup" aria-label="Cut style">
+<p class="st-lbl st-lbl-top">How should we cut it?</p>
+<div class="st-finish st-finish-seg" id="st-finish" role="radiogroup" aria-label="Cut style">
 <label><input type="radio" name="finish" value="around" checked><span class="st-fi"><svg viewBox="0 0 48 48"><path d="M24 6c6 0 7 5 11 7s9 4 7 11-8 4-9 10-6 8-12 6-6-8-11-11-9-6-6-13 9-5 12-8 5-2 8-2z" fill="currentColor"/></svg></span><b>Cut around artwork</b><small>The cut follows your design. Best for logos and characters.</small></label>
 <label><input type="radio" name="finish" value="shape"><span class="st-fi"><svg viewBox="0 0 48 48"><circle cx="15" cy="15" r="9" fill="currentColor"/><rect x="27" y="7" width="16" height="16" fill="currentColor"/><path d="M15 43c-9-6-11-10-11-14a6 6 0 0 1 11-3 6 6 0 0 1 11 3c0 4-2 8-11 14z" fill="currentColor"/></svg></span><b>Cut a simple shape</b><small>Circle, heart, star and more with your design inside.</small></label>
-<label><input type="radio" name="finish" value="print"><span class="st-fi"><svg viewBox="0 0 48 48"><rect x="6" y="11" width="36" height="26" fill="none" stroke="currentColor" stroke-width="3"/></svg></span><b>Print only</b><small>Your image exactly as it is. May look less cute than a character.</small></label>
+<label><input type="radio" name="finish" value="print"><span class="st-fi"><svg viewBox="0 0 48 48"><rect x="6" y="11" width="36" height="26" fill="none" stroke="currentColor" stroke-width="3"/></svg></span><b>Print only</b><small>Your image exactly as it is. May look less cute than a chara
 </div>
 <div class="st-place">
 <div class="st-stage" id="st-stage">
@@ -133,21 +140,37 @@
 <p class="st-fine st-hint">The red dashed line is the 5 mm clear zone. Nothing can go past it, so we can cut the cake safely.</p>
 </div>
 <div class="st-panel">
-<div id="pl-shapes-wrap" hidden><h4>Cut-out shape</h4><div class="st-shapes" id="pl-shapes" role="radiogroup" aria-label="Shape"></div>
-<label class="st-range"><span>Shape size</span><input type="range" id="pl-ssize" min="12" max="60" step="0.5" value="38"><output id="pl-ssize-o"></output></label>
-<label class="st-range"><span>Shape proportion</span><input type="range" id="pl-sprop" min="60" max="140" value="100"><output id="pl-sprop-o"></output></label></div>
-<div id="pl-around-wrap"><h4>Cut line</h4>
-<label class="st-range"><span>Space around artwork</span><input type="range" id="pl-off" min="1.2" max="5" step="0.1" value="2"><output id="pl-off-o"></output></label>
-<label class="st-range"><span>Smooth outline</span><input type="range" id="pl-smooth" min="0" max="6" step="0.25" value="1.5"><output id="pl-smooth-o"></output></label></div>
-<h4>Artwork</h4>
+<details class="st-acc" id="acc-size" open><summary>Size and position</summary><div class="st-acc-b">
 <label class="st-range"><span>Size</span><input type="range" id="pl-size" min="4" max="100" step="0.5" value="30"><output id="pl-size-o"></output></label>
 <label class="st-range"><span>Rotation</span><input type="range" id="pl-rot" min="-180" max="180" step="1" value="0"><output id="pl-rot-o"></output></label>
-<h4>Cake orientation</h4>
+<p class="st-lbl">Cake direction</p>
 <div class="st-seg" id="pl-orient" role="radiogroup" aria-label="Orientation"><label><input type="radio" name="orient" value="landscape" checked><span>Landscape</span></label><label><input type="radio" name="orient" value="portrait"><span>Portrait</span></label></div>
+</div></details>
+<details class="st-acc" id="pl-shapes-wrap" hidden><summary>Cut-out shape</summary><div class="st-acc-b"><div class="st-shapes" id="pl-shapes" role="radiogroup" aria-label="Shape"></div>
+<label class="st-range"><span>Shape size</span><input type="range" id="pl-ssize" min="12" max="60" step="0.5" value="38"><output id="pl-ssize-o"></output></label>
+<label class="st-range"><span>Shape proportion</span><input type="range" id="pl-sprop" min="60" max="140" value="100"><output id="pl-sprop-o"></output></label></div></details>
+<details class="st-acc" id="pl-around-wrap"><summary>Cut line</summary><div class="st-acc-b">
+<label class="st-range"><span>Space around artwork</span><input type="range" id="pl-off" min="1.2" max="5" step="0.1" value="2"><output id="pl-off-o"></output></label>
+<label class="st-range"><span>Smooth outline</span><input type="range" id="pl-smooth" min="0" max="6" step="0.25" value="1.5"><output id="pl-smooth-o"></output></label></div></details>
+<details class="st-acc st-ai-card" id="acc-ai" open><summary>Improve with AI <span class="st-ai-head"><span class="st-aimode" id="ai-mode"></span></span></summary><div class="st-acc-b">
+<div class="st-ai-btns" id="ai-btns">
+<button type="button" class="st-btn st-ai" data-kind="cutout"><b>Remove background</b><small>Keeps your design, removes the rest</small></button>
+<button type="button" class="st-btn st-ai" data-kind="cartoon"><b>Make it a cartoon</b><small>Cute character style</small></button>
+</div>
+<p class="st-ai-status" id="ai-status" role="status" hidden></p>
+<p class="st-note" id="ai-note" hidden>AI is not connected yet, so a quick built-in tool was used. Results are simpler. You can always ask our designer.</p>
+<div class="st-vers"><div class="st-vers-top"><b>Your versions</b><button type="button" class="st-link" id="ai-retry" hidden>Not happy? Try again</button></div>
+<div class="st-ver-strip" id="ver-strip" aria-label="Versions"></div><p class="st-fine">Tap any version to switch back to it. Your original is always kept.</p></div>
+</div></details>
+<details class="st-acc" id="acc-help"><summary>Need help from our designer?</summary><div class="st-acc-b">
+<label class="st-check st-designer"><input type="checkbox" id="st-designer"><span><b>Not what you wanted? Ask our designer to do it</b><small>We prepare the artwork by hand and send you a proof to approve before anything is produced.</small></span></label>
+<div id="st-dnote-wrap" hidden><textarea id="st-dnote" rows="2" placeholder="Anything we should know? (optional)"></textarea></div>
+</div></details>
 <div class="st-rules"><p>Keep faces and text 2 mm inside the cut line (dotted).</p></div>
 <ul class="st-checks" id="pl-checks" aria-live="polite"></ul>
 </div>
 </div>
+<span class="st-hidden-open"><button type="button" class="st-create st-create-sm" id="st-decor"><span class="st-create-ic" aria-hidden="true">&#127912;</span><span><b>Add text, shapes, emojis &amp; flowers</b><small>Decorate your design or build one from scratch.</small></span></button></span>
 <div class="st-nav"><button type="button" class="st-btn" data-go="1">Back</button><button type="button" class="gt-btn" data-go="3">Preview</button></div>
 </section>
 <section class="st-card" data-step="3" hidden>
@@ -228,7 +251,8 @@
 <script src="backend.js?v=21"></script>
 <script src="script.js?v=20"></script>
 <script src="animations.js?v=20"></script>
-<script src="studio.js?v=20"></script>
+<script src="studio.js?v=21"></script>
+<script src="studio-ui.js?v=21"></script>
 
 </body>
 
