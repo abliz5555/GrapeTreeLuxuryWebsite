@@ -16,7 +16,7 @@
     var STATUSES = [['new', 'New'], ['confirmed', 'Confirmed'], ['preparing', 'Preparing'], ['delivering', 'Out for delivery'], ['delivered', 'Delivered'], ['cancelled', 'Cancelled']];
     var STATUS_NAME = {}; STATUSES.forEach(function (s) { STATUS_NAME[s[0]] = s[1]; });
     var PAY_NAME = { whatsapp: 'WhatsApp', bank: 'Bank transfer', card: 'Card' };
-    var tab = 'orders', ORDERS = [], PRODUCTS = [], CONTENT = {};
+    var tab = 'dashboard', ORDERS = [], PRODUCTS = [], CONTENT = {};
 
     function toast(text, bad) {
         var t = $('#adm-toast'); t.textContent = text; t.className = 'adm-toast show' + (bad ? ' bad' : '');
@@ -69,78 +69,168 @@
     function show(t) {
         tab = t;
         $$('[data-tab]', tabsEl).forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === t); });
-        ({ orders: viewOrders, products: viewProducts, website: viewWebsite, studio: viewStudio, test: viewTest, settings: viewSettings })[t]();
+        ({ dashboard: viewDashboard, business: viewBusiness, legal: viewLegal, orders: viewOrders, products: viewProducts, website: viewWebsite, studio: viewStudio, test: viewTest, settings: viewSettings })[t]();
     }
 
+    /* ============================ SMALL HELPERS (v9) ============================ */
+    function cacheSet(key, val) {
+        try { var c = JSON.parse(localStorage.getItem('gt-content-v1') || '{}') || {}; c[key] = val; localStorage.setItem('gt-content-v1', JSON.stringify(c)); } catch (e) {}
+    }
+    function hasArt(o) { return (o.items || []).some(function (l) { return l.art; }); }
+    function reviewOf(o) { return hasArt(o) ? (o.art_review || 'pending') : 'na'; }
+    var REVIEWS = [['pending', 'Waiting for review'], ['approved', 'Approved for production'], ['changes', 'Customer must change it'], ['rejected', 'Rejected (not allowed)']];
+    var REVIEW_NAME = { pending: 'Review design', approved: 'Design approved', changes: 'Needs change', rejected: 'Design rejected', na: '' };
+    function ymd(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+    function daysFromNow(s) { if (!s) return null; var a = new Date(s + 'T12:00:00'), b = new Date(); b.setHours(12, 0, 0, 0); return Math.round((a - b) / 86400000); }
+    function openOrder(id) { focusId = id; fStatus = 'all'; fPay = 'all'; fReview = 'all'; fRange = 'all'; fText = ''; show('orders'); }
+    var focusId = null;
+
+    /* ============================ DASHBOARD ============================ */
+    function viewDashboard() {
+        root.innerHTML = '<div class="adm-bar"><h2>Dashboard</h2><button class="adm-btn ghost" id="d-refresh">Refresh</button></div><div id="d-box"><p class="adm-loading">Loading...</p></div>';
+        $('#d-refresh').addEventListener('click', function () { loadOrders(); });
+        loadOrders();
+    }
+    function drawDashboard() {
+        var box = $('#d-box'); if (!box) return;
+        var live = ORDERS.filter(function (o) { return o.status !== 'cancelled' && o.source !== 'admin-test'; });
+        var now = new Date(), ms = new Date(now.getFullYear(), now.getMonth(), 1), ds = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var sum = function (a) { return a.reduce(function (t, o) { return t + Number(o.subtotal || 0); }, 0); };
+        var newO = live.filter(function (o) { return o.status === 'new'; });
+        var review = live.filter(function (o) { return reviewOf(o) === 'pending' && o.status !== 'delivered'; });
+        var unpaid = live.filter(function (o) { return o.payment_status !== 'paid' && o.status !== 'delivered'; });
+        var month = live.filter(function (o) { return new Date(o.created_at) >= ms; }), today = live.filter(function (o) { return new Date(o.created_at) >= ds; });
+        var attn = live.filter(function (o) { return o.status === 'new' || reviewOf(o) === 'pending' && o.status !== 'delivered'; }).sort(function (a, b) { return new Date(a.created_at) - new Date(b.created_at); }).slice(0, 8);
+        var up = live.filter(function (o) { var d = daysFromNow(o.delivery_date); return d != null && d >= 0 && d <= 7 && o.status !== 'delivered'; }).sort(function (a, b) { return String(a.delivery_date).localeCompare(String(b.delivery_date)); }).slice(0, 8);
+        var late = live.filter(function (o) { var d = daysFromNow(o.delivery_date); return d != null && d < 0 && o.status !== 'delivered'; });
+        var byStatus = STATUSES.map(function (s) { return '<span class="chip st-' + s[0] + '">' + esc(s[1]) + ' <b>' + ORDERS.filter(function (o) { return o.status === s[0]; }).length + '</b></span>'; }).join(' ');
+        var src = {}; live.forEach(function (o) { var k = (o.source || 'direct').split(' / ')[0] || 'direct'; src[k] = (src[k] || 0) + 1; });
+        var top = Object.keys(src).sort(function (a, b) { return src[b] - src[a]; }).slice(0, 5).map(function (k) { return esc(k) + ' <b>' + src[k] + '</b>'; }).join(' &nbsp;&middot;&nbsp; ');
+        function row(o, extra) {
+            return '<button type="button" class="adm-row-btn" data-open="' + esc(o.id) + '"><span class="o-no">#' + esc(o.order_no) + '</span><span class="grow"><strong>' + esc(o.name) + '</strong><small>' + esc(dt(o.created_at)) + (o.delivery_date ? ' &middot; deliver ' + esc(o.delivery_date) : '') + '</small></span>' + (extra || '') + '<span class="o-total">' + esc(money(o.subtotal)) + '</span></button>';
+        }
+        box.innerHTML = '<div class="adm-stats">' +
+            statLink('New orders', newO.length, 'waiting for you', 'status=new') +
+            statLink('Designs to review', review.length, 'check copyright and content', 'review=pending') +
+            statLink('Not paid yet', unpaid.length, money(sum(unpaid)), 'pay=unpaid') +
+            stat('Today', today.length, money(sum(today))) +
+            stat('This month', month.length, money(sum(month))) +
+            (late.length ? statLink('Late deliveries', late.length, 'delivery date has passed', 'late=1') : '') + '</div>' +
+            '<div class="adm-two">' +
+            '<section class="adm-card"><h3>Needs your attention</h3>' + (attn.length ? attn.map(function (o) { return row(o, (o.status === 'new' ? '<span class="chip st-new">New</span>' : '') + (reviewOf(o) === 'pending' ? '<span class="chip rv-pending">Review design</span>' : '')); }).join('') : '<p class="adm-empty">Nothing waiting. Nice work.</p>') + '</section>' +
+            '<section class="adm-card"><h3>Deliveries in the next 7 days</h3>' + (up.length ? up.map(function (o) { var d = daysFromNow(o.delivery_date); return row(o, '<span class="chip">' + (d === 0 ? 'Today' : d === 1 ? 'Tomorrow' : 'In ' + d + ' days') + '</span>'); }).join('') : '<p class="adm-empty">No deliveries planned this week.</p>') + '</section></div>' +
+            '<section class="adm-card"><h3>All orders by status</h3><div class="adm-chips">' + byStatus + '</div><p class="adm-fine">Where orders come from: ' + (top || 'no orders yet') + '</p></section>';
+    }
+    function statLink(l, v, s, f) { return '<button type="button" class="adm-stat link" data-filter="' + esc(f) + '"><span>' + esc(l) + '</span><strong>' + esc(v) + '</strong><small>' + esc(s) + '</small></button>'; }
+    function stat(l, v, s, wide) { return '<div class="adm-stat' + (wide ? ' wide' : '') + '"><span>' + esc(l) + '</span>' + (v !== '' ? '<strong>' + esc(v) + '</strong>' : '') + '<small>' + (wide ? s : esc(s)) + '</small></div>'; }
+
     /* ============================ ORDERS ============================ */
-    var fStatus = 'all', fText = '';
+    var fStatus = 'all', fText = '', fPay = 'all', fReview = 'all', fRange = 'all', fSort = 'new', fLate = false;
+    function opts(list, cur) { return list.map(function (s) { return '<option value="' + s[0] + '"' + (s[0] === cur ? ' selected' : '') + '>' + esc(s[1]) + '</option>'; }).join(''); }
     function viewOrders() {
-        root.innerHTML = '<div class="adm-stats" id="o-stats"></div>' +
-            '<div class="adm-bar"><select id="o-status" aria-label="Filter by status"><option value="all">All orders</option>' + STATUSES.map(function (s) { return '<option value="' + s[0] + '">' + s[1] + '</option>'; }).join('') + '</select>' +
-            '<input type="search" id="o-q" placeholder="Search name, phone or order number" aria-label="Search orders"><button class="adm-btn ghost" id="o-refresh">Refresh</button></div>' +
-            '<div id="o-list"><p class="adm-loading">Loading orders...</p></div>';
-        $('#o-status').value = fStatus; $('#o-q').value = fText;
-        $('#o-status').addEventListener('change', function () { fStatus = this.value; drawOrders(); });
+        root.innerHTML = '<div class="adm-bar wrap"><h2>Orders</h2><span class="grow"></span><button class="adm-btn ghost" id="o-csv">Download list (CSV)</button><button class="adm-btn ghost" id="o-refresh">Refresh</button></div>' +
+            '<div class="adm-filters">' +
+            '<input type="search" id="o-q" placeholder="Search name, phone, email or order number" aria-label="Search orders">' +
+            '<select id="o-status" aria-label="Status">' + opts([['all', 'All statuses']].concat(STATUSES), fStatus) + '</select>' +
+            '<select id="o-pay" aria-label="Payment">' + opts([['all', 'Any payment'], ['unpaid', 'Not paid'], ['paid', 'Paid']], fPay) + '</select>' +
+            '<select id="o-review" aria-label="Design review">' + opts([['all', 'Any design review'], ['pending', 'Waiting for review'], ['approved', 'Approved'], ['changes', 'Needs change'], ['rejected', 'Rejected']], fReview) + '</select>' +
+            '<select id="o-range" aria-label="Date">' + opts([['all', 'All dates'], ['today', 'Today'], ['7', 'Last 7 days'], ['30', 'Last 30 days']], fRange) + '</select>' +
+            '<select id="o-sort" aria-label="Sort">' + opts([['new', 'Newest first'], ['old', 'Oldest first'], ['delivery', 'By delivery date']], fSort) + '</select></div>' +
+            '<p class="adm-fine" id="o-count"></p><div id="o-list"><p class="adm-loading">Loading orders...</p></div>';
+        $('#o-q').value = fText;
+        [['o-status', 'fStatus'], ['o-pay', 'fPay'], ['o-review', 'fReview'], ['o-range', 'fRange'], ['o-sort', 'fSort']].forEach(function (p) {
+            $('#' + p[0]).addEventListener('change', function () { var v = this.value; if (p[1] === 'fStatus') fStatus = v; else if (p[1] === 'fPay') fPay = v; else if (p[1] === 'fReview') fReview = v; else if (p[1] === 'fRange') fRange = v; else fSort = v; fLate = false; drawOrders(); });
+        });
         $('#o-q').addEventListener('input', function () { fText = this.value; drawOrders(); });
         $('#o-refresh').addEventListener('click', loadOrders);
+        $('#o-csv').addEventListener('click', exportCsv);
         loadOrders();
     }
     function loadOrders() {
-        B.client.from('orders').select('*').order('created_at', { ascending: false }).limit(500).then(function (r) {
+        return B.client.from('orders').select('*').order('created_at', { ascending: false }).limit(1000).then(function (r) {
             if (r.error) throw r.error;
             ORDERS = r.data || [];
             var n = ORDERS.filter(function (o) { return o.status === 'new'; }).length, b = $('#adm-new');
             b.hidden = !n; b.textContent = n;
-            if (tab === 'orders') { drawStats(); drawOrders(); }
-        }).catch(function (e) { var l = $('#o-list'); if (l) l.innerHTML = '<p class="adm-err">Could not load orders: ' + esc(e.message || e) + '</p>'; });
+            if (tab === 'orders') drawOrders(); else if (tab === 'dashboard') drawDashboard();
+        }).catch(function (e) { var l = $('#o-list') || $('#d-box'); if (l) l.innerHTML = '<p class="adm-err">Could not load orders: ' + esc(e.message || e) + '<br>If this is the first time after an update, run supabase/v9-update.sql in the Supabase SQL Editor.</p>'; });
     }
-    function drawStats() {
-        var now = new Date(), ms = new Date(now.getFullYear(), now.getMonth(), 1), ds = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        var live = ORDERS.filter(function (o) { return o.status !== 'cancelled'; });
-        var sum = function (a) { return a.reduce(function (t, o) { return t + Number(o.subtotal || 0); }, 0); };
-        var month = live.filter(function (o) { return new Date(o.created_at) >= ms; }), today = live.filter(function (o) { return new Date(o.created_at) >= ds; });
-        var src = {}; live.forEach(function (o) { var k = (o.source || 'direct').split(' / ')[0] || 'direct'; src[k] = (src[k] || 0) + 1; });
-        var top = Object.keys(src).sort(function (a, b) { return src[b] - src[a]; }).slice(0, 4).map(function (k) { return esc(k) + ' <b>' + src[k] + '</b>'; }).join(' &nbsp;·&nbsp; ');
-        $('#o-stats').innerHTML =
-            stat('New orders', ORDERS.filter(function (o) { return o.status === 'new'; }).length, 'waiting for you') +
-            stat('Today', today.length, money(sum(today))) +
-            stat('This month', month.length, money(sum(month))) +
-            stat('Where orders come from', '', top || 'No orders yet', true);
-    }
-    function stat(l, v, s, wide) { return '<div class="adm-stat' + (wide ? ' wide' : '') + '"><span>' + esc(l) + '</span>' + (v !== '' ? '<strong>' + esc(v) + '</strong>' : '') + '<small>' + (wide ? s : esc(s)) + '</small></div>'; }
-
-    function drawOrders() {
+    function filtered() {
         var q = fText.trim().toLowerCase().replace(/^#/, '');
+        var from = null; if (fRange === 'today') { from = new Date(); from.setHours(0, 0, 0, 0); } else if (fRange === '7' || fRange === '30') { from = new Date(Date.now() - (+fRange) * 86400000); }
         var list = ORDERS.filter(function (o) {
             if (fStatus !== 'all' && o.status !== fStatus) return false;
+            if (fPay !== 'all' && (o.payment_status || 'unpaid') !== fPay) return false;
+            if (fReview !== 'all' && reviewOf(o) !== fReview) return false;
+            if (from && new Date(o.created_at) < from) return false;
+            if (fLate) { var d = daysFromNow(o.delivery_date); if (!(d != null && d < 0 && o.status !== 'delivered' && o.status !== 'cancelled')) return false; }
             if (!q) return true;
             return String(o.order_no).indexOf(q) > -1 || (o.name || '').toLowerCase().indexOf(q) > -1 || (o.phone || '').toLowerCase().indexOf(q) > -1 || (o.email || '').toLowerCase().indexOf(q) > -1;
         });
-        var box = $('#o-list'); if (!box) return;
-        if (!list.length) { box.innerHTML = '<div class="adm-empty">No orders here yet.</div>'; return; }
+        if (fSort === 'old') list.sort(function (a, b) { return new Date(a.created_at) - new Date(b.created_at); });
+        else if (fSort === 'delivery') list.sort(function (a, b) { return String(a.delivery_date || '9999').localeCompare(String(b.delivery_date || '9999')); });
+        return list;
+    }
+    function chipsFor(o) {
+        var rv = reviewOf(o);
+        return '<span class="chip st-' + esc(o.status) + '">' + esc(STATUS_NAME[o.status] || o.status) + '</span>' +
+            (rv !== 'na' ? '<span class="chip rv-' + rv + '">' + esc(REVIEW_NAME[rv]) + '</span>' : '') +
+            (o.payment_status === 'paid' ? '<span class="chip paid">Paid</span>' : (o.status !== 'cancelled' ? '<span class="chip unpaid">Not paid</span>' : ''));
+    }
+    function drawOrders() {
+        var list = filtered(), box = $('#o-list'); if (!box) return;
+        $('#o-count').textContent = list.length + ' of ' + ORDERS.length + ' orders';
+        if (!list.length) { box.innerHTML = '<div class="adm-empty">No orders match these filters.</div>'; return; }
         box.innerHTML = list.map(function (o) {
             return '<article class="adm-order" data-id="' + esc(o.id) + '">' +
-                '<button type="button" class="o-head" aria-expanded="false"><span class="o-no">#' + esc(o.order_no) + (o.source === 'admin-test' ? ' <em style="background:#fde8a8;color:#6b4b00;font-style:normal;font-size:11px;padding:1px 6px;border-radius:6px">TEST</em>' : '') + '</span>' +
-                '<span class="o-who"><strong>' + esc(o.name) + '</strong><small>' + esc(dt(o.created_at)) + ' · ' + esc(o.emirate) + '</small></span>' +
-                '<span class="o-total">' + esc(money(o.subtotal)) + (o.has_quote ? ' +' : '') + '</span>' +
-                '<span class="chip st-' + esc(o.status) + '">' + esc(STATUS_NAME[o.status] || o.status) + '</span></button>' +
+                '<button type="button" class="o-head" aria-expanded="false"><span class="o-no">#' + esc(o.order_no) + (o.source === 'admin-test' ? ' <em class="testtag">TEST</em>' : '') + '</span>' +
+                '<span class="o-who"><strong>' + esc(o.name) + '</strong><small>' + esc(dt(o.created_at)) + ' &middot; ' + esc(o.emirate) + (o.delivery_date ? ' &middot; deliver ' + esc(o.delivery_date) : '') + '</small></span>' +
+                '<span class="o-total">' + esc(money(o.subtotal)) + (o.has_quote ? ' +' : '') + '</span><span class="o-chips">' + chipsFor(o) + '</span></button>' +
                 '<div class="o-body" hidden></div></article>';
         }).join('');
+        if (focusId) { var el = $('.adm-order[data-id="' + focusId + '"] .o-head'); focusId = null; if (el) { el.click(); el.scrollIntoView({ block: 'start' }); } }
+    }
+    function exportCsv() {
+        var list = filtered();
+        function q(v) { v = String(v == null ? '' : v).replace(/"/g, '""'); return /[",\n]/.test(v) ? '"' + v + '"' : v; }
+        var head = ['Order', 'Date', 'Status', 'Payment', 'Design review', 'Name', 'Phone', 'Email', 'Emirate', 'Address', 'Delivery date', 'Total (AED)', 'Items', 'Notes', 'Private note', 'Source'];
+        var rows = list.map(function (o) {
+            return [o.order_no, o.created_at, STATUS_NAME[o.status] || o.status, o.payment_status, REVIEW_NAME[reviewOf(o)] || '', o.name, o.phone, o.email, o.emirate, String(o.address || '').replace(/\n/g, ' '), o.delivery_date, o.subtotal,
+                (o.items || []).map(function (l) { return l.name + ' x' + l.qty; }).join(' | '), o.notes, o.admin_note, o.source].map(q).join(',');
+        });
+        var blob = new Blob(['﻿' + [head.join(',')].concat(rows).join('\n')], { type: 'text/csv;charset=utf-8' });
+        var a = doc.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'grapetree-orders-' + ymd(new Date()) + '.csv'; doc.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); URL.revokeObjectURL(a.href); }, 500);
+        toast(list.length + ' orders downloaded');
     }
 
-    /* design files from the cake studio (private storage: opened with a short-lived link) */
-    var ART_LABELS = { print: 'Print file (PNG)', preview: 'Preview', cutline: 'Cut line (SVG)', orig: 'Customer original', spec: 'Spec (JSON)' };
+    /* design files (private storage: opened with a short-lived link) */
+    var ART_LABELS = { print: 'Print file (PNG)', preview: 'Final design', cutline: 'Cut line (SVG)', orig: 'Customer original', spec: 'Spec (JSON)' };
     function artBlock(l) {
         var a = l.art; if (!a) return '';
         var out = '<div class="o-art">';
+        var pc = a.piece ? ' <span class="chip">piece ' + esc(a.piece) + (a.pieces ? ' of ' + esc(a.pieces) : '') + '</span>' : '';
         if (a.designer) out += '<span class="chip">designer: create cartoon + send proof</span> ';
-        if (a.failed || !a.folder) return out + '<span class="chip">files were not uploaded: ask the customer on WhatsApp</span></div>';
-        ['print', 'preview', 'cutline', 'orig', 'spec'].forEach(function (k) {
+        if (a.failed || !a.folder) return out + pc + '<span class="chip">files were not uploaded: ask the customer on WhatsApp</span></div>';
+        out += pc + '<div class="adm-thumbs">';
+        [['orig', "Customer's upload"], ['preview', 'Final design they confirmed']].forEach(function (k) {
+            if (a.files && a.files[k[0]]) out += '<figure><button type="button" data-art="' + esc(a.folder + '/' + a.files[k[0]]) + '" aria-label="Open ' + esc(k[1]) + ' full size"><img data-thumb="' + esc(a.folder + '/' + a.files[k[0]]) + '" alt="' + esc(k[1]) + '"></button><figcaption>' + esc(k[1]) + '</figcaption></figure>';
+        });
+        out += '</div><div class="adm-dl">';
+        ['print', 'cutline', 'orig', 'preview', 'spec'].forEach(function (k) {
             if (a.files && a.files[k]) out += '<button type="button" class="o-artbtn" data-art="' + esc(a.folder + '/' + a.files[k]) + '">' + esc(ART_LABELS[k]) + '</button> ';
         });
+        out += '</div>';
+        if (a.legal && a.legal.accepted_at) out += '<p class="adm-fine ok">&#10003; Customer confirmed the rights and content statements for this design (' + esc(dt(a.legal.accepted_at)) + ')</p>';
+        else out += '<p class="adm-fine warn">No rights confirmation was saved with this design (placed before the update).</p>';
         return out + '</div>';
     }
-    document.addEventListener('click', function (e) {
+    function loadThumbs(scope) {
+        $$('img[data-thumb]', scope).forEach(function (im) {
+            if (im.getAttribute('data-done')) return; im.setAttribute('data-done', '1');
+            B.client.storage.from('order-art').createSignedUrl(im.getAttribute('data-thumb'), 900).then(function (r) { if (r && r.data && r.data.signedUrl) im.src = r.data.signedUrl; else im.alt = 'not available'; });
+        });
+    }
+    doc.addEventListener('click', function (e) {
         var b = e.target.closest ? e.target.closest('[data-art]') : null;
         if (!b) return;
         e.preventDefault();
@@ -151,44 +241,99 @@
         });
     });
 
+    /* quick messages to the customer (WhatsApp / email) */
+    var TEMPLATES = [
+        ['confirm', 'Order confirmed', function (o) { return 'Hello ' + o.name + ', thank you for your order #' + o.order_no + ' with Grape Tree. We have confirmed it' + (o.delivery_date ? ' for delivery on ' + o.delivery_date : '') + '. Total: ' + money(o.subtotal) + '. We will keep you updated.'; }],
+        ['image', 'Please send a better image', function (o) { return 'Hello ' + o.name + ', this is Grape Tree about order #' + o.order_no + '. To print your design well we need a clearer, higher-resolution image (a PNG or JPG of at least 1000 px). Could you please send it here?'; }],
+        ['proof', 'Design ready: please approve', function (o) { return 'Hello ' + o.name + ', your design for order #' + o.order_no + ' is ready. Please check the attached proof and reply "APPROVED" so we can start production. Production starts only after your approval.'; }],
+        ['rights', 'We need proof of rights / permission', function (o) { return 'Hello ' + o.name + ', this is Grape Tree about order #' + o.order_no + '. Your design may include a logo, character or artwork that belongs to someone else. Before we can produce it, please send us the written permission or licence from the owner. Thank you for understanding.'; }],
+        ['cannot', 'We cannot print this design', function (o) { return 'Hello ' + o.name + ', thank you for your order #' + o.order_no + '. Unfortunately we cannot produce this design because it does not meet our Content & Copyright Policy (copyright, trademark or content reasons). You are welcome to send us a different design and we will gladly continue. Any payment made will be refunded.'; }],
+        ['payment', 'Payment reminder', function (o) { return 'Hello ' + o.name + ', a friendly reminder that order #' + o.order_no + ' (' + money(o.subtotal) + ') is waiting for payment. We start production once it is received. Thank you!'; }],
+        ['delivering', 'Out for delivery', function (o) { return 'Hello ' + o.name + ', your Grape Tree order #' + o.order_no + ' is out for delivery today. Please keep your phone nearby.'; }],
+        ['thanks', 'Delivered: thank you', function (o) { return 'Hello ' + o.name + ', thank you for choosing Grape Tree! We hope you love your order #' + o.order_no + '. We would be happy to see a photo of it.'; }]
+    ];
+    function tplText(o, id) { var t = TEMPLATES.filter(function (x) { return x[0] === id; })[0]; return t ? t[2](o) : ''; }
+
+    function legalBlock(o) {
+        var lg = o.legal || {};
+        if (!lg.accepted) return '<div class="o-agree warn"><h4>Customer agreement</h4><p>&#9888; No agreement was recorded for this order (it was placed before this feature). Consider asking the customer to confirm the terms on WhatsApp.</p></div>';
+        var st = (lg.statements || []).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('');
+        return '<div class="o-agree ok"><h4>Customer agreement</h4><p>&#10003; Accepted the Terms, Content &amp; Copyright Policy and Privacy Policy (text version ' + esc(lg.version || '?') + ') on <strong>' + esc(dt(lg.server_time || lg.client_time)) + '</strong>.<br><small>Saved as proof: IP ' + esc(lg.ip || 'not available') + ' &middot; ' + esc(String(lg.user_agent || '').slice(0, 90)) + '</small></p>' + (st ? '<ul>' + st + '</ul>' : '') + '</div>';
+    }
+    function historyBlock(o) {
+        var h = Array.isArray(o.history) ? o.history.slice().reverse() : [];
+        if (!h.length) return '';
+        return '<div class="o-hist"><h4>History</h4><ul>' + h.map(function (x) { return '<li><span>' + esc(dt(x.t)) + '</span> ' + esc(x.what) + (x.by ? ' <em>' + esc(x.by) + '</em>' : '') + '</li>'; }).join('') + '</ul></div>';
+    }
     function orderBody(o) {
         var items = (o.items || []).map(function (l) {
             var meta = (l.meta || []).map(function (m) { return '<li>' + esc(m[0]) + ': ' + esc(m[1]) + '</li>'; }).join('');
             return '<li><div><strong>' + esc(l.name) + '</strong> <em>x ' + esc(l.qty) + '</em>' + (l.quote ? ' <span class="chip">quote needed</span>' : '') + (meta ? '<ul class="o-meta">' + meta + '</ul>' : '') + (l.note ? '<p class="o-note">' + esc(l.note) + '</p>' : '') + artBlock(l) + '</div><span>' + esc(money(l.total)) + '</span></li>';
         }).join('');
-        var wa = 'https://wa.me/' + digits(o.phone) + '?text=' + encodeURIComponent('Hello ' + o.name + ', this is Grape Tree about your order #' + o.order_no + '.');
+        var wa = 'https://wa.me/' + digits(o.phone) + '?text=' + encodeURIComponent(tplText(o, 'confirm'));
+        var art = hasArt(o);
         return '<div class="o-grid"><div><h4>Items</h4><ul class="o-items">' + items + '</ul>' +
             '<p class="o-sum"><span>Estimated total</span><strong>' + esc(money(o.subtotal)) + (o.has_quote ? ' + quoted items' : '') + '</strong></p></div>' +
             '<div><h4>Customer</h4><p><strong>' + esc(o.name) + '</strong><br><a href="tel:' + esc(o.phone) + '">' + esc(o.phone) + '</a>' + (o.email ? '<br><a href="mailto:' + esc(o.email) + '">' + esc(o.email) + '</a>' : '') + '</p>' +
             '<h4>Delivery</h4><p>' + esc(o.emirate) + '<br>' + esc(o.address).replace(/\n/g, '<br>') + '<br><strong>' + (o.delivery_date ? esc(o.delivery_date) : 'No date') + '</strong></p>' +
             (o.notes ? '<h4>Customer notes</h4><p>' + esc(o.notes) + '</p>' : '') +
             '<h4>Payment</h4><p>' + esc(PAY_NAME[o.payment_method] || o.payment_method) + (o.source ? '<br><small>Came from: ' + esc(o.source) + '</small>' : '') + '</p></div></div>' +
-            '<div class="o-actions"><label>Order status<select data-f="status">' + STATUSES.map(function (s) { return '<option value="' + s[0] + '"' + (s[0] === o.status ? ' selected' : '') + '>' + s[1] + '</option>'; }).join('') + '</select></label>' +
-            '<label>Payment<select data-f="payment_status"><option value="unpaid"' + (o.payment_status === 'unpaid' ? ' selected' : '') + '>Not paid</option><option value="paid"' + (o.payment_status === 'paid' ? ' selected' : '') + '>Paid</option><option value="refunded"' + (o.payment_status === 'refunded' ? ' selected' : '') + '>Refunded</option></select></label>' +
-            '<label class="grow">Private note (only you see this)<input type="text" data-f="admin_note" value="' + esc(o.admin_note || '') + '"></label>' +
-            '<div class="o-btns"><a class="adm-btn ghost" href="' + wa + '" target="_blank" rel="noopener">WhatsApp customer</a><button class="adm-btn ghost" data-print>Print</button></div></div>';
+            legalBlock(o) +
+            '<div class="o-actions"><label>Order status<select data-f="status">' + opts(STATUSES, o.status) + '</select></label>' +
+            '<label>Payment<select data-f="payment_status">' + opts([['unpaid', 'Not paid'], ['paid', 'Paid']], o.payment_status || 'unpaid') + '</select></label>' +
+            (art ? '<label>Design review<select data-f="art_review">' + opts(REVIEWS, o.art_review || 'pending') + '</select></label><label class="grow">Review note (reason / what to change)<input type="text" data-f="art_review_note" value="' + esc(o.art_review_note || '') + '"></label>' : '') +
+            '<label class="grow">Private note (only you see this)<input type="text" data-f="admin_note" value="' + esc(o.admin_note || '') + '"></label></div>' +
+            '<div class="o-msg"><label class="grow">Message the customer<select data-tpl>' + TEMPLATES.map(function (t) { return '<option value="' + t[0] + '">' + esc(t[1]) + '</option>'; }).join('') + '</select></label>' +
+            '<a class="adm-btn" data-wa href="' + wa + '" target="_blank" rel="noopener">WhatsApp</a>' + (o.email ? '<a class="adm-btn ghost" data-mail href="mailto:' + esc(o.email) + '?subject=' + encodeURIComponent('Grape Tree order #' + o.order_no) + '&body=' + encodeURIComponent(tplText(o, 'confirm')) + '">Email</a>' : '') + '<button class="adm-btn ghost" data-print>Print</button></div>' +
+            historyBlock(o);
     }
+    function renderBody(artEl, o) { var body = $('.o-body', artEl); body.innerHTML = orderBody(o); loadThumbs(body); var h = $('.o-head', artEl); $('.o-chips', h).innerHTML = chipsFor(o); }
     doc.addEventListener('click', function (e) {
         var head = e.target.closest('.o-head');
         if (head) {
             var art = head.parentNode, body = $('.o-body', art), open = head.getAttribute('aria-expanded') === 'true';
             head.setAttribute('aria-expanded', open ? 'false' : 'true'); body.hidden = open;
-            if (!open && !body.innerHTML) body.innerHTML = orderBody(ORDERS.filter(function (o) { return o.id === art.getAttribute('data-id'); })[0]);
+            if (!open && !body.innerHTML) { body.innerHTML = orderBody(ORDERS.filter(function (o) { return o.id === art.getAttribute('data-id'); })[0]); }
+            if (!open) loadThumbs(body);
             return;
         }
         var pr = e.target.closest('[data-print]');
-        if (pr) printOrder(ORDERS.filter(function (o) { return o.id === pr.closest('.adm-order').getAttribute('data-id'); })[0]);
+        if (pr) { printOrder(ORDERS.filter(function (o) { return o.id === pr.closest('.adm-order').getAttribute('data-id'); })[0]); return; }
+        var op = e.target.closest('[data-open]'); if (op) { openOrder(op.getAttribute('data-open')); return; }
+        var fl = e.target.closest('[data-filter]');
+        if (fl) {
+            var kv = fl.getAttribute('data-filter').split('='); fStatus = 'all'; fPay = 'all'; fReview = 'all'; fRange = 'all'; fText = ''; fLate = false;
+            if (kv[0] === 'status') fStatus = kv[1]; else if (kv[0] === 'pay') fPay = kv[1]; else if (kv[0] === 'review') fReview = kv[1]; else if (kv[0] === 'late') fLate = true;
+            show('orders');
+        }
     });
+    function saveOrder(o, patch, what, artEl) {
+        var entry = { t: new Date().toISOString(), by: (B.user() && B.user().email) || 'admin', what: what };
+        var hist = (Array.isArray(o.history) ? o.history : []).concat([entry]);
+        var upd = JSON.parse(JSON.stringify(patch)); upd.history = hist;
+        return B.client.from('orders').update(upd).eq('id', o.id).then(function (r) {
+            if (r.error) throw r.error;
+            Object.keys(upd).forEach(function (k) { o[k] = upd[k]; });
+            toast('Saved'); if (artEl) renderBody(artEl, o);
+            var n = ORDERS.filter(function (x) { return x.status === 'new'; }).length, b = $('#adm-new'); b.hidden = !n; b.textContent = n;
+        }).catch(fail);
+    }
     doc.addEventListener('change', function (e) {
+        var tp = e.target.closest('[data-tpl]');
+        if (tp) {
+            var a0 = tp.closest('.adm-order'), o0 = ORDERS.filter(function (x) { return x.id === a0.getAttribute('data-id'); })[0], txt = tplText(o0, tp.value);
+            $('[data-wa]', a0).href = 'https://wa.me/' + digits(o0.phone) + '?text=' + encodeURIComponent(txt);
+            var m = $('[data-mail]', a0); if (m) m.href = 'mailto:' + o0.email + '?subject=' + encodeURIComponent('Grape Tree order #' + o0.order_no) + '&body=' + encodeURIComponent(txt);
+            return;
+        }
         var f = e.target.closest('[data-f]'); if (!f) return;
         var art = f.closest('.adm-order'); if (!art) return;
         var o = ORDERS.filter(function (x) { return x.id === art.getAttribute('data-id'); })[0], patch = {}, key = f.getAttribute('data-f');
         patch[key] = f.value;
-        B.client.from('orders').update(patch).eq('id', o.id).then(function (r) {
-            if (r.error) throw r.error;
-            o[key] = f.value; toast('Saved');
-            if (key === 'status') { var c = $('.chip', art); c.className = 'chip st-' + o.status; c.textContent = STATUS_NAME[o.status]; drawStats(); var n = ORDERS.filter(function (x) { return x.status === 'new'; }).length, b = $('#adm-new'); b.hidden = !n; b.textContent = n; }
-        }).catch(fail);
+        var what = key === 'status' ? 'Status: ' + (STATUS_NAME[f.value] || f.value) : key === 'payment_status' ? 'Payment: ' + (f.value === 'paid' ? 'Paid' : 'Not paid') :
+            key === 'art_review' ? 'Design review: ' + (REVIEW_NAME[f.value] || f.value) : key === 'art_review_note' ? 'Review note: ' + f.value : 'Private note: ' + f.value;
+        if (key === 'art_review' && f.value === 'approved' && o.status === 'new') { /* leave the status for the owner to choose */ }
+        saveOrder(o, patch, what, art);
     });
     function printOrder(o) {
         var w = window.open('', '_blank'); if (!w) return toast('Please allow pop-ups to print.', true);
@@ -472,8 +617,102 @@
         });
     }
 
+    /* ============================ BUSINESS INFO ============================ */
+    var BIZ_FIELDS = [
+        ['Contact details shown on the whole website', [
+            ['whatsapp', 'WhatsApp number (digits only, country code first)', 'e.g. 971555577478', 'Used by the green WhatsApp button, the footer and "Order on WhatsApp".'],
+            ['phone', 'Phone number (optional)', 'e.g. +971 4 000 0000', 'Shown in the footer.'],
+            ['email', 'Public email address', 'e.g. hello@grapetree.ae', 'Shown in the footer so customers can write to you.'],
+            ['address', 'Address', 'Office / shop address', 'Shown in the footer.'],
+            ['mapQuery', 'Map search (optional)', 'e.g. Grape Tree FZE, SAIF Zone, Sharjah', 'What the footer map shows. Leave empty to use the address.'],
+            ['hours', 'Opening hours', 'e.g. Sun to Thu, 9:00 to 18:00', 'Shown in the footer.']]],
+        ['Social links (leave empty to hide)', [
+            ['instagramKatanukiya', 'Katanukiya Instagram link', 'https://instagram.com/...', ''],
+            ['instagramGildart', 'GildArt Instagram link', 'https://instagram.com/...', ''],
+            ['tiktok', 'TikTok link', 'https://tiktok.com/@...', ''],
+            ['facebook', 'Facebook link', 'https://facebook.com/...', '']]],
+        ['Order emails', [
+            ['notify_emails', 'Email addresses that receive every new order (separate with commas)', 'you@gmail.com, partner@gmail.com', 'The order email with design files is sent here. If empty, the ADMIN_EMAILS secret in Supabase is used.'],
+            ['reply_to', 'Reply-to email for customers', 'support@grapetree.ae', 'When a customer replies to the confirmation email, it goes here.']]]
+    ];
+    function viewBusiness() {
+        root.innerHTML = '<div class="adm-bar"><h2>Business info</h2></div><p class="adm-lead">Change your contact details here and the whole website updates: footer, WhatsApp buttons, order messages and order emails. No code needed.</p><div id="b-box"><p class="adm-loading">Loading...</p></div>';
+        B.content().then(function (c) {
+            CONTENT = c || {};
+            var cur = CONTENT.business || {}, co = CFG.company || {}, so = CFG.social || {};
+            var def = { whatsapp: CFG.whatsapp, phone: co.phone, email: co.email, address: co.address, mapQuery: co.mapQuery, hours: co.hours, instagramKatanukiya: so.instagramKatanukiya, instagramGildart: so.instagramGildart, tiktok: so.tiktok, facebook: so.facebook };
+            var html = '<form class="adm-card" id="b-form">';
+            BIZ_FIELDS.forEach(function (g) {
+                html += '<h3>' + esc(g[0]) + '</h3><div class="adm-form">';
+                g[1].forEach(function (f) {
+                    var v = cur[f[0]] != null ? cur[f[0]] : (def[f[0]] || '');
+                    html += '<label class="full">' + esc(f[1]) + '<input name="' + f[0] + '" value="' + esc(v) + '" placeholder="' + esc(f[2]) + '" autocomplete="off">' + (f[3] ? '<small>' + esc(f[3]) + '</small>' : '') + '</label>';
+                });
+                html += '</div>';
+            });
+            html += '<p class="adm-err" id="b-err" role="alert"></p><div class="adm-row"><span class="grow"></span><button class="adm-btn" type="submit">Save business info</button></div></form>';
+            $('#b-box').innerHTML = html;
+            $('#b-form').addEventListener('submit', function (e) {
+                e.preventDefault();
+                var f = e.target, v = {}, err = '';
+                BIZ_FIELDS.forEach(function (g) { g[1].forEach(function (x) { v[x[0]] = f[x[0]].value.trim(); }); });
+                v.whatsapp = digits(v.whatsapp);
+                if (v.whatsapp && v.whatsapp.length < 9) err = 'The WhatsApp number looks too short. Use digits only, with the country code (for example 971555577478).';
+                var mail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+                if (!err && v.email && !mail.test(v.email)) err = 'The public email address is not valid.';
+                if (!err && v.reply_to && !mail.test(v.reply_to)) err = 'The reply-to email address is not valid.';
+                if (!err && v.notify_emails && !v.notify_emails.split(',').every(function (x) { return mail.test(x.trim()); })) err = 'One of the order notification emails is not valid. Separate several with commas.';
+                ['instagramKatanukiya', 'instagramGildart', 'tiktok', 'facebook'].forEach(function (k) { if (!err && v[k] && !/^https?:\/\//i.test(v[k])) err = 'Social links must start with https://'; });
+                $('#b-err').textContent = err; if (err) return;
+                B.saveContent('business', v).then(function () { CONTENT.business = v; cacheSet('business', v); toast('Saved. The website now shows the new details.'); }).catch(fail);
+            });
+        });
+    }
+
+    /* ============================ LEGAL TEXTS ============================ */
+    function viewLegal() {
+        root.innerHTML = '<div class="adm-bar"><h2>Legal &amp; copyright protection</h2></div>' +
+            '<p class="adm-lead">These texts appear on your Terms, Content &amp; Copyright and Privacy pages, in the reminder customers see before uploading, and in the agreements they must tick before ordering. Every order saves which version the customer accepted, with the date, time and IP address, as proof.</p>' +
+            '<div class="adm-note"><b>Please have a UAE lawyer review these texts once.</b> They are a careful starting point, not legal advice. Tip: start a line with <code># </code> for a heading and <code>- </code> for a bullet point.</div><div id="g-box"><p class="adm-loading">Loading...</p></div>';
+        B.content().then(function (c) {
+            CONTENT = c || {};
+            if (!window.GTLegal) { $('#g-box').innerHTML = '<p class="adm-err">legal.js is missing. Please upload it with the website files.</p>'; return; }
+            cacheSet('legal', CONTENT.legal || undefined);
+            var L = GTLegal.merge(GTLegal.DEFAULTS, CONTENT.legal || null), D = GTLegal.DEFAULTS;
+            function ta(name, label, val, rows, hint) { return '<label class="full">' + esc(label) + '<textarea name="' + name + '" rows="' + rows + '">' + esc(val) + '</textarea>' + (hint ? '<small>' + esc(hint) + '</small>' : '') + '</label>'; }
+            function inp(name, label, val, hint) { return '<label class="full">' + esc(label) + '<input name="' + name + '" value="' + esc(val) + '">' + (hint ? '<small>' + esc(hint) + '</small>' : '') + '</label>'; }
+            $('#g-box').innerHTML = '<form class="adm-card" id="g-form"><p class="adm-fine">Current text version: <strong>' + esc(L.version) + '</strong>. It goes up by one each time you save a change.</p>' +
+                '<h3>Reminders and agreements</h3><div class="adm-form">' +
+                ta('reminder', 'Reminder shown before a customer uploads or writes anything (one point per line)', L.reminder.join('\n'), 5, '') +
+                inp('c_upload', 'Tick-box before uploading', L.consent.upload, 'Use {content} to link to the Content & Copyright page.') +
+                ta('c_studio', 'Tick-boxes on the final step of the studio (one per line)', L.consent.studio.join('\n'), 5, 'Each line becomes a separate tick-box the customer must accept.') +
+                inp('c_checkout', 'Tick-box at checkout', L.consent.checkout, 'Use {terms}, {content} and {privacy} to create links to the three pages.') + '</div>' +
+                '<h3>Terms of Sale &amp; Custom Orders</h3><div class="adm-form">' + inp('t_title', 'Page title', L.docs.terms.title) + ta('t_text', 'Text', L.docs.terms.text, 16) + '</div>' +
+                '<h3>Content &amp; Copyright Policy</h3><div class="adm-form">' + inp('p_title', 'Page title', L.docs.content.title) + ta('p_text', 'Text', L.docs.content.text, 16) + '</div>' +
+                '<h3>Privacy Policy</h3><div class="adm-form">' + inp('v_title', 'Page title', L.docs.privacy.title) + ta('v_text', 'Text', L.docs.privacy.text, 12) + '</div>' +
+                '<div class="adm-row"><a class="adm-btn ghost" href="terms.html" target="_blank" rel="noopener">View Terms</a><a class="adm-btn ghost" href="content-policy.html" target="_blank" rel="noopener">View Content policy</a><a class="adm-btn ghost" href="privacy.html" target="_blank" rel="noopener">View Privacy</a><span class="grow"></span><button class="adm-btn ghost" type="button" id="g-reset">Restore the original texts</button><button class="adm-btn" type="submit">Save legal texts</button></div></form>';
+            $('#g-reset').addEventListener('click', function () {
+                confirmBox('Restore all legal texts to the original version? Your changes will be replaced.', 'Restore').then(function (yes) {
+                    if (!yes) return;
+                    var nv = (L.version || 1) + 1, o = JSON.parse(JSON.stringify(D)); o.version = nv;
+                    B.saveContent('legal', o).then(function () { CONTENT.legal = o; cacheSet('legal', o); toast('Original texts restored'); viewLegal(); }).catch(fail);
+                });
+            });
+            $('#g-form').addEventListener('submit', function (e) {
+                e.preventDefault();
+                var f = e.target, lines = function (v) { return v.split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean); };
+                var o = { version: L.version, docs: { terms: { title: f.t_title.value.trim() || D.docs.terms.title, text: f.t_text.value.trim() }, content: { title: f.p_title.value.trim() || D.docs.content.title, text: f.p_text.value.trim() }, privacy: { title: f.v_title.value.trim() || D.docs.privacy.title, text: f.v_text.value.trim() } },
+                    reminder: lines(f.reminder.value), consent: { upload: f.c_upload.value.trim(), studio: lines(f.c_studio.value), checkout: f.c_checkout.value.trim() } };
+                if (!o.reminder.length || !o.consent.studio.length || !o.consent.upload || !o.consent.checkout) { toast('The reminder and the tick-box texts cannot be empty.', true); return; }
+                var same = JSON.stringify([o.docs, o.reminder, o.consent]) === JSON.stringify([L.docs, L.reminder, L.consent]);
+                if (!same) o.version = (L.version || 1) + 1;
+                B.saveContent('legal', o).then(function () { CONTENT.legal = o; cacheSet('legal', o); toast(same ? 'Nothing changed' : 'Saved. New text version: ' + o.version); if (!same) viewLegal(); }).catch(fail);
+            });
+        });
+    }
+
     /* ------------------------------ start ------------------------------ */
     B.ready.then(function () { gate(); if (B.isAdmin()) loadOrders(); });
     B.onAuth(function () { gate(); if (B.isAdmin() && tab !== 'orders') loadOrders(); else if (B.isAdmin()) { /* orders view loads itself */ } });
-    setInterval(function () { if (B.isAdmin() && !doc.hidden && tab === 'orders' && !$('.adm-order [aria-expanded=true]')) loadOrders(); }, 90000);
+    setInterval(function () { if (B.isAdmin() && !doc.hidden && (tab === 'orders' || tab === 'dashboard') && !$('.adm-order [aria-expanded=true]')) loadOrders(); }, 90000);
 })();

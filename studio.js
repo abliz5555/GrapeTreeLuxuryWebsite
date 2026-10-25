@@ -126,6 +126,7 @@
     function loadFile(file) {
         showUpErr('');
         if (!file) return;
+        if (!rightsOk()) return;
         if (!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type)) {
             return showUpErr(T('This file type is not supported. Please use a PNG, JPG, WebP or GIF image. (Photos in HEIC format: please export them as JPG first.)'));
         }
@@ -1481,7 +1482,7 @@
             shape: ISCAKE && S.finish === 'shape' ? { id: S.shape, width_mm: num(S.sh.w, 2), proportion: num(S.sh.prop, 3), x_mm: num(S.sh.x, 2), y_mm: num(S.sh.y, 2) } : null,
             artwork: { x_mm: num(S.p.x, 2), y_mm: num(S.p.y, 2), width_mm: num(S.p.w, 2), height_mm: num(artH(), 2), rotation_deg: num(S.p.rot, 1), version: v.label, version_kind: v.kind, ai: !!v.ai },
             cut_offset_mm: ISCAKE && S.finish === 'around' ? S.off : null, cut_smooth_mm: ISCAKE && S.finish === 'around' ? S.smooth : null,
-            designer_requested: S.designer, designer_note: S.designerNote,
+            designer_requested: S.designer, designer_note: S.designerNote, legal: legalStudio(),
             quantity: orderQty(), box: ISCAKE ? box().id : (S.customBox ? 'custom' : 'standard'),
             box_set: ISCAKE ? null : { id: boxSet().id, label: boxSet().label, pieces: pieces(), boxes: S.nbox, piece_index: (buildIdx != null ? buildIdx : S.slot) + 1, piece_of: pieces() }, thickness_mm: ISCAKE ? null : +thick().id, flavour: ISCAKE ? null : FLAVOURS[S.flavour], custom_box_note: S.customBox ? S.boxNote : '',
             total: totalPrice(), currency: CFG.currency || 'AED',
@@ -1529,7 +1530,7 @@
                     id: 'studio-chocolate', name: T('Custom GildArt chocolates') + ' · ' + T(bs.label) + (np > 1 ? ' · ' + T('print') + ' ' + (i + 1) + '/' + np : ''), img: thumb(fs[i].previewCanvas), qty: 1,
                     unit: i === 0 ? totalPrice() : 0, quote: i === 0, fixed: true, included: i > 0, group: gid,
                     meta: meta, note: note, test: isTest,
-                    art: { id: inf.designId, finish: 'print', designer: inf.designer, look: inf.look, qty: S.nbox, product: PRODUCT, piece: i + 1, pieces: np, group: gid }, sig: 'studio|' + inf.designId
+                    art: { id: inf.designId, finish: 'print', designer: inf.designer, look: inf.look, qty: S.nbox, product: PRODUCT, piece: i + 1, pieces: np, group: gid, legal: legalStudio() }, sig: 'studio|' + inf.designId
                 };
                 window.GT.cart.add(line);
             });
@@ -1561,7 +1562,7 @@
             window.GT.cart.add({
                 id: 'studio-' + PRODUCT, name: (ISCAKE ? T('Custom cut-out cakes') : T('Custom GildArt chocolates')) + ' (' + t.qty + ' ' + T('pcs') + ')', img: thumb(f.previewCanvas), qty: 1, unit: totalPrice(), quote: true, fixed: true,
                 meta: meta, note: note, test: !!(B && B.isAdmin && B.isAdmin()),
-                art: { id: S.designId, finish: S.finish, designer: S.designer, look: look(), qty: t.qty, product: PRODUCT }, sig: 'studio|' + S.designId
+                art: { id: S.designId, finish: S.finish, designer: S.designer, look: look(), qty: t.qty, product: PRODUCT, legal: legalStudio() }, sig: 'studio|' + S.designId
             });
             location.href = 'checkout.html';
         }).catch(function () {
@@ -1934,7 +1935,7 @@
         enhanceRanges(doc);
         $('#mk-cancel').addEventListener('click', mkClose);
         $('#mk-done').addEventListener('click', mkDone);
-        $('#st-create').addEventListener('click', function () { mkOpen(!S.versions.length); });
+        $('#st-create').addEventListener('click', function () { if (!rightsOk()) return; mkOpen(!S.versions.length); });
         $('#st-decor').addEventListener('click', function () { mkOpen(false); });
         if ($('#st-chars')) $('#st-chars').addEventListener('click', function () { MK.tab = 'friend'; mkOpen(true); });
         buildFriendGallery();
@@ -1959,6 +1960,45 @@
         if (ST.chips && ST.chips.length && ch.length) { var ul = $('.st-chips'); ul.innerHTML = ST.chips.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join(''); }
     }
 
+
+    /* ------------------------------ legal protection: reminders, agreements, content check ------------------------------ */
+    function LG() { return window.GTLegal ? GTLegal.get() : null; }
+    var RIGHTS_KEY = 'gt-rights-ok';
+    function rightsOk(msg) {
+        var cb = $('#st-rights-ok'); if (!cb) return true;
+        if (cb.checked) return true;
+        var box = $('#st-rights'); if (box) { box.classList.add('bad'); if (box.scrollIntoView) box.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        if (msg !== false) showUpErr(T('Please tick the box in "Before you upload" first.'));
+        return false;
+    }
+    function setupLegal() {
+        var L = LG(); if (!L) return;
+        var host = $('#st-uploadpane') || $('#st-drop').parentNode, first = $('#st-drop');
+        var box = doc.createElement('div'); box.className = 'st-rights'; box.id = 'st-rights';
+        box.innerHTML = '<p class="st-rights-t">' + esc(T('Before you upload')) + '</p><ul>' + L.reminder.map(function (r) { return '<li>' + esc(T(r)) + '</li>'; }).join('') + '</ul>' +
+            '<label class="st-agree"><input type="checkbox" id="st-rights-ok"><span>' + GTLegal.withLinks(L.consent.upload) + '</span></label>';
+        if (first && first.parentNode === host) host.insertBefore(box, first); else host.insertBefore(box, host.firstChild);
+        var cb = $('#st-rights-ok');
+        try { cb.checked = sessionStorage.getItem(RIGHTS_KEY) === '1'; } catch (e) {}
+        cb.addEventListener('change', function () { try { sessionStorage.setItem(RIGHTS_KEY, cb.checked ? '1' : '0'); } catch (e) {} box.classList.toggle('bad', !cb.checked && false); if (cb.checked) { box.classList.remove('bad'); showUpErr(''); } });
+        // stop the file chooser from opening until the customer has agreed
+        var drop = $('#st-drop'); if (drop) drop.addEventListener('click', function (e) { if (!rightsOk()) { e.preventDefault(); e.stopPropagation(); } }, true);
+        // the four approvals on the last step: review, rights, lawful content, tolerance
+        var ap = $('.st-approve'); if (ap) {
+            var labels = $$('label.st-check', ap), keep0 = labels[0] && labels[0].outerHTML, keep2 = labels[labels.length - 1] && labels[labels.length - 1].outerHTML;
+            var mid = L.consent.studio.map(function (t) { return '<label class="st-check"><input type="checkbox" class="st-ap"><span>' + GTLegal.withLinks(t) + '</span></label>'; }).join('');
+            ap.innerHTML = keep0 + mid + keep2;
+            $$('.st-ap').forEach(function (c) { c.addEventListener('change', updateAddBtn); });
+        }
+    }
+    function legalStudio() {
+        var L = LG(); if (!L) return null;
+        return { version: L.version, accepted_at: new Date().toISOString(), uploaded_confirmed: !!($('#st-rights-ok') && $('#st-rights-ok').checked), statements: L.consent.studio.map(function (t) { return GTLegal.plain(t); }) };
+    }
+    /* words we never draw: protected brands and characters, famous people, religious figures, adult or illegal subjects */
+    var BLOCKED = /\b(disney|mickey|minnie|pixar|marvel|spider-?man|batman|superman|avengers|iron ?man|hulk|pokemon|pikachu|hello ?kitty|sanrio|nike|adidas|puma|gucci|louis ?vuitton|chanel|dior|hermes|prada|rolex|cartier|tiffany|coca-?cola|pepsi|starbucks|mcdonald|kfc|ferrari|lamborghini|porsche|bugatti|real ?madrid|barcelona|manchester|liverpool|chelsea|arsenal|messi|ronaldo|trump|biden|putin|naruto|goku|dragon ?ball|one ?piece|frozen|elsa|minecraft|mario|nintendo|playstation|barbie|lego|paw ?patrol|peppa|cocomelon|bluey|snoopy|winnie|doraemon|totoro|ghibli|star ?wars|harry ?potter|simpsons|shrek|minions?|jesus|allah|prophet|quran|bible|nude|naked|nsfw|porn|sex|sexy|cannabis|marijuana|weed|cocaine|drugs?|gun|rifle|pistol|bomb|terror\w*|swastika|isis|hitler)\b/i;
+    function blockedSubject(q) { return BLOCKED.test(String(q || '')); }
+
     /* ------------------------------ AI drawing from words (chocolate) ------------------------------ */
     function setupAiDraw() {
         var open = $('#st-aidraw-open'); if (!open) return;
@@ -1974,6 +2014,8 @@
             var q = txt.value.trim(); showErr('');
             if (busy) return;
             if (q.length < 3) return showErr(T('Please describe what you would like to see.'));
+            if (!rightsOk(false)) return showErr(T('Please tick the box in "Before you upload" first.'));
+            if (blockedSubject(q)) return showErr(T('We cannot draw protected brands, cartoon characters, real people, religious figures or sensitive subjects. Please describe something original, for example a landmark, an animal or an object.'));
             if (needLogin()) return showErr(esc(T('AI drawing is free for signed-in customers.')) + ' ' + LOGIN_HTML, true);
             if (!aiOn()) return showErr(T('AI drawing is not available right now. Please upload your own picture, or choose "Write a message or monogram".'));
             busy = true; go.disabled = true; st.hidden = false; st.textContent = T('Drawing your design... this takes about 30 seconds.');
@@ -1990,7 +2032,7 @@
     }
     /* ------------------------------ start ------------------------------ */
     function init() {
-        setupSteps(); setupPlacement(); setupEditor(); setupAiDraw();
+        setupSteps(); setupPlacement(); setupEditor(); setupAiDraw(); setupLegal();
         var file = $('#st-file'), drop = $('#st-drop');
         file.addEventListener('change', function () { loadFile(file.files[0]); file.value = ''; });
         ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });

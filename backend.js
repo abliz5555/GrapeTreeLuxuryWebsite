@@ -157,6 +157,7 @@
 
     /* put the admin-chosen images/text onto the page */
     function applyContent(c) {
+        try { doc.dispatchEvent(new CustomEvent('gt:content', { detail: c || {} })); } catch (e) {}
         var imgs = (c && c.images) || {};
         $$('[data-slot]').forEach(function (el) {
             var url = imgs[el.getAttribute('data-slot')];

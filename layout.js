@@ -9,6 +9,15 @@
     'use strict';
     var DATA = window.GT_DATA || {};
     var C = DATA.config || {}, CO = C.company || {}, S = C.social || {};
+    /* contact details the owner edits in the admin page (Business info): saved in the database, cached in the browser, applied here */
+    function applyBiz(b) {
+        if (!b || typeof b !== 'object') return;
+        if (b.whatsapp) C.whatsapp = String(b.whatsapp).replace(/\D/g, '');
+        ['phone', 'email', 'address', 'hours', 'mapQuery'].forEach(function (k) { if (b[k] != null && b[k] !== '') CO[k] = b[k]; });
+        ['instagramKatanukiya', 'instagramGildart', 'tiktok', 'facebook'].forEach(function (k) { if (b[k] != null) S[k] = b[k]; });
+        C.company = CO; C.social = S;
+    }
+    try { applyBiz((JSON.parse(localStorage.getItem('gt-content-v1') || '{}') || {}).business); } catch (e) {}
     var path = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
     var body = function () { return document.body; };
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -59,38 +68,54 @@
     }
 
     /* ------------------------------ FOOTER ------------------------------ */
-    function footer() {
-        var wa = C.whatsapp || '971555577478';
-        var addr = CO.address || 'Dubai, United Arab Emirates';
-        var q = CO.mapQuery || addr;
-        var rows = '';
+    function contactRows() {
+        var wa = C.whatsapp || '971555577478', addr = CO.address || 'Dubai, United Arab Emirates', rows = '';
         rows += '<li>' + ICON.pin + '<span>' + esc(addr) + '</span></li>';
         rows += '<li>' + ICON.wa + '<a href="https://wa.me/' + esc(wa) + '" target="_blank" rel="noopener">+' + esc(wa).replace(/^(\d{3})(\d{2})(\d{3})(\d+)$/, '$1 $2 $3 $4') + '</a></li>';
-        if (CO.phone) rows += '<li>' + ICON.tel + '<a href="tel:' + esc(CO.phone.replace(/\s/g, '')) + '">' + esc(CO.phone) + '</a></li>';
+        if (CO.phone) rows += '<li>' + ICON.tel + '<a href="tel:' + esc(String(CO.phone).replace(/\s/g, '')) + '">' + esc(CO.phone) + '</a></li>';
         if (CO.email) rows += '<li>' + ICON.mail + '<a href="mailto:' + esc(CO.email) + '">' + esc(CO.email) + '</a></li>';
         if (CO.hours) rows += '<li>' + ICON.clock + '<span>' + esc(CO.hours) + '</span></li>';
+        return rows;
+    }
+    function socialRows() {
         var soc = '';
         if (S.instagramKatanukiya) soc += '<a href="' + esc(S.instagramKatanukiya) + '" target="_blank" rel="noopener" aria-label="Katanukiya on Instagram" title="Katanukiya on Instagram">' + ICON.ig + '<small>Katanukiya</small></a>';
         if (S.instagramGildart) soc += '<a href="' + esc(S.instagramGildart) + '" target="_blank" rel="noopener" aria-label="GildArt on Instagram" title="GildArt on Instagram">' + ICON.ig + '<small>GildArt</small></a>';
         if (S.tiktok) soc += '<a href="' + esc(S.tiktok) + '" target="_blank" rel="noopener" aria-label="TikTok" title="TikTok">' + ICON.tt + '</a>';
         if (S.facebook) soc += '<a href="' + esc(S.facebook) + '" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook">' + ICON.fb + '</a>';
+        return soc;
+    }
+    function mapQ() { return CO.mapQuery || CO.address || 'Dubai, United Arab Emirates'; }
+    function mapSrc() { return 'https://www.google.com/maps?q=' + encodeURIComponent(mapQ()) + '&output=embed'; }
+    function mapDir() { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(mapQ()); }
+    function footer() {
+        var wa = C.whatsapp || '971555577478';
         var map = CO.map === false ? '' :
-            '<div class="gt-ftr-map"><iframe title="Our location" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=' + encodeURIComponent(q) + '&output=embed"></iframe>' +
-            '<a class="gt-ftr-dir" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q) + '" target="_blank" rel="noopener">Get directions</a></div>';
+            '<div class="gt-ftr-map"><iframe title="Our location" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="' + mapSrc() + '"></iframe>' +
+            '<a class="gt-ftr-dir" href="' + mapDir() + '" target="_blank" rel="noopener">Get directions</a></div>';
         var f =
             '<footer class="gt-ftr">' +
             '<div class="gt-ftr-grid">' +
-            '<div class="gt-ftr-brand"><img src="images/logo2.svg" alt="Grape Tree FZE"><p>Japanese craftsmanship, made for gifting in the UAE.</p><div class="gt-soc">' + soc + '</div></div>' +
+            '<div class="gt-ftr-brand"><img src="images/logo2.svg" alt="Grape Tree FZE"><p>Japanese craftsmanship, made for gifting in the UAE.</p><div class="gt-soc">' + socialRows() + '</div></div>' +
             '<div class="gt-ftr-col"><h4>Explore</h4><a href="index.html">Home</a><a href="katanukiya.html">Katanukiya</a><a href="gildart.html">GildArt</a><a href="shop.html">Shop</a><a href="shop.html#custom">Custom orders</a></div>' +
             '<div class="gt-ftr-col"><h4>Customers</h4><a href="account.html">My account</a><a href="account.html">My orders</a><a href="checkout.html">Cart</a><a href="contact.html">Contact us</a></div>' +
-            '<div class="gt-ftr-col gt-ftr-contact"><h4>Visit &amp; contact</h4><ul>' + rows + '</ul></div>' +
+            '<div class="gt-ftr-col gt-ftr-contact"><h4>Visit &amp; contact</h4><ul>' + contactRows() + '</ul></div>' +
             map +
             '</div>' +
-            '<div class="gt-ftr-bottom"><span>&copy; ' + new Date().getFullYear() + ' Grape Tree FZE. All rights reserved.</span><span>Katanukiya &middot; GildArt</span></div>' +
+            '<div class="gt-ftr-bottom"><span>&copy; ' + new Date().getFullYear() + ' Grape Tree FZE. All rights reserved.</span><span class="gt-ftr-legal"><a href="terms.html">Terms of Sale</a><a href="content-policy.html">Content &amp; Copyright</a><a href="privacy.html">Privacy</a></span></div>' +
             '</footer>' +
             '<a href="https://wa.me/' + esc(wa) + '" class="whatsapp-float" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"><img src="images/whatsapp.png" alt="WhatsApp"></a>';
         document.write(f);
     }
+    /* when the saved Business info arrives from the database, refresh what is already on the page */
+    function refreshBiz() {
+        var ul = document.querySelector('.gt-ftr-contact ul'); if (ul) ul.innerHTML = contactRows();
+        var so = document.querySelector('.gt-soc'); if (so) so.innerHTML = socialRows();
+        var fr = document.querySelector('.gt-ftr-map iframe'); if (fr && fr.getAttribute('src') !== mapSrc()) fr.setAttribute('src', mapSrc());
+        var dr = document.querySelector('.gt-ftr-dir'); if (dr) dr.setAttribute('href', mapDir());
+        var w = document.querySelector('.whatsapp-float'); if (w) w.setAttribute('href', 'https://wa.me/' + (C.whatsapp || '971555577478'));
+    }
+    document.addEventListener('gt:content', function (e) { var c = e.detail || {}; if (c.business) { applyBiz(c.business); refreshBiz(); } });
 
     /* ------------------------------ behaviour ------------------------------ */
     function wire() {

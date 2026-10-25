@@ -82,10 +82,18 @@ export function customerEmail(o, site, bank, wa) {
   return { subject: `Your Grape Tree order #${o.order_no}`, html };
 }
 
+function reviewNote(o, site) {
+  const hasArt = (o.items || []).some((l) => l.art);
+  const lg = o.legal || {};
+  const agreed = lg.accepted ? `Customer accepted the terms and content policy (version ${esc(lg.version || '?')}).` : 'No terms acceptance was recorded for this order.';
+  if (!hasArt && lg.accepted) return '';
+  return `<div style="background:#fff7e0;border:1px solid #f0d78a;border-radius:12px;padding:14px 16px;margin:0 0 18px;font-size:14px;line-height:1.6;color:${INK}"><strong>${hasArt ? 'Please review the design before production.' : 'Note'}</strong><br>${hasArt ? 'Check copyright, trademarks and content (open the order in Admin: you can see the customer\'s upload and the final design they confirmed, then mark it Approved, Needs change or Rejected). ' : ''}${agreed}</div>`;
+}
+
 export function shopEmail(o, site, wa) {
   const phone = String(o.phone || '').replace(/\D/g, '');
   const html = shell(site, 'New order #' + o.order_no, `<strong style="color:${INK}">${esc(o.name)}</strong> just ordered ${esc(money(o.subtotal))}${o.has_quote ? ' + quoted items' : ''}.`,
-    orderBlock(o, true) + btn('https://wa.me/' + phone + '?text=' + encodeURIComponent('Hello ' + o.name + ', this is Grape Tree about your order #' + o.order_no + '.'), 'WhatsApp the customer', false) + btn(site + '/admin.html', 'Open admin', true));
+    reviewNote(o, site) + orderBlock(o, true) + btn('https://wa.me/' + phone + '?text=' + encodeURIComponent('Hello ' + o.name + ', this is Grape Tree about your order #' + o.order_no + '.'), 'WhatsApp the customer', false) + btn(site + '/admin.html', 'Open admin', true));
   return { subject: `${o.source === 'admin-test' ? '[TEST] ' : ''}New order #${o.order_no} - ${o.name} - ${money(o.subtotal)}`, html };
 }
 
@@ -132,15 +140,22 @@ if (typeof Deno !== 'undefined' && Deno.serve) {
     const site = (env('SITE_URL') || 'https://grapetree.ae').replace(/\/$/, '');
     const from = env('FROM_EMAIL'), key = env('RESEND_API_KEY'), reply = env('REPLY_TO') || undefined;
     const admins = env('ADMIN_EMAILS').split(',').map((s) => s.trim()).filter(Boolean);
-    const wa = env('WHATSAPP') || '971555577478';
-    let bank = '';
+    let wa = env('WHATSAPP') || '971555577478';
+    let bank = '', biz = {};
     try {
-      const r = await fetch(env('SUPABASE_URL') + '/rest/v1/site_content?key=eq.settings&select=value', { headers: { apikey: env('SUPABASE_SERVICE_ROLE_KEY'), Authorization: 'Bearer ' + env('SUPABASE_SERVICE_ROLE_KEY') } });
-      const j = await r.json(); bank = (j[0] && j[0].value && j[0].value.bank_details) || '';
+      const h = { apikey: env('SUPABASE_SERVICE_ROLE_KEY'), Authorization: 'Bearer ' + env('SUPABASE_SERVICE_ROLE_KEY') };
+      const r = await fetch(env('SUPABASE_URL') + '/rest/v1/site_content?key=in.(settings,business)&select=key,value', { headers: h });
+      const rows = await r.json();
+      for (const row of (rows || [])) { if (row.key === 'settings') bank = (row.value && row.value.bank_details) || ''; if (row.key === 'business') biz = row.value || {}; }
     } catch (e) {}
+    // Business info saved in the admin page wins over the secrets
+    const bizAdmins = String(biz.notify_emails || '').split(',').map((x) => x.trim()).filter(Boolean);
+    if (bizAdmins.length) { admins.length = 0; admins.push(...bizAdmins); }
+    const replyTo = (biz.reply_to && String(biz.reply_to).trim()) || reply;
+    if (biz.whatsapp) wa = String(biz.whatsapp).replace(/\D/g, '') || wa;
     const results = [];
     if (admins.length) { const m = shopEmail(o, site, wa); const att = await artAttachments(o, env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY')); results.push(send(key, from, admins, m.subject, m.html, o.email || undefined, att).catch((e) => console.error('shop mail', e.message))); }
-    if (o.email && o.source !== 'admin-test') { const m = customerEmail(o, site, bank, wa); results.push(send(key, from, o.email, m.subject, m.html, reply).catch((e) => console.error('customer mail', e.message))); }
+    if (o.email && o.source !== 'admin-test') { const m = customerEmail(o, site, bank, wa); results.push(send(key, from, o.email, m.subject, m.html, replyTo).catch((e) => console.error('customer mail', e.message))); }
     await Promise.all(results);
     return new Response('ok', { status: 200 });
   });

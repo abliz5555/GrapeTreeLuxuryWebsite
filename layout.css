@@ -287,3 +287,15 @@ html, body, body *{ font-variant-numeric:lining-nums; font-feature-settings:"lnu
 .pc-price, .c-price, .co-price, .t-price, .gt-modal-price, .o-total, .sum-total, .st-sum-t, .st-bar strong, .st-tier strong, .st-nb-sum b, .gt-li-row strong, .gt-sum strong, .co-totals strong, .co-line strong, .gt-sum b{
     font-family:'Playfair Display',Georgia,'Times New Roman',serif !important; font-variant-numeric:lining-nums tabular-nums; font-feature-settings:"lnum" 1,"tnum" 1; font-weight:600; letter-spacing:0;
 }
+
+/* ---------- v9: legal pages + footer legal links ---------- */
+.legal-doc{ max-width:820px; margin:0 auto; padding:clamp(110px,16vw,150px) 20px 70px; color:var(--ink); }
+.legal-doc h1{ font-family:'Playfair Display',Georgia,serif; font-size:clamp(28px,5vw,40px); margin:6px 0 4px; }
+.legal-doc .legal-meta{ font-size:13px; opacity:.6; margin:0 0 26px; }
+.legal-doc h2{ font-family:'Playfair Display',Georgia,serif; font-size:21px; margin:30px 0 8px; }
+.legal-doc p, .legal-doc li{ font-size:16px; line-height:1.75; }
+.legal-doc ul{ padding-left:22px; margin:8px 0 12px; }
+.legal-links{ display:flex; flex-wrap:wrap; gap:10px 22px; margin-top:44px; padding-top:20px; border-top:1px solid rgba(var(--ink-rgb,40,24,16),.15); }
+.legal-links a{ font-weight:600; font-size:14px; }
+.gt-ftr-legal{ display:flex; flex-wrap:wrap; gap:6px 18px; }
+.gt-ftr-legal a{ color:inherit; opacity:.8; text-decoration:underline; text-underline-offset:3px; }

@@ -19,6 +19,7 @@
 
     <script src="shop-data.js"></script>
     <script src="layout.js"></script>
+    <script src="legal.js"></script>
     <script src="i18n.js"></script>
     <script src="track.js"></script>
     <link rel="stylesheet" href="style.css">
@@ -91,6 +92,13 @@
                 </fieldset>
 
                 <p class="co-note" id="co-note"></p>
+
+                <div class="co-legal" id="co-legal">
+                    <p class="co-legal-t">Before you send your order</p>
+                    <ul id="co-legal-list"></ul>
+                    <label class="co-agree"><input type="checkbox" id="co-agree"><span id="co-agree-text"></span></label>
+                    <p class="co-legal-err" id="co-agree-err" role="alert" hidden>Please tick the box above to continue.</p>
+                </div>
 
                 <button type="submit" class="gt-btn gt-btn-block" id="co-submit">Send order request</button>
             </form>

@@ -485,3 +485,14 @@ body[data-product=cake] #st-scene, body[data-product=cake] #st-preview{ backgrou
 .st-btn-primary{ background:var(--ink); color:#fff; border-color:var(--ink); padding:13px 18px; }
 .st-btn-primary:hover{ background:#000; color:#fff; }
 @media (max-width:420px){ .st-aidraw-styles{ grid-template-columns:1fr; } }
+
+/* ---------- v9: rights reminder + agreements ---------- */
+.st-rights{ margin:0 0 16px; padding:14px 16px; border:1px solid rgba(var(--ink-rgb),.18); border-radius:14px; background:var(--cream); }
+.st-rights.bad{ border-color:#b3261e; box-shadow:0 0 0 2px rgba(179,38,30,.15); }
+.st-rights-t{ margin:0 0 6px; font-weight:700; font-size:15px; }
+.st-rights ul{ margin:0 0 10px; padding-left:20px; font-size:13.5px; line-height:1.55; }
+.st-agree{ display:flex; gap:11px; align-items:flex-start; cursor:pointer; font-size:14px; line-height:1.5; }
+.st-agree input{ width:20px; height:20px; margin-top:2px; flex:none; accent-color:var(--gold,#b8863c); }
+.st-agree a, .st-check a{ text-decoration:underline; text-underline-offset:3px; }
+
+.st-rights a,.st-agree a,.co-legal a{color:var(--gold-dark,#8a6a12);text-decoration:underline}

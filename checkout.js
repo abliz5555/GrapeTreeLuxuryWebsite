@@ -88,8 +88,21 @@
     function field(id) { return $('#' + id).closest('.field'); }
     function setInvalid(id, bad) { field(id).classList.toggle('invalid', !!bad); return !!bad; }
 
+    /* legal reminders + the agreement the customer must tick (the text comes from the admin Legal tab) */
+    function drawLegal() {
+        if (!window.GTLegal) return;
+        var L = GTLegal.get(), ul = $('#co-legal-list'), tx = $('#co-agree-text');
+        if (ul) ul.innerHTML = L.reminder.map(function (r) { return '<li>' + GTLegal.esc(T(r)) + '</li>'; }).join('');
+        if (tx) tx.innerHTML = GTLegal.withLinks(L.consent.checkout);
+    }
+    drawLegal(); doc.addEventListener('gt:content', drawLegal);
+    function legalRecord() {
+        var L = window.GTLegal ? GTLegal.get() : { version: 1, consent: { checkout: '' } };
+        return { version: L.version, accepted: true, client_time: new Date().toISOString(), statements: [window.GTLegal ? GTLegal.plain(L.consent.checkout) : 'Terms accepted'] };
+    }
     function validate() {
         var bad = [];
+        var ag = $('#co-agree'); if (ag) { var miss = !ag.checked; $('#co-agree-err').hidden = !miss; $('#co-legal').classList.toggle('bad', miss); if (miss) bad.push('co-agree'); }
         if (setInvalid('f-name', !$('#f-name').value.trim())) bad.push('f-name');
         var digits = $('#f-phone').value.replace(/\D/g, '');
         if (setInvalid('f-phone', digits.length < 7)) bad.push('f-phone');
@@ -99,7 +112,7 @@
         if (setInvalid('f-address', $('#f-address').value.trim().length < 6)) bad.push('f-address');
         var d = $('#f-date').value;
         if (setInvalid('f-date', !d || d < minDate())) bad.push('f-date');
-        if (bad.length) $('#' + bad[0]).focus();
+        if (bad.length) { var fe = $('#' + bad[0]); if (fe) { fe.focus(); if (bad[0] === 'co-agree' && fe.scrollIntoView) fe.scrollIntoView({ block: 'center' }); } }
         return !bad.length;
     }
 
@@ -240,7 +253,7 @@
             });
             if (!useDb) return null;
             return B.placeOrder({ name: c.name, phone: c.phone, email: c.email, emirate: c.emirate, address: c.address,
-                delivery_date: c.date, notes: c.notes, payment_method: c.pay, items: lines,
+                delivery_date: c.date, notes: c.notes, payment_method: c.pay, items: lines, legal: legalRecord(),
                 source: lines.some(function (x) { return x.test; }) ? 'admin-test' : (window.GT.source ? window.GT.source() : '') }).catch(function () { return null; });
         });
         saved.then(function (res) {

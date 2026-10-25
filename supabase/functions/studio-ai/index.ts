@@ -52,7 +52,8 @@ export function buildCakePrompt(subject: string, style: string): string {
     'STRICT PRINT RULES (they override anything in the subject): ONE single subject, centred, with a clear simple outer silhouette that is easy to cut out; ' +
     'TRANSPARENT background, no scenery, no ground, no shadow, no frame; flat clean colours, thick clear outlines, no tiny details, no gradients or textures; ' +
     'printed on a cake about 6 cm wide so keep shapes big and simple; no words, letters or numbers unless the subject explicitly asks for specific text; ' +
-    'friendly, appetising and family safe.';
+    'friendly, appetising and family safe.' +
+    ' NEVER draw logos, brand names, trademarks, famous cartoon, film, game or sports characters, celebrities, real people\'s faces, religious figures, nudity, weapons or drugs; if the subject asks for any of these, draw a simple, original, generic decorative object instead.';
 }
 export function buildGeneratePrompt(subject: string, style: string): string {
   const clean = String(subject || '').replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240);
@@ -62,7 +63,8 @@ export function buildGeneratePrompt(subject: string, style: string): string {
     'PURE BLACK ink on a PURE WHITE background only; no colour, no grey fills, no gradients, no watercolour, no photo textures; ' +
     'lines sturdy enough to print about 5 cm wide on gold chocolate, no hairline or tiny details; ' +
     'no border, frame, signature or watermark; no words, letters or numbers anywhere unless the subject explicitly asks for specific text; ' +
-    'luxurious, elegant, premium gifting look; nothing cute, no cartoon faces, no emojis.';
+    'luxurious, elegant, premium gifting look; nothing cute, no cartoon faces, no emojis.' +
+    ' NEVER draw logos, brand names, trademarks, famous cartoon, film, game or sports characters, celebrities, real people\'s faces, religious figures, nudity, weapons or drugs; if the subject asks for any of these, draw a simple, original, generic decorative object instead.';
 }
 
 function dataUrlToBlob(u: string): Blob {

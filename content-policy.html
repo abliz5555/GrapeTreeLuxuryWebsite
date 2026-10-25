@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content &amp; Copyright Policy | Grape Tree FZE</title>
+    <meta name="description" content="What you may print on Katanukiya cakes and GildArt chocolates: copyright, trademarks and prohibited content.">
+    <meta property="og:title" content="Content &amp; Copyright Policy | Grape Tree FZE">
+    <meta property="og:description" content="What you may print on Katanukiya cakes and GildArt chocolates: copyright, trademarks and prohibited content.">
+    <meta property="og:image" content="https://grapetree.ae/images/contact-hero2.jpg">
+
+    <!-- Animation switch-on (runs before the page paints so nothing flashes) -->
+    <script>
+        (function(){var d=document.documentElement;d.classList.add('gt-js');try{if(matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('gt-ready')}else{setTimeout(function(){d.classList.add('gt-ready')},4500)}}catch(e){d.classList.add('gt-ready')}})();
+    </script>
+
+    <script src="shop-data.js"></script>
+    <script src="layout.js"></script>
+    <script src="legal.js"></script>
+    <script src="i18n.js"></script>
+    <script src="track.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="shop.css">
+    <link rel="stylesheet" href="animations.css">
+    <link rel="stylesheet" href="theme.css">
+    <link rel="stylesheet" href="layout.css">
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Cormorant Garamond added: your CSS already uses it, but it was never loaded -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<script>GTLayout.header()</script>
+
+<main class="legal-doc" id="legal-main">
+    <p class="small-title">LEGAL</p>
+    <h1 id="legal-title">Content &amp; Copyright Policy</h1>
+    <p class="legal-meta" id="legal-meta"></p>
+    <div id="legal-body"></div>
+    <nav class="legal-links" aria-label="Other legal pages"><a href="terms.html">Terms of Sale</a><a href="content-policy.html">Content &amp; Copyright Policy</a><a href="privacy.html">Privacy Policy</a></nav>
+</main>
+
+<script>GTLayout.footer()</script>
+
+<script src="cart.js"></script>
+<script src="backend.js"></script>
+<script src="script.js"></script>
+<script>
+(function () {
+    function draw() {
+        var L = GTLegal.get(), d = L.docs['content'];
+        document.getElementById('legal-title').textContent = d.title;
+        document.title = d.title + ' | Grape Tree FZE';
+        document.getElementById('legal-body').innerHTML = GTLegal.render(d.text);
+        document.getElementById('legal-meta').textContent = L.company + ' \u00b7 Version ' + L.version;
+    }
+    draw();
+    document.addEventListener('gt:content', draw);
+})();
+</script>
+</body>
+</html>

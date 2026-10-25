@@ -136,3 +136,14 @@ v8.5: "Describe it - AI draws it for you" (chocolate studio, step 2).
   Needs the studio-ai function deployed with OPENAI_API_KEY (same as the other AI tools). Daily limit per visitor: AI_DAILY_LIMIT.
 
 v8.6: cake studio also has "Describe it - AI draws it for you" (styles cute / cartoon / pastel / elegant; transparent background, flat colours, ready to cut). Rules in studio-ai: buildCakePrompt / CAKE_STYLES. Redeploy studio-ai.
+
+v8.7: Estimate shows AED 0 until the customer has a design (cake and chocolate). AI errors now report the real reason (admin test mode shows it; Supabase function Logs show it too). Redeploy studio-ai to get the detail field.
+
+v8.8: AI only for signed-in customers, 10 pictures per customer per day (AI_DAILY_LIMIT), website-wide cap 150/day (AI_GLOBAL_LIMIT), default model gpt-image-1.5 (gpt-image-1 retires), quality via AI_QUALITY (low/medium/high). Redeploy studio-ai; keep Verify JWT OFF (the function checks the login itself).
+
+v9 - Admin + legal protection
+ * Admin: Dashboard, Orders manager (customer upload + final design thumbnails, agreement record, design review, history, message templates, CSV), Business info (phone, WhatsApp, email, address, hours, social, order notification emails), Legal (edit terms / content policy / privacy / reminders; version goes up on save).
+ * Customer: rights reminder before upload, approvals at step 4, agreement tick-box at checkout, 3 policy pages linked in footer.
+ * Run supabase/v9-update.sql ONCE in Supabase SQL Editor BEFORE publishing (orders need the new columns).
+ * Redeploy Edge Functions studio-ai (Verify JWT OFF) and order-email.
+ * Legal texts are starting points: have a UAE lawyer review them.
