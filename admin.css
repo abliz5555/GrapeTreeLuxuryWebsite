@@ -359,3 +359,5 @@ body[data-admin] header.adm-top .adm-tabs button{ white-space:normal; text-align
 .st-bp-head{ display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap }
 .st-bp-head .st-fld{ flex:1 1 200px } .st-bp-head .st-narrow{ flex:0 1 150px }
 @media (max-width:520px){ .st-cards{ grid-template-columns:1fr } }
+.st-qc-l{ font-size:.74rem; font-weight:700; color:#6b5d52; text-transform:uppercase; letter-spacing:.03em; margin-top:2px }
+.st-qc-e b{ color:#222; font-size:1rem }

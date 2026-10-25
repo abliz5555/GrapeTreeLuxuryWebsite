@@ -552,23 +552,25 @@
             var s;
             if (cake) {
                 var ts = ST.tiers.slice().sort(function (a, b) { return a.qty - b.qty; }), lo = ts[0];
-                s = lo ? 'Customers must order <b>at least ' + lo.qty + ' pieces</b>, from <b>' + aed(lo.price) + '</b>. They can choose ' + ts.length + ' quantit' + (ts.length === 1 ? 'y' : 'ies') + ' (up to ' + ts[ts.length - 1].qty + ' pieces).' : 'Add at least one quantity.';
+                s = lo ? 'Customers must order <b>at least ' + lo.qty + ' pieces</b>, from <b>' + aed(n(lo.qty) * n(lo.unit)) + '</b> in total. They can choose ' + ts.length + ' quantit' + (ts.length === 1 ? 'y' : 'ies') + ' (up to ' + ts[ts.length - 1].qty + ' pieces).' : 'Add at least one quantity.';
             } else {
                 s = '';
             }
             return '<div class="st-live" id="s-live">' + s + '</div>';
         }
         function cardsHtml(kind, bi, arr, unit) {
-            var P = kind === 'btiers' ? ' data-b="' + bi + '"' : '';
+            var P = kind === 'btiers' ? ' data-b="' + bi + '"' : '', per = unit === 'pcs' ? 'piece' : 'box';
             return '<div class="st-cards">' + arr.map(function (t, i) {
+                if (t.unit == null || t.unit === '') t.unit = n(t.qty) > 0 ? Math.round(n(t.price) / n(t.qty) * 10000) / 10000 : 0;
                 return '<div class="st-qc' + (t.popular ? ' pop' : '') + '"' + P + '>' +
                     '<div class="st-qc-top"><label class="check"><input type="radio" name="pop' + kind + bi + '" data-pop="' + i + '"' + P + ' data-k="' + kind + '"' + (t.popular ? ' checked' : '') + '> Popular tag</label>' +
                     (arr.length > 1 ? '<button type="button" class="st-x" data-rm="' + kind + '" data-i="' + i + '"' + P + ' aria-label="Remove this option">&times;</button>' : '') + '</div>' +
-                    '<div class="st-qc-q"><input type="number" inputmode="numeric" min="1" step="1" data-a="' + kind + '"' + P + ' data-i="' + i + '" data-f="qty" value="' + esc(t.qty) + '" aria-label="Quantity"><small>' + unit + '</small></div>' +
-                    '<div class="st-qc-p"><span>AED</span><input type="number" inputmode="decimal" min="0" step="1" data-a="' + kind + '"' + P + ' data-i="' + i + '" data-f="price" value="' + esc(t.price) + '" aria-label="Total price"></div>' +
-                    '<div class="st-qc-e st-calc" data-ce="' + kind + '|' + bi + '|' + i + '">' + (n(t.qty) > 0 ? aed(n(t.price) / n(t.qty)) + ' each' : '-') + '</div></div>';
+                    '<label class="st-qc-l">Quantity</label><div class="st-qc-q"><input type="number" inputmode="numeric" min="1" step="1" data-a="' + kind + '"' + P + ' data-i="' + i + '" data-f="qty" value="' + esc(t.qty) + '" aria-label="Quantity"><small>' + unit + '</small></div>' +
+                    '<label class="st-qc-l">Price for 1 ' + per + '</label><div class="st-qc-p"><span>AED</span><input type="number" inputmode="decimal" min="0" step="0.01" data-a="' + kind + '"' + P + ' data-i="' + i + '" data-f="unit" value="' + esc(t.unit) + '" aria-label="Price for one ' + per + '"></div>' +
+                    '<div class="st-qc-e st-calc" data-ce="' + kind + '|' + bi + '|' + i + '">' + totalText(t) + '</div></div>';
             }).join('') + '<button type="button" class="st-qc st-qadd" data-add="' + kind + '"' + P + '><b>+</b><span>Add a quantity option</span></button></div>';
         }
+        function totalText(t) { return 'Total: <b>' + aed(n(t.qty) * n(t.unit)) + '</b>'; }
         function tiersHtml() { return cardsHtml('tiers', 0, ST.tiers, 'pcs'); }
         function boxesHtml() {
             return '<div class="st-tbl st-t-col"><div class="st-th">Colour</div><div class="st-th">Name shown to customer</div><div class="st-th">Extra price (AED per piece)</div><div class="st-th"></div>' +
@@ -585,14 +587,14 @@
                     '<label class="st-fld st-narrow"><span class="st-lb">Pieces in the box</span>' + num('bsets', i, 'pieces', 'min="1" max="12" step="1"') + '</label>' +
                     (ST.bsets.length > 1 ? '<button type="button" class="adm-btn ghost sm danger" data-rm="bsets" data-i="' + i + '">Remove this box</button>' : '') + '</div>' +
                     '<div class="st-live" data-bl="' + i + '"></div>' +
-                    '<p class="st-help">Quantity options customers can choose for this box. Quantity = number of boxes. Price = total for that quantity. The smallest quantity is the minimum order.</p>' +
+                    '<p class="st-help">Quantity options customers can choose for this box. Type the quantity and the price for ONE box (or one piece); the total is calculated for you. The smallest quantity is the minimum order.</p>' +
                     cardsHtml('btiers', i, b.tiers, n(b.pieces) === 1 ? 'pcs' : 'boxes') + '</div>';
             }).join('') + '<p><button type="button" class="adm-btn ghost" data-add="bsets">+ Add a box type</button></p>';
         }
         function blLive(i) {
             var b = ST.bsets[i]; if (!b) return '';
             var ts = b.tiers.slice().sort(function (x, y) { return n(x.qty) - n(y.qty); }), lo = ts[0];
-            return lo ? 'Minimum order: <b>' + n(lo.qty) + ' ' + (n(b.pieces) === 1 ? 'pcs' : 'boxes') + '</b>' + (n(b.pieces) > 1 ? ' (' + n(lo.qty) * n(b.pieces) + ' pieces)' : '') + ' &middot; from <b>' + aed(n(lo.price)) + '</b> &middot; ' + ts.length + ' option' + (ts.length === 1 ? '' : 's') : 'Add at least one quantity option.';
+            return lo ? 'Minimum order: <b>' + n(lo.qty) + ' ' + (n(b.pieces) === 1 ? 'pcs' : 'boxes') + '</b>' + (n(b.pieces) > 1 ? ' (' + n(lo.qty) * n(b.pieces) + ' pieces)' : '') + ' &middot; from <b>' + aed(n(lo.qty) * n(lo.unit)) + '</b> in total &middot; ' + ts.length + ' option' + (ts.length === 1 ? '' : 's') : 'Add at least one quantity option.';
         }
         function thickHtml() {
             return '<div class="st-tbl st-t-th"><div class="st-th">Name shown to customer</div><div class="st-th">Thickness (mm)</div><div class="st-th">Extra price (AED per piece)</div><div class="st-th"></div>' +
@@ -605,7 +607,7 @@
 
         var h = '<p class="st-help st-top">' + (cake ? 'This is the page customers use to design a <b>Katanukiya cut-out cake</b>.' : 'This is the page customers use to design <b>GildArt printed chocolates</b>.') + ' Everything below can be changed. Press <b>Save changes</b> at the bottom when you finish. It goes live straight away.</p>';
         if (cake) {
-            h += sec(1, 'Minimum order and prices', 'Each card below is one choice the customer sees on the order page. The <b>smallest quantity is the minimum order</b>. The price is the <b>total</b> for that quantity (it includes the first die setup and delivery in the UAE).', summary() + '<div id="s-tiers">' + tiersHtml() + '</div>');
+            h += sec(1, 'Minimum order and prices', 'Each card below is one choice the customer sees on the order page. Type the <b>quantity</b> and the <b>price for 1 piece</b>; the <b>total is calculated for you</b>. The <b>smallest quantity is the minimum order</b>. Prices include the first die setup and delivery in the UAE.', summary() + '<div id="s-tiers">' + tiersHtml() + '</div>');
             h += sec(2, 'Box colours', 'The boxes the customer can pick. If a colour costs more, type the extra price for each piece (use 0 for no extra charge).', '<div id="s-boxes">' + boxesHtml() + '</div>');
         } else {
             h += sec(1, 'Box types, minimum order and quantity options', 'Customers pick a box, then one of the quantity options below it (like the cake page). <b>The smallest quantity is the minimum order</b> for that box. For example: single chocolate from 50 pieces, 3-piece set from 20 boxes. Prices include delivery in the UAE.', '<div id="s-bsets">' + bsetsHtml() + '</div>');
@@ -632,7 +634,7 @@
 
         function arrOf(kind, bi) { return kind === 'btiers' ? (ST.bsets[bi] ? ST.bsets[bi].tiers : []) : ST.tiers; }
         function refresh() {   // update the calculated numbers without redrawing the cards
-            $$('[data-ce]', form).forEach(function (el) { var p = el.dataset.ce.split('|'), t = arrOf(p[0], +p[1])[+p[2]]; el.textContent = t && n(t.qty) > 0 ? aed(n(t.price) / n(t.qty)) + ' each' : '-'; });
+            $$('[data-ce]', form).forEach(function (el) { var p = el.dataset.ce.split('|'), t = arrOf(p[0], +p[1])[+p[2]]; el.innerHTML = t ? totalText(t) : ''; });
             $$('[data-bl]', form).forEach(function (el) { el.innerHTML = blLive(+el.dataset.bl); });
             var lv = $('#s-live'); if (lv) lv.outerHTML = summary();
         }
@@ -641,7 +643,7 @@
         refresh();
         form.oninput = function (e) {
             var d = e.target.dataset;
-            if (d.a) { var arr = d.b != null ? arrOf(d.a, +d.b) : ST[d.a], r = arr[+d.i], val = e.target.value; r[d.f] = (e.target.type === 'number') ? (val === '' ? '' : Number(val)) : val; if (d.a === 'bsets' && d.f === 'pieces') redraw('#s-bsets', bsetsHtml); else refresh(); }
+            if (d.a) { var arr = d.b != null ? arrOf(d.a, +d.b) : ST[d.a], r = arr[+d.i], val = e.target.value; r[d.f] = (e.target.type === 'number') ? (val === '' ? '' : Number(val)) : val; if (d.f === 'qty' || d.f === 'unit') r.price = Math.round(n(r.qty) * n(r.unit) * 100) / 100; if (d.a === 'bsets' && d.f === 'pieces') redraw('#s-bsets', bsetsHtml); else refresh(); }
         };
         form.onchange = function (e) {
             var d = e.target.dataset;
@@ -651,9 +653,9 @@
             var a = e.target.closest('[data-add]'), r = e.target.closest('[data-rm]');
             if (a) {
                 var k = a.dataset.add, arr = k === 'btiers' ? arrOf(k, +a.dataset.b) : ST[k], L = arr[arr.length - 1] || {};
-                if (k === 'tiers' || k === 'btiers') arr.push({ qty: Math.round(n(L.qty || 50) * 2), price: Math.round(n(L.price || 1000) * 1.9) });
+                if (k === 'tiers' || k === 'btiers') { var q2 = Math.round(n(L.qty || 50) * 2), u2 = Math.round(n(L.unit || 20) * 0.9 * 100) / 100; arr.push({ qty: q2, unit: u2, price: Math.round(q2 * u2 * 100) / 100 }); }
                 if (k === 'boxes') ST.boxes.push({ id: 'colour-' + (ST.boxes.length + 1), label: 'New colour', extra: 3, color: '#cccccc' });
-                if (k === 'bsets') ST.bsets.push({ id: 'b' + (ST.bsets.length + 1) + '-' + Date.now().toString(36).slice(-3), pieces: 6, label: '6-piece gift box', price: 180, tiers: [{ qty: 20, price: 3200 }, { qty: 50, price: 7500, popular: true }, { qty: 100, price: 14000 }] });
+                if (k === 'bsets') ST.bsets.push({ id: 'b' + (ST.bsets.length + 1) + '-' + Date.now().toString(36).slice(-3), pieces: 6, label: '6-piece gift box', price: 180, tiers: [{ qty: 20, unit: 160, price: 3200 }, { qty: 50, unit: 150, price: 7500, popular: true }, { qty: 100, unit: 140, price: 14000 }] });
                 if (k === 'thick') ST.thick.push({ id: '8', mm: 8, label: '8 mm', extra: 0.5 });
                 redraw(REDRAW[k][0], REDRAW[k][1]);
             } else if (r) { var kk = r.dataset.rm, ar = kk === 'btiers' ? arrOf(kk, +r.dataset.b) : ST[kk]; ar.splice(+r.dataset.i, 1); redraw(REDRAW[kk][0], REDRAW[kk][1]); }
@@ -664,8 +666,8 @@
             var out = { title: $('#s-title').value.trim(), lead: $('#s-lead').value.trim(), chips: $('#s-chips').value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 4) };
             if (cake) {
                 var ts = ST.tiers.slice().sort(function (a, b) { return n(a.qty) - n(b.qty); });
-                for (var i = 0; i < ts.length; i++) { if (!(n(ts[i].qty) >= 1) || !(n(ts[i].price) >= 0) || ts[i].price === '') return bad('Please check the quantities and prices in "Minimum order and prices".'); if (i && n(ts[i].qty) === n(ts[i - 1].qty)) return bad('Two rows have the same quantity.'); }
-                out.tiers = ts.map(function (t) { var o = { qty: Math.round(n(t.qty)), price: n(t.price) }; if (t.popular) o.popular = true; return o; });
+                for (var i = 0; i < ts.length; i++) { if (!(n(ts[i].qty) >= 1) || !(n(ts[i].unit) >= 0) || ts[i].unit === '') return bad('Please check the quantities and prices in "Minimum order and prices".'); if (i && n(ts[i].qty) === n(ts[i - 1].qty)) return bad('Two rows have the same quantity.'); }
+                out.tiers = ts.map(function (t) { var o = { qty: Math.round(n(t.qty)), unit: n(t.unit), price: Math.round(Math.round(n(t.qty)) * n(t.unit) * 100) / 100 }; if (t.popular) o.popular = true; return o; });
                 var used = {};
                 out.boxes = ST.boxes.map(function (b, i) { var o = {}; for (var k in b) o[k] = b[k]; o.label = String(b.label || '').trim() || 'Colour ' + (i + 1); o.extra = Math.max(0, n(b.extra)); o.color = b.color || '#cccccc'; var id = String(b.id || '').trim() || slug(o.label); while (used[id]) id += '-x'; used[id] = 1; o.id = id; return o; });
                 if (!out.boxes.length) return bad('Please keep at least one box colour.');
@@ -678,7 +680,7 @@
                     o.label = String(b.label || '').trim() || 'Box ' + (i + 1); o.pieces = Math.min(12, Math.max(1, Math.round(n(b.pieces))));
                     var id = String(b.id || '') || String(o.pieces); while (ids[id]) id += 'x'; ids[id] = 1; o.id = id;
                     var ts = (b.tiers || []).slice().sort(function (x, y) { return n(x.qty) - n(y.qty); });
-                    o.tiers = ts.map(function (t) { var q = { qty: Math.round(n(t.qty)), price: Math.max(0, n(t.price)) }; if (t.popular) q.popular = true; return q; });
+                    o.tiers = ts.map(function (t) { var q = { qty: Math.round(n(t.qty)), unit: Math.max(0, n(t.unit)), price: Math.max(0, Math.round(Math.round(n(t.qty)) * n(t.unit) * 100) / 100) }; if (t.popular) q.popular = true; return q; });
                     o.price = o.tiers.length ? Math.round(o.tiers[0].price / Math.max(1, o.tiers[0].qty) * 100) / 100 : 0;   // price per box at the minimum order
                     return o;
                 });
