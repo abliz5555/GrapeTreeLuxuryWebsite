@@ -232,6 +232,7 @@
         var note = doc.createElement('div');
         note.className = 'co-bank';
         note.innerHTML = '<strong>' + esc(T('Your design files')) + '</strong><p>' + esc(T('We could not upload your design files automatically. Please download them below and send them to us on WhatsApp together with your order.')) + '</p><div class="co-files"></div>';
+        if (window.GT.uploadErr) { var er = doc.createElement('p'); er.className = 'gt-fine'; er.textContent = 'Technical reason (for our team): ' + window.GT.uploadErr; note.appendChild(er); }
         box.querySelector('.co-success').appendChild(note);
         failed.forEach(function (id) {
             window.GTStore.get(id).then(function (d) {
@@ -271,7 +272,7 @@
         var useDb = !!(B && B.enabled);
         var artUp = (useDb && B.uploadStudio) ? Promise.all(cartItems.map(function (l) {
             if (!l.art) return null;
-            return B.uploadStudio(l.art).catch(function () { return { id: l.art.id, failed: true }; });
+            return B.uploadStudio(l.art).catch(function (e) { window.GT.uploadErr = String((e && (e.message || e.error)) || e || 'unknown'); try { console.warn('design upload failed:', window.GT.uploadErr); } catch (x) {} return { id: l.art.id, failed: true }; });
         })) : Promise.resolve(cartItems.map(function (l) { return l.art ? { id: l.art.id, failed: true } : null; }));
         var saved = artUp.then(function (arts) {
             artResults = arts;
