@@ -13,7 +13,7 @@
     function $(s, c) { return (c || doc).querySelector(s); }
     function $$(s, c) { return Array.prototype.slice.call((c || doc).querySelectorAll(s)); }
 
-    var STATUSES = [['new', 'New'], ['confirmed', 'Confirmed'], ['preparing', 'Preparing'], ['delivering', 'Out for delivery'], ['delivered', 'Delivered'], ['cancelled', 'Cancelled']];
+    var STATUSES = [['new', 'New'], ['confirmed', 'Confirmed'], ['preparing', 'Preparing'], ['ready', 'Ready for delivery'], ['delivering', 'Out for delivery'], ['delivered', 'Delivered'], ['cancelled', 'Cancelled']];
     var STATUS_NAME = {}; STATUSES.forEach(function (s) { STATUS_NAME[s[0]] = s[1]; });
     var PAY_NAME = { whatsapp: 'WhatsApp', bank: 'Bank transfer', card: 'Card' };
     var tab = 'dashboard', ORDERS = [], PRODUCTS = [], CONTENT = {};
@@ -56,10 +56,11 @@
             });
             return;
         }
-        if (!B.isAdmin()) {
-            root.innerHTML = card('<h2>This account is not an admin</h2><p>You are signed in as <strong>' + esc(B.user().email) + '</strong>, which does not have admin access. Sign out and use the admin email.</p>');
+        if (!B.isStaff()) {
+            root.innerHTML = card('<h2>This account has no admin access</h2><p>You are signed in as <strong>' + esc(B.user().email) + '</strong>, which is not an admin or staff account. Sign out and use your admin or staff email.</p>');
             return;
         }
+        $$('[data-tab]', tabsEl).forEach(function (b) { b.hidden = !B.isAdmin() && b.getAttribute('data-tab') !== 'orders'; });   // staff see the Orders tab only
         tabsEl.hidden = false; show(tab);
     }
     function card(html) { return '<div class="adm-card narrow">' + html + '</div>'; }
@@ -67,9 +68,10 @@
     outBtn.addEventListener('click', function () { B.signOut(); });
     tabsEl.addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (b) show(b.getAttribute('data-tab')); });
     function show(t) {
+        if (!B.isAdmin()) t = 'orders';
         tab = t;
         $$('[data-tab]', tabsEl).forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === t); });
-        ({ dashboard: viewDashboard, business: viewBusiness, legal: viewLegal, orders: viewOrders, products: viewProducts, website: viewWebsite, studio: viewStudio, test: viewTest, settings: viewSettings })[t]();
+        ({ dashboard: viewDashboard, team: viewTeam, business: viewBusiness, legal: viewLegal, orders: viewOrders, products: viewProducts, website: viewWebsite, studio: viewStudio, test: viewTest, settings: viewSettings })[t]();
     }
 
     /* ============================ SMALL HELPERS (v9) ============================ */
@@ -279,12 +281,14 @@
             (o.notes ? '<h4>Customer notes</h4><p>' + esc(o.notes) + '</p>' : '') +
             '<h4>Payment</h4><p>' + esc(PAY_NAME[o.payment_method] || o.payment_method) + (o.source ? '<br><small>Came from: ' + esc(o.source) + '</small>' : '') + '</p></div></div>' +
             legalBlock(o) +
-            '<div class="o-actions"><label>Order status<select data-f="status">' + opts(STATUSES, o.status) + '</select></label>' +
+            '<div class="o-actions o-pub"><label class="grow">Message to the customer (shown on their order tracking page, optional)<input type="text" data-pubmsg maxlength="300" placeholder="e.g. Your design is approved and printing starts tomorrow"></label>' +
+            '<button class="adm-btn ghost" type="button" data-post>Post message only</button></div>' +
+            '<div class="o-actions"><label>Order status (the customer sees it on the tracking page)<select data-f="status">' + opts(STATUSES, o.status) + '</select></label>' +
             '<label>Payment<select data-f="payment_status">' + opts([['unpaid', 'Not paid'], ['paid', 'Paid']], o.payment_status || 'unpaid') + '</select></label>' +
             (art ? '<label>Design review<select data-f="art_review">' + opts(REVIEWS, o.art_review || 'pending') + '</select></label><label class="grow">Review note (reason / what to change)<input type="text" data-f="art_review_note" value="' + esc(o.art_review_note || '') + '"></label>' : '') +
             '<label class="grow">Private note (only you see this)<input type="text" data-f="admin_note" value="' + esc(o.admin_note || '') + '"></label></div>' +
             '<div class="o-msg"><label class="grow">Message the customer<select data-tpl>' + TEMPLATES.map(function (t) { return '<option value="' + t[0] + '">' + esc(t[1]) + '</option>'; }).join('') + '</select></label>' +
-            '<a class="adm-btn" data-wa href="' + wa + '" target="_blank" rel="noopener">WhatsApp</a>' + (o.email ? '<a class="adm-btn ghost" data-mail href="mailto:' + esc(o.email) + '?subject=' + encodeURIComponent('Grape Tree order #' + o.order_no) + '&body=' + encodeURIComponent(tplText(o, 'confirm')) + '">Email</a>' : '') + '<button class="adm-btn ghost" data-print>Print</button></div>' +
+            '<a class="adm-btn" data-wa href="' + wa + '" target="_blank" rel="noopener">WhatsApp</a>' + (o.email ? '<a class="adm-btn ghost" data-mail href="mailto:' + esc(o.email) + '?subject=' + encodeURIComponent('Grape Tree order #' + o.order_no) + '&body=' + encodeURIComponent(tplText(o, 'confirm')) + '">Email</a>' : '') + '<button class="adm-btn ghost" data-print>Print</button>' + (B.isAdmin() ? '<button class="adm-btn danger" data-del-order type="button">Delete order</button>' : '') + '</div>' +
             historyBlock(o);
     }
     function renderBody(artEl, o) { var body = $('.o-body', artEl); body.innerHTML = orderBody(o); loadThumbs(body); var h = $('.o-head', artEl); $('.o-chips', h).innerHTML = chipsFor(o); }
@@ -300,6 +304,29 @@
         var pr = e.target.closest('[data-print]');
         if (pr) { printOrder(ORDERS.filter(function (o) { return o.id === pr.closest('.adm-order').getAttribute('data-id'); })[0]); return; }
         var op = e.target.closest('[data-open]'); if (op) { openOrder(op.getAttribute('data-open')); return; }
+        var dl = e.target.closest('[data-del-order]');
+        if (dl) {
+            var da = dl.closest('.adm-order'), dord = ORDERS.filter(function (x) { return x.id === da.getAttribute('data-id'); })[0];
+            confirmBox('Delete order #' + dord.order_no + ' for good? The order and its design files are removed and this cannot be undone.', 'Delete order').then(function (yes) {
+                if (!yes) return;
+                var paths = []; (dord.items || []).forEach(function (l) { if (l.art && l.art.folder && l.art.files) Object.keys(l.art.files).forEach(function (k) { paths.push(l.art.folder + '/' + l.art.files[k]); }); });
+                var rm = paths.length ? B.client.storage.from('order-art').remove(paths).then(function () {}, function () {}) : Promise.resolve();
+                rm.then(function () { return B.client.from('orders').delete().eq('id', dord.id).select(); }).then(function (r) {
+                    if (r.error) throw r.error;
+                    if (!r.data || !r.data.length) throw new Error('The database did not allow it. Run supabase/v11-update.sql in the Supabase SQL Editor first.');
+                    ORDERS = ORDERS.filter(function (x) { return x.id !== dord.id; }); toast('Order deleted'); if (tab === 'orders') drawOrders(); else show(tab);
+                    var n = ORDERS.filter(function (x) { return x.status === 'new'; }).length, b = $('#adm-new'); b.hidden = !n; b.textContent = n;
+                }).catch(fail);
+            });
+            return;
+        }
+        var po = e.target.closest('[data-post]');
+        if (po) {
+            var pa = po.closest('.adm-order'), pi = $('[data-pubmsg]', pa), po_o = ORDERS.filter(function (x) { return x.id === pa.getAttribute('data-id'); })[0];
+            if (!pi.value.trim()) { toast('Type the message first.', true); return; }
+            saveOrder(po_o, {}, 'Message to customer: ' + pi.value.trim(), pa, { pub: true, msg: pi.value.trim() });
+            return;
+        }
         var fl = e.target.closest('[data-filter]');
         if (fl) {
             var kv = fl.getAttribute('data-filter').split('='); fStatus = 'all'; fPay = 'all'; fReview = 'all'; fRange = 'all'; fText = ''; fLate = false;
@@ -307,8 +334,9 @@
             show('orders');
         }
     });
-    function saveOrder(o, patch, what, artEl) {
+    function saveOrder(o, patch, what, artEl, extra) {
         var entry = { t: new Date().toISOString(), by: (B.user() && B.user().email) || 'admin', what: what };
+        if (extra) Object.keys(extra).forEach(function (k) { entry[k] = extra[k]; });
         var hist = (Array.isArray(o.history) ? o.history : []).concat([entry]);
         var upd = JSON.parse(JSON.stringify(patch)); upd.history = hist;
         return B.client.from('orders').update(upd).eq('id', o.id).then(function (r) {
@@ -332,8 +360,11 @@
         patch[key] = f.value;
         var what = key === 'status' ? 'Status: ' + (STATUS_NAME[f.value] || f.value) : key === 'payment_status' ? 'Payment: ' + (f.value === 'paid' ? 'Paid' : 'Not paid') :
             key === 'art_review' ? 'Design review: ' + (REVIEW_NAME[f.value] || f.value) : key === 'art_review_note' ? 'Review note: ' + f.value : 'Private note: ' + f.value;
-        if (key === 'art_review' && f.value === 'approved' && o.status === 'new') { /* leave the status for the owner to choose */ }
-        saveOrder(o, patch, what, art);
+        var extra = null, pm = $('[data-pubmsg]', art), msg = pm ? pm.value.trim() : '';
+        if (key === 'status') extra = { pub: true, status: f.value, msg: msg };                       // every status change shows on the customer's tracking page
+        else if (key === 'art_review' && (f.value === 'approved' || f.value === 'changes' || f.value === 'rejected'))
+            extra = { pub: true, msg: f.value === 'approved' ? 'Your design is approved for production.' : (f.value === 'changes' ? 'We need a change to your design.' : 'We cannot produce this design.') + ((o.art_review_note || '') ? ' ' + o.art_review_note : '') };
+        saveOrder(o, patch, what, art, extra);
     });
     function printOrder(o) {
         var w = window.open('', '_blank'); if (!w) return toast('Please allow pop-ups to print.', true);
@@ -650,23 +681,179 @@
                 });
                 html += '</div>';
             });
+            var hasPin = isFinite(parseFloat(cur.lat)) && isFinite(parseFloat(cur.lng));
+            html += '<h3>Our location on the map</h3><div class="adm-map">' +
+                '<p class="adm-hint">Click the map or drag the pin to the exact spot. This is the map customers see at the bottom of every page, and "Get directions" opens this exact pin.</p>' +
+                '<div class="adm-map-tools"><input id="m-q" type="search" placeholder="Search a place or address, e.g. SAIF Zone, Sharjah" autocomplete="off"><button type="button" class="adm-btn ghost" id="m-find">Search</button><button type="button" class="adm-btn ghost" id="m-me">Use my current location</button></div>' +
+                '<div class="adm-map-tools"><input id="m-link" type="url" placeholder="Or paste a Google Maps link here (the long link with @25.3,55.4)" autocomplete="off"><button type="button" class="adm-btn ghost" id="m-use">Use link</button></div>' +
+                '<div id="m-map" class="adm-map-box" aria-label="Map"><p class="adm-hint" style="padding:18px">Loading the map...</p></div>' +
+                '<div class="adm-grid2"><label>Latitude<input name="lat" id="m-lat" inputmode="decimal" value="' + esc(hasPin ? cur.lat : '') + '" placeholder="e.g. 25.3463"></label><label>Longitude<input name="lng" id="m-lng" inputmode="decimal" value="' + esc(hasPin ? cur.lng : '') + '" placeholder="e.g. 55.4209"></label></div>' +
+                '<div class="adm-row"><span class="adm-hint" id="m-state">' + (hasPin ? 'Pin is set.' : 'No pin yet: the website uses the address text instead.') + '</span><span class="grow"></span><button type="button" class="adm-btn ghost" id="m-clear">Remove pin</button></div></div>';
             html += '<p class="adm-err" id="b-err" role="alert"></p><div class="adm-row"><span class="grow"></span><button class="adm-btn" type="submit">Save business info</button></div></form>';
             $('#b-box').innerHTML = html;
+            initMapPicker();
             $('#b-form').addEventListener('submit', function (e) {
                 e.preventDefault();
                 var f = e.target, v = {}, err = '';
                 BIZ_FIELDS.forEach(function (g) { g[1].forEach(function (x) { v[x[0]] = f[x[0]].value.trim(); }); });
                 v.whatsapp = digits(v.whatsapp);
-                if (v.whatsapp && v.whatsapp.length < 9) err = 'The WhatsApp number looks too short. Use digits only, with the country code (for example 971555577478).';
+                var la = f.lat.value.trim().replace(',', '.'), ln = f.lng.value.trim().replace(',', '.');
+                if (la || ln) {
+                    if (!isFinite(parseFloat(la)) || !isFinite(parseFloat(ln)) || Math.abs(la) > 90 || Math.abs(ln) > 180) err = 'The map pin is not valid. Click the map to place it again, or press "Remove pin".';
+                    else { v.lat = Math.round(parseFloat(la) * 1e6) / 1e6; v.lng = Math.round(parseFloat(ln) * 1e6) / 1e6; }
+                } else { v.lat = ''; v.lng = ''; }
+                if (!err && v.whatsapp && v.whatsapp.length < 9) err = 'The WhatsApp number looks too short. Use digits only, with the country code (for example 971555577478).';
                 var mail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
                 if (!err && v.email && !mail.test(v.email)) err = 'The public email address is not valid.';
                 if (!err && v.reply_to && !mail.test(v.reply_to)) err = 'The reply-to email address is not valid.';
                 if (!err && v.notify_emails && !v.notify_emails.split(',').every(function (x) { return mail.test(x.trim()); })) err = 'One of the order notification emails is not valid. Separate several with commas.';
                 ['instagramKatanukiya', 'instagramGildart', 'tiktok', 'facebook'].forEach(function (k) { if (!err && v[k] && !/^https?:\/\//i.test(v[k])) err = 'Social links must start with https://'; });
                 $('#b-err').textContent = err; if (err) return;
-                B.saveContent('business', v).then(function () { CONTENT.business = v; cacheSet('business', v); toast('Saved. The website now shows the new details.'); }).catch(fail);
+                B.saveContent('business', v).then(function () {
+                    return B.client.from('site_content').select('value').eq('key', 'business').maybeSingle();          // read it back to be sure it really is saved
+                }).then(function (r) {
+                    var got = r && r.data && r.data.value;
+                    if (!got || got.email !== v.email || got.address !== v.address) throw new Error('The database did not keep the change. Please try again, or tell your developer.');
+                    CONTENT.business = v; cacheSet('business', v); toast('Saved and live. Visitors see the new details when they open or refresh a page.');
+                }).catch(fail);
             });
         });
+    }
+
+
+    /* ---- map location picker (Leaflet + OpenStreetMap, free, no key) ---- */
+    function loadLeaflet(cb) {
+        if (window.L && window.L.map) return cb();
+        if (!document.getElementById('lf-css')) { var l = document.createElement('link'); l.id = 'lf-css'; l.rel = 'stylesheet'; l.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(l); }
+        var sc = document.createElement('script'); sc.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        sc.onload = function () { cb(); }; sc.onerror = function () { cb(new Error('x')); }; document.head.appendChild(sc);
+    }
+    function initMapPicker() {
+        var box = $('#m-map'); if (!box) return;
+        var la = $('#m-lat'), ln = $('#m-lng'), state = $('#m-state'), map = null, pin = null;
+        function say(t) { if (state) state.textContent = t; }
+        function setPin(lat, lng, fly) {
+            lat = Math.round(lat * 1e6) / 1e6; lng = Math.round(lng * 1e6) / 1e6;
+            la.value = lat; ln.value = lng; say('Pin is set. Press "Save business info" to publish it.');
+            if (!map) return;
+            if (!pin) {
+                pin = L.marker([lat, lng], { draggable: true }).addTo(map);
+                pin.on('dragend', function () { var p = pin.getLatLng(); setPin(p.lat, p.lng); });
+            } else pin.setLatLng([lat, lng]);
+            if (fly) map.setView([lat, lng], Math.max(map.getZoom(), 16));
+        }
+        function fromInputs() {
+            var a = parseFloat(la.value.replace(',', '.')), b = parseFloat(ln.value.replace(',', '.'));
+            if (isFinite(a) && isFinite(b) && Math.abs(a) <= 90 && Math.abs(b) <= 180) setPin(a, b, true);
+        }
+        la.addEventListener('change', fromInputs); ln.addEventListener('change', fromInputs);
+        $('#m-clear').addEventListener('click', function () { la.value = ''; ln.value = ''; if (pin && map) { map.removeLayer(pin); pin = null; } say('Pin removed. Press "Save business info" so the website uses the address text again.'); });
+        $('#m-use').addEventListener('click', function () {
+            var t = decodeURIComponent($('#m-link').value || ''), m = t.match(/@(-?\d+\.\d+),\s*(-?\d+\.\d+)/) || t.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || t.match(/[?&](?:q|ll|query|destination)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
+            if (m) setPin(parseFloat(m[1]), parseFloat(m[2]), true);
+            else say('I could not find the position in that link. Open the place in Google Maps, copy the full address-bar link (not the short maps.app.goo.gl link), or just click the map.');
+        });
+        function find() {
+            var q = $('#m-q').value.trim(); if (!q) return;
+            say('Searching...');
+            fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=ae&q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return r.json(); })
+                .then(function (j) { if (j && j[0]) { setPin(parseFloat(j[0].lat), parseFloat(j[0].lon), true); } else say('Nothing found. Try a simpler name, or click the map yourself.'); })
+                .catch(function () { say('Search is not available now. Click the map to place the pin.'); });
+        }
+        $('#m-find').addEventListener('click', find);
+        $('#m-q').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); find(); } });
+        $('#m-me').addEventListener('click', function () {
+            if (!navigator.geolocation) return say('Your browser cannot share its location.');
+            say('Asking your device for its location...');
+            navigator.geolocation.getCurrentPosition(function (p) { setPin(p.coords.latitude, p.coords.longitude, true); }, function () { say('Location was not allowed. Click the map instead.'); }, { enableHighAccuracy: true, timeout: 10000 });
+        });
+        loadLeaflet(function (err) {
+            if (err || !window.L) { box.innerHTML = '<p class="adm-hint" style="padding:18px">The map could not load (check your internet). You can still type the latitude and longitude below.</p>'; return; }
+            box.innerHTML = '';
+            var a = parseFloat(la.value), b = parseFloat(ln.value), has = isFinite(a) && isFinite(b);
+            map = L.map(box, { scrollWheelZoom: false, tap: true }).setView(has ? [a, b] : [25.2048, 55.2708], has ? 16 : 10);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+            map.on('click', function (e) { setPin(e.latlng.lat, e.latlng.lng); });
+            map.on('focus', function () { map.scrollWheelZoom.enable(); }); map.on('blur', function () { map.scrollWheelZoom.disable(); });
+            if (has) setPin(a, b);
+            setTimeout(function () { map.invalidateSize(); }, 200);
+        });
+    }
+
+    /* ============================ TEAM (admin only) ============================ */
+    function team(body) {
+        return B.client.functions.invoke('team-admin', { body: body }).then(function (r) {
+            var d = r.data || {};
+            if (d.error) throw new Error(d.error + (d.detail ? ' (' + d.detail + ')' : ''));
+            if (r.error) {
+                var m = r.error.message || String(r.error);
+                if (r.error.context && r.error.context.json) return r.error.context.json().then(function (j) { throw new Error((j && j.error) || m); }, function () { throw new Error(m); });
+                throw new Error(/not found|404|Failed to send|fetch/i.test(m) ? 'The team-admin function is not deployed yet (see supabase/functions/team-admin/index.ts).' : m);
+            }
+            return d;
+        });
+    }
+    function askPassword(title, email) {
+        return new Promise(function (resolve) {
+            var d = doc.createElement('div'); d.className = 'adm-modal open';
+            d.innerHTML = '<div class="adm-dialog small"><h3 style="margin:0 0 6px">' + esc(title) + '</h3><p class="adm-fine">' + esc(email) + '</p>' +
+                '<label>New password (at least 8 characters)<input type="text" id="pw-new" autocomplete="off" spellcheck="false"></label><p class="adm-err" id="pw-err" role="alert"></p>' +
+                '<div class="adm-row end"><button class="adm-btn ghost" data-no>Cancel</button><button class="adm-btn" data-yes>Save password</button></div></div>';
+            doc.body.appendChild(d); $('#pw-new', d).focus();
+            d.addEventListener('click', function (e) {
+                if (e.target.closest('[data-yes]')) {
+                    var v = $('#pw-new', d).value; if (v.length < 8) { $('#pw-err', d).textContent = 'Please use at least 8 characters.'; return; }
+                    d.remove(); resolve(v);
+                } else if (e.target.closest('[data-no]') || e.target === d) { d.remove(); resolve(null); }
+            });
+        });
+    }
+    function viewTeam() {
+        root.innerHTML = '<div class="adm-bar"><h2>Team</h2></div>' +
+            '<section class="adm-card"><h3>Create a staff account</h3>' +
+            '<p class="adm-fine">You choose the email and the password, then give both to your staff member. Staff can see and update orders and customer designs only. They cannot change products, prices, website content, business info or legal texts, delete orders, or add other staff.</p>' +
+            '<form id="t-form" novalidate><div class="adm-grid2"><label>Name<input type="text" id="t-name" autocomplete="off"></label>' +
+            '<label>Email (their sign-in)<input type="email" id="t-email" placeholder="name@example.com" autocomplete="off" required></label></div>' +
+            '<label>Password (at least 8 characters)<input type="text" id="t-pass" autocomplete="off" spellcheck="false" required></label>' +
+            '<p class="adm-err" id="t-err" role="alert"></p><div class="adm-row"><button class="adm-btn" type="submit">Create staff account</button><span class="grow"></span></div></form>' +
+            '<p class="adm-fine">They sign in at <strong>grapetree.ae/admin.html</strong> with this email and password, and see the Orders page only.</p></section>' +
+            '<section class="adm-card"><h3>People with access</h3><div id="t-list"><p class="adm-loading">Loading...</p></div></section>';
+        function draw() {
+            B.teamList().then(function (rows) {
+                $('#t-list').innerHTML = (rows && rows.length) ? '<ul class="adm-team">' + rows.map(function (p) {
+                    var staff = p.role === 'staff';
+                    return '<li><div><strong>' + esc(p.name || p.email) + '</strong>' + (p.name ? '<br><small>' + esc(p.email) + '</small>' : '') + '</div>' +
+                        '<span class="chip ' + (staff ? 'st-confirmed' : 'st-preparing') + '">' + (staff ? (p.pending ? 'Staff - not signed up yet' : 'Staff') : 'Admin') + '</span>' +
+                        (staff ? '<span class="adm-row">' + (p.pending ? '' : '<button class="adm-btn ghost" type="button" data-pw="' + esc(p.email) + '">Change password</button>') + '<button class="adm-btn danger" type="button" data-rm="' + esc(p.email) + '">Delete</button></span>' : '<span></span>') + '</li>';
+                }).join('') + '</ul>' : '<p class="adm-empty">No one yet.</p>';
+                $$('[data-pw]', $('#t-list')).forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        var em = b.getAttribute('data-pw');
+                        askPassword('Change password', em).then(function (pw) { if (pw) team({ action: 'password', email: em, password: pw }).then(function () { toast('Password changed for ' + em); }).catch(fail); });
+                    });
+                });
+                $$('[data-rm]', $('#t-list')).forEach(function (b) {
+                    b.addEventListener('click', function () {
+                        var em = b.getAttribute('data-rm');
+                        confirmBox('Delete the staff account ' + em + '? They will not be able to sign in any more. Orders they handled are kept.', 'Delete account').then(function (yes) {
+                            if (yes) team({ action: 'delete', email: em }).then(function () { toast('Account deleted'); draw(); }).catch(fail);
+                        });
+                    });
+                });
+            }).catch(function (e) { $('#t-list').innerHTML = '<p class="adm-err">Could not load the team: ' + esc(e.message || e) + '<br>Run supabase/v10-update.sql in the Supabase SQL Editor first.</p>'; });
+        }
+        $('#t-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var em = $('#t-email').value.trim(), pw = $('#t-pass').value, err = $('#t-err'), btn = $('button', e.target); err.textContent = '';
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { err.textContent = 'Please type a valid email address.'; return; }
+            if (pw.length < 8) { err.textContent = 'The password needs at least 8 characters.'; return; }
+            btn.disabled = true;
+            team({ action: 'create', email: em, password: pw, name: $('#t-name').value.trim() }).then(function () {
+                toast('Staff account created for ' + em); $('#t-email').value = ''; $('#t-pass').value = ''; $('#t-name').value = ''; draw();
+            }).catch(function (x) { err.textContent = x.message || String(x); }).then(function () { btn.disabled = false; });
+        });
+        draw();
     }
 
     /* ============================ LEGAL TEXTS ============================ */
@@ -712,7 +899,7 @@
     }
 
     /* ------------------------------ start ------------------------------ */
-    B.ready.then(function () { gate(); if (B.isAdmin()) loadOrders(); });
-    B.onAuth(function () { gate(); if (B.isAdmin() && tab !== 'orders') loadOrders(); else if (B.isAdmin()) { /* orders view loads itself */ } });
-    setInterval(function () { if (B.isAdmin() && !doc.hidden && (tab === 'orders' || tab === 'dashboard') && !$('.adm-order [aria-expanded=true]')) loadOrders(); }, 90000);
+    B.ready.then(function () { gate(); if (B.isStaff()) loadOrders(); });
+    B.onAuth(function () { gate(); if (B.isStaff() && tab !== 'orders') loadOrders(); else if (B.isStaff()) { /* orders view loads itself */ } });
+    setInterval(function () { if (B.isStaff() && !doc.hidden && (tab === 'orders' || tab === 'dashboard') && !$('.adm-order [aria-expanded=true]')) loadOrders(); }, 90000);
 })();

@@ -188,3 +188,21 @@ body[data-admin]{ margin:0; }
 .adm-form label.full{ grid-column:1 / -1; }
 .adm-card h3{ margin:22px 0 10px; font-size:18px; } .adm-card h3:first-child{ margin-top:0; }
 @media (max-width:640px){ .adm-two{ grid-template-columns:1fr; } .adm-thumbs figure, .adm-thumbs button{ width:128px; } .adm-thumbs button{ height:128px; } }
+.chip.st-ready{ background:#d9f0ea; color:#14604c; }
+.adm-steps{ margin:8px 0 16px 20px; padding:0; line-height:1.7; }
+.adm-team{ list-style:none; margin:0; padding:0; }
+.adm-team li{ display:grid; grid-template-columns:1fr auto auto; gap:14px; align-items:center; padding:12px 0; border-bottom:1px solid rgba(0,0,0,.08); }
+.adm-team li:last-child{ border-bottom:0; }
+.o-pub{ margin-bottom:6px; }
+@media (max-width:640px){ .adm-team li{ grid-template-columns:1fr; } }
+.adm-grid2{ display:grid; grid-template-columns:1fr 1fr; gap:0 14px; }
+.adm-team .adm-row{ gap:8px; }
+@media (max-width:640px){ .adm-grid2{ grid-template-columns:1fr; } }
+
+/* map picker */
+.adm-map{ margin:6px 0 4px; }
+.adm-map-tools{ display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
+.adm-map-tools input{ flex:1 1 220px; min-width:0; }
+.adm-map-box{ height:340px; border-radius:14px; overflow:hidden; border:1px solid var(--adm-line,#e5ded0); background:#efe9dc; margin:10px 0 12px; z-index:0; position:relative; }
+.adm-hint{ font-size:13px; color:#7a6a5e; margin:4px 0; }
+@media (max-width:640px){ .adm-map-box{ height:300px; } .adm-map-tools .adm-btn{ flex:1 1 100%; } }

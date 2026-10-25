@@ -38,9 +38,9 @@
         if (on) { btn.dataset.old = btn.textContent; btn.textContent = T(label || 'Please wait...'); btn.disabled = true; }
         else { btn.textContent = btn.dataset.old || btn.textContent; btn.disabled = false; }
     }
-    function dateText(s) { try { return new Date(s).toLocaleDateString(document.documentElement.lang === 'ar' ? 'ar-AE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return ''; } }
+    function dateText(s) { try { return new Date(s).toLocaleDateString(({ar:'ar-AE',tr:'tr-TR',zh:'zh-CN',ru:'ru-RU',ja:'ja-JP'}[document.documentElement.lang]||'en-GB'), { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return ''; } }
 
-    var STATUS = { new: 'New', confirmed: 'Confirmed', preparing: 'Preparing', delivering: 'Out for delivery', delivered: 'Delivered', cancelled: 'Cancelled' };
+    var STATUS = { new: 'New', confirmed: 'Confirmed', preparing: 'Preparing', ready: 'Ready for delivery', delivering: 'Out for delivery', delivered: 'Delivered', cancelled: 'Cancelled' };
 
     /* ------------------------------ views ------------------------------ */
     function viewOff() {
@@ -148,7 +148,7 @@
             '<div class="acct-grid">' +
             '<section class="acct-card acct-orders"><h2>My orders</h2><div id="a-orders"><p class="acct-loading">Loading...</p></div></section>' +
             '<aside class="acct-side">' +
-            (B.isAdmin() ? '<a class="acct-card acct-admin" href="admin.html"><strong>Open the admin dashboard</strong><span>Manage products, orders and website images</span></a>' : '') +
+            (B.isAdmin() ? '<a class="acct-card acct-admin" href="admin.html"><strong>Open the admin dashboard</strong><span>Manage products, orders and website images</span></a>' : (B.isStaff() ? '<a class="acct-card acct-admin" href="admin.html"><strong>Open the orders page</strong><span>See, track and update customer orders</span></a>' : '')) +
             '<section class="acct-card"><h2>My details</h2><form id="a-prof" novalidate>' +
             '<div class="field"><label for="p-name">Full name</label><input id="p-name" type="text" value="' + esc(p.full_name || '') + '"></div>' +
             '<div class="field"><label for="p-phone">Phone / WhatsApp</label><input id="p-phone" type="tel" value="' + esc(p.phone || '') + '"></div>' +
@@ -204,6 +204,7 @@
                     '<span class="chip st-' + esc(o.status) + '">' + esc(T(STATUS[o.status] || o.status)) + '</span></header>' +
                     '<ul>' + items + '</ul>' +
                     '<footer><span>' + (o.has_quote ? esc(money(o.subtotal)) + ' + ' + esc(T('quoted items')) : esc(money(o.subtotal))) + '</span>' +
+                    '<a class="acct-link" href="order-track.html?no=' + esc(o.order_no) + '">' + esc(T('Track order')) + '</a>' +
                     '<a class="acct-link" href="invoice.html?no=' + esc(o.order_no) + '&print=1" target="_blank" rel="noopener">Download PDF</a>' +
                     (canRe ? '<button type="button" class="acct-link" data-re="' + esc(o.id) + '">Order again</button>' : '') + '</footer></article>';
             }).join('');

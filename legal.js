@@ -146,8 +146,10 @@
     var PAGE = { terms: 'terms.html', content: 'content-policy.html', privacy: 'privacy.html' };
     /* turns "{terms}", "{content}", "{privacy}" in a sentence into links (the text itself is escaped first) */
     function withLinks(s) {
-        return esc(s).replace(/\{(terms|content|privacy)\}/g, function (m, k) {
+        var tl = window.GT && window.GT.lang ? window.GT.lang.t(s) : s;
+        return esc(tl).replace(/\{(terms|content|privacy)\}/g, function (m, k) {
             var t = get().docs[k].title;
+            if (window.GT && window.GT.lang) t = window.GT.lang.t(t);
             return '<a href="' + PAGE[k] + '" target="_blank" rel="noopener">' + esc(t) + '</a>';
         });
     }

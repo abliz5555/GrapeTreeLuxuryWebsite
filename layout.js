@@ -15,6 +15,7 @@
         if (b.whatsapp) C.whatsapp = String(b.whatsapp).replace(/\D/g, '');
         ['phone', 'email', 'address', 'hours', 'mapQuery'].forEach(function (k) { if (b[k] != null && b[k] !== '') CO[k] = b[k]; });
         ['instagramKatanukiya', 'instagramGildart', 'tiktok', 'facebook'].forEach(function (k) { if (b[k] != null) S[k] = b[k]; });
+        CO.lat = b.lat; CO.lng = b.lng;     /* map pin picked in the admin page */
         C.company = CO; C.social = S;
     }
     try { applyBiz((JSON.parse(localStorage.getItem('gt-content-v1') || '{}') || {}).business); } catch (e) {}
@@ -86,8 +87,9 @@
         return soc;
     }
     function mapQ() { return CO.mapQuery || CO.address || 'Dubai, United Arab Emirates'; }
-    function mapSrc() { return 'https://www.google.com/maps?q=' + encodeURIComponent(mapQ()) + '&output=embed'; }
-    function mapDir() { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(mapQ()); }
+    function pin() { var a = parseFloat(CO.lat), b = parseFloat(CO.lng); return (isFinite(a) && isFinite(b) && Math.abs(a) <= 90 && Math.abs(b) <= 180) ? a + ',' + b : ''; }
+    function mapSrc() { var p = pin(); return p ? 'https://www.google.com/maps?q=' + p + '&z=16&output=embed' : 'https://www.google.com/maps?q=' + encodeURIComponent(mapQ()) + '&output=embed'; }
+    function mapDir() { var p = pin(); return p ? 'https://www.google.com/maps/dir/?api=1&destination=' + p : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(mapQ()); }
     function footer() {
         var wa = C.whatsapp || '971555577478';
         var map = CO.map === false ? '' :
@@ -98,7 +100,7 @@
             '<div class="gt-ftr-grid">' +
             '<div class="gt-ftr-brand"><img src="images/logo2.svg" alt="Grape Tree FZE"><p>Japanese craftsmanship, made for gifting in the UAE.</p><div class="gt-soc">' + socialRows() + '</div></div>' +
             '<div class="gt-ftr-col"><h4>Explore</h4><a href="index.html">Home</a><a href="katanukiya.html">Katanukiya</a><a href="gildart.html">GildArt</a><a href="shop.html">Shop</a><a href="shop.html#custom">Custom orders</a></div>' +
-            '<div class="gt-ftr-col"><h4>Customers</h4><a href="account.html">My account</a><a href="account.html">My orders</a><a href="checkout.html">Cart</a><a href="contact.html">Contact us</a></div>' +
+            '<div class="gt-ftr-col"><h4>Customers</h4><a href="account.html">My account</a><a href="account.html">My orders</a><a href="order-track.html">Track an order</a><a href="checkout.html">Cart</a><a href="contact.html">Contact us</a></div>' +
             '<div class="gt-ftr-col gt-ftr-contact"><h4>Visit &amp; contact</h4><ul>' + contactRows() + '</ul></div>' +
             map +
             '</div>' +

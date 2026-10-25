@@ -82,6 +82,7 @@
         }, function () { B.profile = { id: B.session.user.id, email: B.session.user.email, role: 'customer' }; return B.profile; });
     }
     B.isAdmin = function () { return !!(B.profile && B.profile.role === 'admin'); };
+    B.isStaff = function () { return !!(B.profile && (B.profile.role === 'admin' || B.profile.role === 'staff')); };   // admin or staff: may manage orders
     B.user = function () { return B.session ? B.session.user : null; };
     function ok(r) { if (r && r.error) throw r.error; return r ? r.data : null; }
 
@@ -101,7 +102,17 @@
             if (B.profile) { B.profile.full_name = name; B.profile.phone = phone; }
         });
     };
-    B.myOrders = function () { return B.client.from('orders').select('*').order('created_at', { ascending: false }).limit(100).then(ok); };
+    B.myOrders = function () { return B.client.from('orders').select('*').eq('user_id', B.session.user.id).order('created_at', { ascending: false }).limit(100).then(ok); };
+    /* order tracking: order number + the phone or email used on the order (a signed-in owner needs no contact) */
+    B.trackOrder = function (no, contact) {
+        return B.ready.then(function (on) {
+            if (!on) throw new Error('offline');
+            return B.client.rpc('track_order', { p_no: Number(no), p_contact: String(contact || '') });
+        }).then(ok);
+    };
+    /* team (admin only) */
+    B.teamList = function () { return B.client.rpc('team_list').then(ok); };
+    B.teamSet = function (email, role) { return B.client.rpc('team_set', { p_email: email, p_role: role }).then(ok); };
     B.myAddresses = function () { return B.client.from('addresses').select('*').order('created_at', { ascending: false }).then(ok); };
     B.addAddress = function (a) { a.user_id = B.session.user.id; return B.client.from('addresses').insert(a).then(ok); };
     B.deleteAddress = function (id) { return B.client.from('addresses').delete().eq('id', id).then(ok); };

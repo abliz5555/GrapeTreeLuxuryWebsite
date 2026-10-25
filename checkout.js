@@ -171,6 +171,7 @@
               '<p>Your order request has been sent. We will confirm availability, price and delivery with you shortly. For the fastest reply, you can also send it to us on WhatsApp now.</p>' +
               (extra.pay === 'bank' && bankText ? '<div class="co-bank"><strong>' + esc(T('Bank details')) + '</strong><pre dir="ltr">' + esc(bankText) + '</pre><p>' + esc(T('Please send the transfer receipt on WhatsApp with your order number. We prepare your order once the payment arrives.')) + '</p></div>' : '') +
               '<a class="gt-btn" href="' + wa + '" target="_blank" rel="noopener">Send on WhatsApp</a>' +
+              (extra.no ? '<a class="gt-btn gt-btn-outline" href="order-track.html?no=' + esc(extra.no) + '">' + esc(T('Track this order')) + '</a>' : '') +
               '<a class="gt-btn gt-btn-outline" href="invoice.html?last=1&print=1" target="_blank" rel="noopener">Download order PDF</a>' +
               '<a class="gt-btn gt-btn-outline" href="shop.html">Back to the shop</a></div>'
             : '<div class="co-success"><h2>One more step</h2>' +

@@ -1,8 +1,8 @@
 /* =====================================================================
    GRAPE TREE - LANGUAGE SYSTEM
    English is written in the pages. Other languages live in lang/XX.js
-   as "English text -> translated text". To add a language:
-     1. copy lang/ar.js to lang/xx.js and translate the right-hand side
+   as "English text -> translated text". Languages: English, Arabic, Turkish, Chinese, Russian, Japanese. To add one:
+     1. copy lang/tr.js to lang/xx.js and translate the right-hand side
      2. add its code to LANGS below
    Missing phrases simply stay in English.
    ===================================================================== */
@@ -10,8 +10,11 @@
     'use strict';
     var LANGS = [
         { code: 'en', name: 'English', short: 'EN', dir: 'ltr' },
-        { code: 'ar', name: 'العربية', short: 'AR', dir: 'rtl' }
-        /* later: { code:'hi', name:'हिन्दी', short:'HI', dir:'ltr' }, { code:'ru', ... }, { code:'ur', ..., dir:'rtl' }, { code:'zh', ... } */
+        { code: 'ar', name: 'العربية', short: 'AR', dir: 'rtl' },
+        { code: 'tr', name: 'Türkçe', short: 'TR', dir: 'ltr' },
+        { code: 'zh', name: '中文', short: 'ZH', dir: 'ltr' },
+        { code: 'ru', name: 'Русский', short: 'RU', dir: 'ltr' },
+        { code: 'ja', name: '日本語', short: 'JA', dir: 'ltr' }
     ];
     var KEY = 'gt-lang';
     var doc = document, root = doc.documentElement;
@@ -33,7 +36,7 @@
     /* load the dictionary now (synchronously, before the page is built) */
     window.GT_I18N = window.GT_I18N || {};
     if (current !== 'en' && !window.GT_I18N[current]) {
-        doc.write('<script src="lang/' + current + '.js"><\/script>');
+        doc.write('<script src="lang/' + current + '.js?v=11"><\/script>');
     }
     if (current !== 'en') {
         var f = doc.createElement('link');
@@ -41,6 +44,19 @@
         f.href = 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@500;600;700&display=swap';
         if (current === 'ar') doc.head.appendChild(f);
     }
+    /* fonts + spacing for the extra languages (system fonts, nothing to download) */
+    (function () {
+        var st = doc.createElement('style');
+        st.textContent =
+            'html[lang="zh"]{--sans:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;--serif:"Songti SC","Noto Serif SC","SimSun",serif;--serif-2:"Songti SC","Noto Serif SC","SimSun",serif}' +
+            'html[lang="ja"]{--sans:"Hiragino Sans","Yu Gothic","Meiryo","Noto Sans JP",system-ui,sans-serif;--serif:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;--serif-2:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif}' +
+            'html[lang="ru"]{--serif:"Playfair Display","Times New Roman",Georgia,serif;--serif-2:"Playfair Display","Times New Roman",Georgia,serif}' +
+            'html[lang="zh"] *,html[lang="ja"] *{letter-spacing:0 !important;text-transform:none !important}' +
+            'html[lang="zh"] body,html[lang="ja"] body{line-break:strict;word-break:normal;overflow-wrap:anywhere}' +
+            'html[lang="ru"] body,html[lang="tr"] body{overflow-wrap:break-word}html[lang] h1,html[lang] h2,html[lang] h3{text-wrap:balance}.lang-btn{white-space:nowrap}' +
+            'html[lang="ru"] .gt-hdr .gt-nav>a,html[lang="ru"] .gt-hdr .gt-brands-link,html[lang="tr"] .gt-hdr .gt-nav>a,html[lang="tr"] .gt-hdr .gt-brands-link{letter-spacing:.04em}';
+        doc.head.appendChild(st);
+    })();
 
     /* ------------------------------ engine ------------------------------ */
     var dict = null, lower = null, patterns = [];
@@ -150,7 +166,7 @@
         if (!find(code) || code === current) return;
         var go = function () { current = code; store(code); apply(); };
         if (code !== 'en' && !window.GT_I18N[code]) {
-            var s = doc.createElement('script'); s.src = 'lang/' + code + '.js'; s.onload = go; doc.head.appendChild(s);
+            var s = doc.createElement('script'); s.src = 'lang/' + code + '.js?v=11'; s.onload = go; doc.head.appendChild(s);
         } else go();
     }
 

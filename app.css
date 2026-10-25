@@ -63,3 +63,4 @@
 .co-bank pre{ white-space:pre-wrap; font:500 14px/1.7 ui-monospace,Menlo,Consolas,monospace; margin:8px 0; color:var(--ink); }
 .co-bank p{ margin:0 !important; font-size:13.5px !important; }
 .co-no{ font-size:17px !important; margin:0 0 6px !important; color:var(--ink); }
+.st-ready{ background:#e3f3ee; color:#1c6a55; }

@@ -297,5 +297,6 @@ html, body, body *{ font-variant-numeric:lining-nums; font-feature-settings:"lnu
 .legal-doc ul{ padding-left:22px; margin:8px 0 12px; }
 .legal-links{ display:flex; flex-wrap:wrap; gap:10px 22px; margin-top:44px; padding-top:20px; border-top:1px solid rgba(var(--ink-rgb,40,24,16),.15); }
 .legal-links a{ font-weight:600; font-size:14px; }
+.legal-links a{ white-space:normal; overflow-wrap:anywhere; max-width:100%; }
 .gt-ftr-legal{ display:flex; flex-wrap:wrap; gap:6px 18px; }
 .gt-ftr-legal a{ color:inherit; opacity:.8; text-decoration:underline; text-underline-offset:3px; }

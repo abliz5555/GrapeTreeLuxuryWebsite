@@ -147,3 +147,20 @@ v9 - Admin + legal protection
  * Run supabase/v9-update.sql ONCE in Supabase SQL Editor BEFORE publishing (orders need the new columns).
  * Redeploy Edge Functions studio-ai (Verify JWT OFF) and order-email.
  * Legal texts are starting points: have a UAE lawyer review them.
+
+v10 - Staff accounts, order tracking
+ * Run supabase/v10-update.sql ONCE in Supabase SQL Editor.
+ * Admin > Team: add staff by email (they sign up first on account.html). Staff see the Orders page only.
+ * order-track.html: customers enter order number + phone/email to see status, items and updates. Status changes and "message to customer" in admin appear there.
+ * New status "Ready for delivery". All scripts/styles now load with ?v=10 so browsers fetch fresh files after each update (change the number when you publish again).
+
+v11 - Staff passwords, delete orders
+ * Deploy the Edge Function supabase/functions/team-admin/index.ts (name: team-admin, Verify JWT OFF). No secrets to add.
+ * Run supabase/v11-update.sql once (lets ONLY an admin delete orders).
+ * Admin > Team: create staff with email + password, change password, delete account. Admin > Orders: "Delete order" (admin only).
+
+==== v12 (languages, map location, all-device sizes) ====
+- New languages: Turkish, Chinese (Simplified), Russian, Japanese (lang/tr.js, zh.js, ru.js, ja.js). Switcher in the header. Admin page and legal pages stay in English on purpose.
+- Admin > Business info > "Our location on the map": click the map, drag the pin, search a place, paste a Google Maps link, or use your current location. Press Save. The footer map and "Get directions" then use the exact pin.
+- Pages checked at phone (360/390), iPad (768/820/1024) and PC (1280/1920) widths in every language.
+- Cache version is now ?v=11 on every script and style link.
