@@ -36,7 +36,7 @@
     /* load the dictionary now (synchronously, before the page is built) */
     window.GT_I18N = window.GT_I18N || {};
     if (current !== 'en' && !window.GT_I18N[current]) {
-        doc.write('<script src="lang/' + current + '.js?v=12"><\/script>');
+        doc.write('<script src="lang/' + current + '.js?v=13"><\/script>');
     }
     if (current !== 'en') {
         var f = doc.createElement('link');
@@ -48,6 +48,7 @@
     (function () {
         var st = doc.createElement('style');
         st.textContent =
+            'html:not(.gt-edit-on) [data-gt-hide]{display:none !important}' +
             'html[lang="zh"]{--sans:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;--serif:"Songti SC","Noto Serif SC","SimSun",serif;--serif-2:"Songti SC","Noto Serif SC","SimSun",serif}' +
             'html[lang="ja"]{--sans:"Hiragino Sans","Yu Gothic","Meiryo","Noto Sans JP",system-ui,sans-serif;--serif:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;--serif-2:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif}' +
             'html[lang="ru"]{--serif:"Playfair Display","Times New Roman",Georgia,serif;--serif-2:"Playfair Display","Times New Roman",Georgia,serif}' +
@@ -61,9 +62,9 @@
     /* ------------------------------ engine ------------------------------ */
     var dict = null, lower = null, patterns = [];
     /* texts and fonts the owner changed in the admin page (saved in the database, cached in the browser) */
-    var OV = {};
+    var OV = {}, STY = {}, HIDE = '\u0001hide';
     function cachedContent() { try { return JSON.parse(localStorage.getItem('gt-content-v1') || '{}') || {}; } catch (e) { return {}; } }
-    function loadOv(c) { OV = (c && c.texts && typeof c.texts === 'object') ? c.texts : {}; }
+    function loadOv(c) { OV = (c && c.texts && typeof c.texts === 'object') ? c.texts : {}; STY = (c && c.styles && typeof c.styles === 'object') ? c.styles : {}; }
     loadOv(cachedContent());
     var FONT_CSS = {
         'Cormorant Garamond': 'Cormorant+Garamond:wght@400;500;600', 'Playfair Display': 'Playfair+Display:wght@400;500;600', 'Lora': 'Lora:wght@400;500;600',
@@ -73,14 +74,15 @@
         'Nunito Sans': 'Nunito+Sans:wght@300;400;600;700', 'Open Sans': 'Open+Sans:wght@300;400;600;700', 'DM Sans': 'DM+Sans:wght@300;400;500;700', 'Raleway': 'Raleway:wght@300;400;500;600'
     };
     function applyFonts(c) {
-        var f = c && c.fonts; if (!f || typeof f !== 'object') return;
+        var f = (c && c.fonts && typeof c.fonts === 'object') ? c.fonts : {};
         var h = FONT_CSS[f.heading] ? f.heading : '', b = FONT_CSS[f.body] ? f.body : '';
-        if (!h && !b) return;
-        var fam = [h, b].filter(function (x, i, a) { return x && a.indexOf(x) === i; }).map(function (x) { return 'family=' + FONT_CSS[x]; }).join('&');
-        var lk = doc.getElementById('gt-fonts-link');
+        var used = [h, b];
+        Object.keys(STY).forEach(function (k) { if (STY[k] && FONT_CSS[STY[k].font]) used.push(STY[k].font); });
+        var fam = used.filter(function (x, i, a) { return x && a.indexOf(x) === i; }).map(function (x) { return 'family=' + FONT_CSS[x]; }).join('&');
+        var lk = doc.getElementById('gt-fonts-link'), st = doc.getElementById('gt-fonts-css');
+        if (!fam) { if (lk) lk.removeAttribute('href'); if (st) st.textContent = ''; return; }
         if (!lk) { lk = doc.createElement('link'); lk.id = 'gt-fonts-link'; lk.rel = 'stylesheet'; doc.head.appendChild(lk); }
         lk.href = 'https://fonts.googleapis.com/css2?' + fam + '&display=swap';
-        var st = doc.getElementById('gt-fonts-css');
         if (!st) { st = doc.createElement('style'); st.id = 'gt-fonts-css'; doc.head.appendChild(st); }
         st.textContent = 'html:root:not([lang="ar"]):not([lang="zh"]):not([lang="ja"]){' + (h ? '--serif:"' + h + '",Georgia,serif;--serif-2:"' + h + '",Georgia,serif;' : '') + (b ? '--sans:"' + b + '",system-ui,sans-serif;' : '') + '}';
     }
@@ -122,9 +124,36 @@
         if (n.__gtOut !== undefined && v === n.__gtOut) { var o = n.__gtEn; } /* untouched since we set it */
         else { n.__gtEn = v; o = v; }
         if (!/[A-Za-z]/.test(o)) { n.__gtOut = o; return; }
-        var t = translate(o);
+        var t = translate(o), key = norm(o), ov = OV[key];
+        var isHid = !!(ov && ov['*'] === HIDE), editing = root.classList.contains('gt-edit-on');
+        var sole = isHid && onlyText(n);
+        if (isHid && !sole && !editing) t = '';
         n.__gtOut = t;
         if (n.nodeValue !== t) n.nodeValue = t;
+        setHide(n, sole);
+        applySty(n, (isHid && !editing) ? null : STY[key]);
+    }
+    /* hide = remove the whole element when the text is all it holds, otherwise just empty the text */
+    function onlyText(n) {
+        var p = n.parentNode; if (!p || /^(BODY|HTML|MAIN|SECTION|ARTICLE)$/.test(p.nodeName)) return false;
+        for (var c = p.firstChild; c; c = c.nextSibling) if (c !== n && !(c.nodeType === 8 || (c.nodeType === 3 && !c.nodeValue.trim()))) return false;
+        return true;
+    }
+    function setHide(n, on) {
+        if (on) { var p = n.parentNode; if (p && p.setAttribute) { p.setAttribute('data-gt-hide', ''); n.__gtHideEl = p; } }
+        else if (n.__gtHideEl) { n.__gtHideEl.removeAttribute('data-gt-hide'); n.__gtHideEl = null; }
+    }
+    /* font / size chosen for one text: the text is wrapped in a small span that carries the style */
+    function applySty(n, s) {
+        var p = n.parentNode; if (!p || !p.classList) return;
+        var own = p.classList.contains('gt-sty');
+        if (!s || (!s.font && !(s.size && +s.size !== 100))) { if (own) { p.style.fontFamily = ''; p.style.fontSize = ''; } return; }
+        if (!own) {
+            if (/^(OPTION|TITLE|TEXTAREA|SCRIPT|STYLE|SELECT|BUTTON)$/.test(p.nodeName) && p.nodeName !== 'BUTTON') return;
+            var w = doc.createElement('span'); w.className = 'gt-sty'; p.insertBefore(w, n); w.appendChild(n); p = w;
+        }
+        p.style.fontFamily = FONT_CSS[s.font] ? '"' + s.font + '",serif' : '';
+        p.style.fontSize = (s.size && +s.size !== 100) ? (+s.size) + '%' : '';
     }
 
     function doAttrs(el) {
@@ -193,7 +222,7 @@
         if (!find(code) || code === current) return;
         var go = function () { current = code; store(code); apply(); };
         if (code !== 'en' && !window.GT_I18N[code]) {
-            var s = doc.createElement('script'); s.src = 'lang/' + code + '.js?v=12'; s.onload = go; doc.head.appendChild(s);
+            var s = doc.createElement('script'); s.src = 'lang/' + code + '.js?v=13'; s.onload = go; doc.head.appendChild(s);
         } else go();
     }
 
@@ -230,13 +259,12 @@
     doc.addEventListener('gt:content', function (e) {
         var c = e.detail || {};
         if (!Object.keys(c).length) return;      /* nothing arrived (offline): keep what we already show */
-        applyFonts(c);
-        var before = JSON.stringify(OV); loadOv(c);
-        if (JSON.stringify(OV) !== before) apply();
+        var before = JSON.stringify([OV, STY]); loadOv(c); applyFonts(c);
+        if (JSON.stringify([OV, STY]) !== before) apply();
     });
     /* edit mode: ?edit=1 lets a signed-in admin click any text on the page and change it */
     if (/[?&]edit=1/.test(location.search)) {
-        var te = doc.createElement('script'); te.src = 'textedit.js?v=12'; te.defer = true; doc.head.appendChild(te);
+        var te = doc.createElement('script'); te.src = 'textedit.js?v=13'; te.defer = true; doc.head.appendChild(te);
     }
 
     window.GT = window.GT || {};
@@ -245,6 +273,11 @@
         t: function (s) { return translate(s); },
         key: function (node) { return norm(node.__gtEn != null ? node.__gtEn : node.nodeValue); },
         original: function (node) { return node.__gtEn != null ? node.__gtEn : node.nodeValue; },
-        reload: function (c) { applyFonts(c || cachedContent()); loadOv(c || cachedContent()); apply(); }
+        reload: function (c) { c = c || cachedContent(); loadOv(c); applyFonts(c); apply(); },
+        previewFonts: function (f) { applyFonts({ fonts: f || {} }); },
+        fontNames: function () { return Object.keys(FONT_CSS); },
+        HIDE: HIDE,
+        sty: function (key) { return STY[key] || null; },
+        ov: function (key) { return OV[key] || null; }
     };
 })();

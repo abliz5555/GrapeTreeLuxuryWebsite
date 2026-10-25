@@ -600,7 +600,7 @@
     /* ============================ WEBSITE IMAGES ============================ */
     function viewWebsite() {
         root.innerHTML = '<div class="adm-bar"><h2>Website: texts, fonts and pictures</h2></div>' +
-            '<div class="adm-card"><h3>1. Change the words on any page</h3><p class="adm-lead">Open a page, then click any text (for example "Japanese craftsmanship. UAE luxury.") and type the new words. It is saved for every visitor. To change the Arabic, Turkish, Chinese, Russian or Japanese version, switch the language button on that page first.</p>' +
+            '<div class="adm-card"><h3>1. Change the words on any page</h3><p class="adm-lead">Open a page, then tap or click any text (for example "Japanese craftsmanship. UAE luxury.") to change the words, the font and the size, or to delete it. The "Fonts" button in the bar changes the font of the whole website. Everything is saved for every visitor. To change the Arabic, Turkish, Chinese, Russian or Japanese version, switch the language button on that page first.</p>' +
             '<div class="adm-pages">' + [['Home page', 'index.html'], ['Katanukiya', 'katanukiya.html'], ['GildArt', 'gildart.html'], ['Shop', 'shop.html'], ['Contact', 'contact.html'], ['Cake designer', 'cake-studio.html'], ['Chocolate designer', 'chocolate-studio.html'], ['Track order', 'order-track.html'], ['My account', 'account.html'], ['Checkout', 'checkout.html']].map(function (p) { return '<a class="adm-btn ghost" target="_blank" rel="noopener" href="' + p[1] + '?edit=1">' + p[0] + '</a>'; }).join('') + '</div>' +
             '<p class="adm-hint">The page opens in a new tab with a dark bar at the bottom. Press <b>Finish</b> when you are done.</p></div>' +
             '<div class="adm-card" id="w-texts"><h3>Your text changes</h3><p class="adm-loading">Loading...</p></div>' +
@@ -614,16 +614,21 @@
     function drawTexts() {
         var box = $('#w-texts'); if (!box) return;
         var texts = CONTENT.texts || {}, rows = [];
-        Object.keys(texts).forEach(function (k) { Object.keys(texts[k] || {}).forEach(function (l) { rows.push([k, l, texts[k][l]]); }); });
+        Object.keys(texts).forEach(function (k) { Object.keys(texts[k] || {}).forEach(function (l) { rows.push([k, l, texts[k][l], 'text']); }); });
+        var sty = CONTENT.styles || {};
+        Object.keys(sty).forEach(function (k) { var v = sty[k] || {}; rows.push([k, '', (v.font ? 'Font: ' + v.font + '. ' : '') + (v.size && +v.size !== 100 ? 'Size: ' + v.size + '%' : ''), 'style']); });
         if (!rows.length) { box.innerHTML = '<h3>Your text changes</h3><p class="adm-lead">Nothing changed yet. Every text on the website is still the original.</p>'; return; }
         box.innerHTML = '<h3>Your text changes</h3><div class="adm-tbl"><table><thead><tr><th>Language</th><th>Original</th><th>Your text</th><th></th></tr></thead><tbody>' + rows.map(function (r, i) {
-            return '<tr><td>' + esc(LN[r[1]] || r[1]) + '</td><td>' + esc(r[0].length > 90 ? r[0].slice(0, 90) + '...' : r[0]) + '</td><td>' + esc(r[2]) + '</td><td><button class="adm-btn ghost" data-undo="' + i + '">Back to original</button></td></tr>';
+            var hid = r[2] === '\u0001hide';
+            return '<tr><td>' + esc(r[3] === 'style' ? 'Font / size' : (r[1] === '*' ? 'All languages' : (LN[r[1]] || r[1]))) + '</td><td>' + esc(r[0].length > 90 ? r[0].slice(0, 90) + '...' : r[0]) + '</td><td>' + (hid ? '<i>Deleted (hidden)</i>' : esc(r[2])) + '</td><td><button class="adm-btn ghost" data-undo="' + i + '">Back to original</button></td></tr>';
         }).join('') + '</tbody></table></div>';
         $$('[data-undo]', box).forEach(function (b) {
             b.addEventListener('click', function () {
-                var r = rows[+b.getAttribute('data-undo')], t = JSON.parse(JSON.stringify(CONTENT.texts || {}));
-                if (t[r[0]]) { delete t[r[0]][r[1]]; if (!Object.keys(t[r[0]]).length) delete t[r[0]]; }
-                B.saveContent('texts', t).then(function () { CONTENT.texts = t; try { localStorage.removeItem('gt-content-v1'); } catch (x) {} toast('Original text restored'); drawTexts(); }).catch(fail);
+                var r = rows[+b.getAttribute('data-undo')], t = JSON.parse(JSON.stringify(CONTENT.texts || {})), sy = JSON.parse(JSON.stringify(CONTENT.styles || {}));
+                var job;
+                if (r[3] === 'style') { delete sy[r[0]]; job = B.saveContent('styles', sy).then(function () { CONTENT.styles = sy; }); }
+                else { if (t[r[0]]) { delete t[r[0]][r[1]]; if (!Object.keys(t[r[0]]).length) delete t[r[0]]; } job = B.saveContent('texts', t).then(function () { CONTENT.texts = t; }); }
+                job.then(function () { try { localStorage.removeItem('gt-content-v1'); } catch (x) {} toast('Original restored'); drawTexts(); }).catch(fail);
             });
         });
     }
