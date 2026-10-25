@@ -52,7 +52,7 @@
                 var b = $('button', e.target); b.disabled = true;
                 B.signIn($('#l-email').value.trim(), $('#l-pass').value).catch(function (err) {
                     b.disabled = false;
-                    $('#l-err').textContent = /confirm/i.test(err.message) ? 'Please confirm your email first (check your inbox).' : 'The email or password is not right.';
+                    $('#l-err').textContent = /confirm/i.test(err.message) ? 'Please confirm your email first (check your inbox).' : /Too many/.test(err.message) ? err.message : 'The email or password is not right.';
                 });
             });
             return;

@@ -49,6 +49,14 @@
         });
     }
 
+    /* ------------------------------ protection ------------------------------ */
+    /* the site must never be shown inside another website's frame (click-jacking) */
+    try { if (window.top !== window.self) { doc.documentElement.style.display = 'none'; window.top.location = window.self.location; } } catch (e) { doc.documentElement.style.display = 'none'; }
+    /* slow down password guessing: after 5 wrong tries this browser waits 5 minutes (the server has its own limits too) */
+    var FAILS = 'gt-login-fails';
+    function failState() { try { return JSON.parse(localStorage.getItem(FAILS) || '{}') || {}; } catch (e) { return {}; } }
+    function failSave(s) { try { localStorage.setItem(FAILS, JSON.stringify(s)); } catch (e) {} }
+
     /* ------------------------------ start-up ------------------------------ */
     var authListeners = [];
     B.onAuth = function (fn) { authListeners.push(fn); };
@@ -65,11 +73,11 @@
                 if (event === 'PASSWORD_RECOVERY') B.recovery = true;
                 if (!session) { B.profile = null; emitAuth(); return; }
                 /* never call the database inside this callback itself (supabase rule), so defer */
-                setTimeout(function () { loadProfile().then(function () { emitAuth(); doc.dispatchEvent(new CustomEvent('gt:auth', { detail: { event: event } })); }); }, 0);
+                setTimeout(function () { loadProfile().then(function () { return sessionGuard(event); }).then(function () { emitAuth(); doc.dispatchEvent(new CustomEvent('gt:auth', { detail: { event: event } })); }); }, 0);
             });
             return B.client.auth.getSession().then(function (r) {
                 B.session = (r && r.data && r.data.session) || null;
-                return B.session ? loadProfile() : null;
+                return B.session ? loadProfile().then(function () { return sessionGuard('INIT'); }) : null;
             }).then(function () { emitAuth(); return true; });
         }).catch(function () { B.enabled = false; return false; });
     })();
@@ -87,6 +95,61 @@
     B.user = function () { return B.session ? B.session.user : null; };
     function ok(r) { if (r && r.error) throw r.error; return r ? r.data : null; }
 
+
+    /* ------------------- safety: one device per account + automatic sign-out when idle ------------------- */
+    var IDLE_TEAM = 30 * 60000, IDLE_CUSTOMER = 2 * 3600000, ACT = 'gt-last-active';
+    function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function lsSet(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+    function sKey() { return 'gt-sess-' + (B.session && B.session.user ? B.session.user.id : ''); }
+    function notice(msg) {
+        try {
+            var d = doc.createElement('div'); d.setAttribute('role', 'alert');
+            d.style.cssText = 'position:fixed;left:12px;right:12px;top:12px;max-width:520px;margin:0 auto;z-index:99999;background:#2a1810;color:#fff;padding:14px 16px;border-radius:12px;font:500 15px/1.4 Inter,system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.3);text-align:center';
+            d.textContent = msg; doc.body.appendChild(d); setTimeout(function () { d.remove(); }, 12000);
+        } catch (e) {}
+    }
+    function forceOut(msg) {
+        if (!B.session) return Promise.resolve();
+        lsSet(sKey(), null);
+        return B.client.auth.signOut({ scope: 'local' }).catch(function () {}).then(function () { B.session = null; B.profile = null; emitAuth(); notice(msg); });
+    }
+    function idleLimit() { return B.isStaff() ? IDLE_TEAM : IDLE_CUSTOMER; }
+    function idleCheck() {
+        if (!B.session) return Promise.resolve(false);
+        var last = +lsGet(ACT) || 0;
+        if (last && Date.now() - last > idleLimit()) { return forceOut('You were signed out because the account was not used for a while. Please sign in again.').then(function () { return true; }); }
+        return Promise.resolve(false);
+    }
+    function sessionCheck() {
+        if (!B.session || !B.client) return Promise.resolve();
+        var mine = lsGet(sKey()); if (!mine) return Promise.resolve();
+        return B.client.rpc('session_ok', { p_key: mine }).then(function (r) {
+            if (r && !r.error && r.data === false) return forceOut('You were signed out because this account was signed in on another device.');
+        }, function () {});
+    }
+    function sessionGuard(event) {
+        if (!B.session || !B.client) return Promise.resolve();
+        return idleCheck().then(function (out) {
+            if (out) return;
+            var fresh = B.fresh || event === 'PASSWORD_RECOVERY' || !lsGet(sKey());
+            B.fresh = false; lsSet(ACT, String(Date.now()));
+            if (fresh) {
+                var key = Math.random().toString(36).slice(2) + Date.now().toString(36);
+                lsSet(sKey(), key);
+                return B.client.rpc('claim_session', { p_key: key }).then(function () {}, function () {});
+            }
+            return sessionCheck();
+        });
+    }
+    (function () {
+        var lastTouch = 0;
+        function touch() { var n = Date.now(); if (n - lastTouch > 15000) { lastTouch = n; if (B.session) lsSet(ACT, String(n)); } }
+        ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function (ev) { doc.addEventListener(ev, touch, { passive: true, capture: true }); });
+        setInterval(function () { if (!B.session) return; idleCheck().then(function (out) { if (!out && !doc.hidden) sessionCheck(); }); }, 30000);
+        doc.addEventListener('visibilitychange', function () { if (!doc.hidden && B.session) idleCheck().then(function (out) { if (!out) sessionCheck(); }); });
+        window.addEventListener('focus', function () { if (B.session) idleCheck().then(function (out) { if (!out) sessionCheck(); }); });
+    })();
+
     /* ------------------------------ accounts ------------------------------ */
     function here(page) { return new URL(page, location.href).href.split('#')[0]; }
     B.signUp = function (email, password, name, phone) {
@@ -94,8 +157,15 @@
             return B.client.auth.signUp({ email: email, password: password, options: { data: { full_name: name || '', phone: phone || '' }, emailRedirectTo: here('account.html') } });
         }).then(ok);
     };
-    B.signIn = function (email, password) { return B.ready.then(function () { return B.client.auth.signInWithPassword({ email: email, password: password }); }).then(ok); };
-    B.signOut = function () { return B.ready.then(function () { return B.client.auth.signOut(); }).then(function () { B.session = null; B.profile = null; emitAuth(); }); };
+    B.signIn = function (email, password) {
+        var fs = failState();
+        if (fs.until && Date.now() < fs.until) return Promise.reject(new Error('Too many wrong attempts. Please wait ' + Math.ceil((fs.until - Date.now()) / 60000) + ' minute(s) and try again, or use "Forgot password".'));
+        B.fresh = true;
+        return B.ready.then(function () { return B.client.auth.signInWithPassword({ email: email, password: password }); }).then(ok).then(function (d) { failSave({}); return d; }, function (e) {
+            var s = failState(); s.n = (s.n || 0) + 1; if (s.n >= 5) { s.until = Date.now() + 5 * 60000; s.n = 0; } failSave(s); throw e;
+        });
+    };
+    B.signOut = function () { return B.ready.then(function () { var k = sKey(); lsSet(k, null); return B.client.auth.signOut({ scope: 'local' }); }).then(function () { B.session = null; B.profile = null; emitAuth(); }); };
     B.resetPassword = function (email) { return B.ready.then(function () { return B.client.auth.resetPasswordForEmail(email, { redirectTo: here('account.html') }); }).then(ok); };
     B.setPassword = function (pw) { return B.ready.then(function () { return B.client.auth.updateUser({ password: pw }); }).then(ok); };
     B.saveProfile = function (name, phone) {
