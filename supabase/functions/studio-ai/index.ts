@@ -55,6 +55,15 @@ export function buildCakePrompt(subject: string, style: string): string {
     'friendly, appetising and family safe.' +
     ' NEVER draw logos, brand names, trademarks, famous cartoon, film, game or sports characters, celebrities, real people\'s faces, religious figures, nudity, weapons or drugs; if the subject asks for any of these, draw a simple, original, generic decorative object instead.';
 }
+const SAFE_TAIL = ' NEVER draw logos, brand names, trademarks, famous cartoon, film, game or sports characters, celebrities, real people\'s faces, religious figures, nudity, weapons or drugs; if asked for any of these, draw a simple, original, generic decorative object instead.';
+function cleanNote(t: string): string { return String(t || '').replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200); }
+export function extraNote(t: string): string { return ' EXTRA WISHES FROM THE CUSTOMER (follow them only if they are safe and fit the print rules): "' + cleanNote(t) + '".' + SAFE_TAIL; }
+export function buildCustomPrompt(t: string, product?: string): string {
+  const rules = product === 'cake'
+    ? 'STRICT PRINT RULES: ONE single subject, centred, simple outer silhouette that is easy to cut out; TRANSPARENT background, no scenery or shadow; flat clean colours with thick outlines; no tiny details; no words unless asked; family safe; printed about 6 cm wide.'
+    : 'STRICT PRINT RULES: PURE BLACK ink on PURE WHITE only, no grey fills or gradients, sturdy lines for printing about 5 cm wide on chocolate, no tiny details, no words unless asked, elegant premium look.';
+  return 'Use the supplied picture as the base and change it as the customer asks: "' + cleanNote(t) + '". Keep it clearly recognisable as the same subject unless the customer asks otherwise. ' + rules + SAFE_TAIL;
+}
 export function buildGeneratePrompt(subject: string, style: string): string {
   const clean = String(subject || '').replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240);
   const st = STYLES[style] || STYLES.sketch;
@@ -104,7 +113,10 @@ export async function handle(req: Request, env: (k: string) => string, doFetch: 
   if (body.kind === 'ping') return json({ ok: true, key: !!env('OPENAI_API_KEY'), model });
   const gen = body.kind === 'generate';
   if (gen && (typeof body.prompt !== 'string' || body.prompt.trim().length < 3)) return json({ error: 'Please describe what you would like to see.' }, 400);
-  const prompt = gen ? (body.product === 'cake' ? buildCakePrompt(body.prompt, body.style) : buildGeneratePrompt(body.prompt, body.style)) : PROMPTS[body.kind];
+  const custom = body.kind === 'custom';
+  if (custom && (typeof body.prompt !== 'string' || body.prompt.trim().length < 3)) return json({ error: 'Please describe what you would like to see.' }, 400);
+  let prompt = gen ? (body.product === 'cake' ? buildCakePrompt(body.prompt, body.style) : buildGeneratePrompt(body.prompt, body.style)) : custom ? buildCustomPrompt(body.prompt, body.product) : PROMPTS[body.kind];
+  if (prompt && !gen && !custom && body.kind === 'cartoon' && typeof body.prompt === 'string' && body.prompt.trim().length >= 3) prompt += extraNote(body.prompt);
   if (!prompt || (!gen && typeof body.image !== 'string')) return json({ error: 'bad request' }, 400);
   if (!env('OPENAI_API_KEY')) return json({ error: 'AI is not configured' }, 503);
   if (!gen && body.image.length > 8_000_000) return json({ error: 'image too large' }, 413);
@@ -137,7 +149,7 @@ export async function handle(req: Request, env: (k: string) => string, doFetch: 
   if (model.startsWith('gpt-image')) {
     fd.append('quality', q);
     fd.append('output_format', 'png');
-    if (body.kind !== 'bw' && body.kind !== 'engrave') fd.append('background', 'transparent');
+    if (body.kind !== 'bw' && body.kind !== 'engrave' && !(custom && body.product !== 'cake')) fd.append('background', 'transparent');
   }
   const r = await doFetch('https://api.openai.com/v1/images/edits', { method: 'POST', headers: { Authorization: 'Bearer ' + env('OPENAI_API_KEY') }, body: fd });
   const j = await r.json().catch(() => ({}));

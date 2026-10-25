@@ -235,12 +235,12 @@
         if (ctx && typeof ctx.json === 'function') return ctx.json().then(function (j) { var x = new Error((j && j.error) || e.message || 'ai failed'); x.detail = j && j.detail; x.status = ctx.status; throw x; }, function () { var x = new Error(e.message || 'ai failed'); x.status = ctx.status; throw x; });
         throw new Error((e && e.message) || (r.data && r.data.error) || 'ai failed');
     }
-    B.studioAI = function (kind, blob) {
+    B.studioAI = function (kind, blob, prompt, product) {
         return B.ready.then(function (on) {
             if (!on) throw new Error('backend off');
             return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(r.result); }; r.onerror = rej; r.readAsDataURL(blob); });
         }).then(function (dataUrl) {
-            return withTimeout(B.client.functions.invoke('studio-ai', { body: { kind: kind, image: dataUrl } }), 120000);
+            return withTimeout(B.client.functions.invoke('studio-ai', { body: { kind: kind, image: dataUrl, prompt: prompt || '', product: product || 'chocolate' } }), 120000);
         }).then(function (r) {
             if (r.error) return fnError(r);
             if (!r.data || !r.data.image) throw new Error((r.data && r.data.error) || 'ai failed');

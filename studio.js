@@ -394,24 +394,30 @@
     var LOGIN_HTML = '<a href="account.html">Sign in or create a free account</a>';
     function aiModeText() { return needLogin() ? T('Sign in (free) to use AI') : aiOn() ? T('AI is on') : T('Quick tools mode (AI is not connected)'); }
     function refreshAiMode() { var m = $('#ai-mode'); if (!m) return; m.textContent = aiModeText(); m.className = 'st-aimode ' + (aiOn() ? 'on' : ''); }
-    var KIND_LABEL = { cutout: 'Cut out', cartoon: 'Cartoon', bw: 'Black & white', engrave: 'Engraving style' };
+    var KIND_LABEL = { cutout: 'Cut out', cartoon: 'Cartoon', bw: 'Black & white', engrave: 'Engraving style', custom: 'Your description' };
+    function aiDesc() { var d = $('#ai-desc'); return d ? d.value.replace(/\s+/g, ' ').trim().slice(0, 200) : ''; }
 
     function generate(kind, quiet) {
         if (S.busy || !S.versions.length) return;
         var orig = S.versions[0];
+        var desc = (kind === 'cartoon' || kind === 'custom') ? aiDesc() : '';
+        if (kind === 'custom') {
+            if (desc.length < 3) { toastMsg(T('Please describe what you would like to see.')); var dd = $('#ai-desc'); if (dd) dd.focus(); return; }
+            if (blockedSubject(desc)) { toastMsg(T('We cannot draw protected brands, cartoon characters, real people, religious figures or sensitive subjects. Please describe something original, for example a landmark, an animal or an object.')); return; }
+        }
         S.busy = true; S.lastKind = kind; setBusy(kind);
         var useAI = aiOn(), source = 'ai';
         var run = !useAI ? Promise.reject(new Error('noai')) : B_ready().then(function () {
             var B = backend(); if (!B.enabled) throw new Error('noai');
-            return canvasBlob(scaleTo(orig.src, 1024)).then(function (blob) { return B.studioAI(kind, blob); });
+            return canvasBlob(scaleTo(orig.src, 1024)).then(function (blob) { return B.studioAI(kind, blob, desc, PRODUCT); });
         }).then(blobToCanvas).then(function (c) {
-            if (kind === 'bw' || kind === 'engrave') c = bwToAlpha(c);
+            if (kind === 'bw' || kind === 'engrave' || (kind === 'custom' && !ISCAKE)) c = bwToAlpha(c);
             return { kind: kind, label: KIND_LABEL[kind] + ' (AI)', src: c, ai: true };
         });
         run.catch(function (e) {
             source = 'local';
             if (useAI && !quiet) toastMsg(T('AI is not available right now, so we used our quick tool. You can try AI again, or send it to our designer.'));
-            return new Promise(function (res) { setTimeout(function () { res(localVersion(kind, orig)); }, 30); });
+            return new Promise(function (res) { setTimeout(function () { res(localVersion(kind === 'custom' ? 'cartoon' : kind, orig)); }, 30); });
         }).then(function (v) {
             addVersion(v);
             S.busy = false; setBusy(null);
@@ -1760,7 +1766,7 @@
             flower: '<div class="mk-grid mk-flowers" id="mk-flowers">' + FLOWERS.map(function (f) { return '<button type="button" data-flower="' + f.id + '"><canvas width="64" height="64" data-k="flower" data-f="' + f.id + '"></canvas><span>' + esc(T(f.label)) + '</span></button>'; }).join('') + '</div>'
         };
         var q = doc.createElement('div'); q.className = 'mk-quick'; q.id = 'mk-quick';
-        q.innerHTML = '<div class="mk-chips" id="mk-chips"></div><div class="mk-qbtns"><button type="button" class="st-btn mk-qdel" id="mk-qdel" disabled>' + esc(T('Delete selected')) + '</button><button type="button" class="st-btn mk-qall" id="mk-qall" disabled>' + esc(T('Delete all')) + '</button></div>';
+        q.innerHTML = '<div class="mk-chips" id="mk-chips"></div><p class="st-fine mk-cutnote" id="mk-cutnote" hidden></p><div class="mk-qbtns"><button type="button" class="st-btn mk-qdel" id="mk-qdel" disabled>' + esc(T('Delete selected')) + '</button><button type="button" class="st-btn mk-qall" id="mk-qall" disabled>' + esc(T('Delete all')) + '</button></div>';
         $('#mk-cv').parentNode.insertBefore(q, $('#mk-cv').nextSibling);
         var allT = 0, allTxt = T('Delete all');
         q.addEventListener('click', function (e) {
@@ -1831,6 +1837,9 @@
     function mkSyncQuick() {
         var ch = $('#mk-chips'); if (!ch) return;
         ch.innerHTML = MK.items.length ? MK.items.map(function (it, i) { return '<button type="button" class="mk-chip' + (i === MK.sel ? ' on' : '') + '" data-i="' + i + '">' + esc(itemName(it, i)) + '</button>'; }).join('') : '<span class="mk-none">' + esc(T('Nothing added yet')) + '</span>';
+        var nt = $('#mk-cutnote');
+        if (nt) { var hasBase = MK.items.some(function (i) { return i.type === 'image'; }), others = MK.items.some(function (i) { return i.type !== 'image'; });
+            nt.hidden = !MK.items.length; nt.textContent = hasBase ? T('The cut line follows your main picture. Text, emojis and shapes you add on top are for printing only (not cut).') : T('There is no main picture, so the cut line follows everything you add. Keep it simple.'); }
         $('#mk-qdel').disabled = !MK.items[MK.sel]; $('#mk-qall').disabled = !MK.items.length;
         var on = ch.querySelector('.on'); if (on && on.scrollIntoView) { try { ch.scrollLeft = on.offsetLeft - ch.clientWidth / 2 + on.offsetWidth / 2; } catch (e) { } }
     }
@@ -1913,12 +1922,18 @@
         mkPaint(c, ppm, false); MK.items = keep;
         if (!hasInk(c)) { toastMsg(T('Nothing to print yet.')); return false; }
         var v = { kind: 'made', label: 'My design', src: c, transparent: true, items: items.map(function (i) { return i; }) };
+        /* the cut line follows the main picture only; text, emojis and shapes added on top are print-only */
+        var baseOnly = items.filter(function (i) { return i.type === 'image'; });
+        if (baseOnly.length && baseOnly.length < items.length) {
+            var mc = makeCanvas(c.width, c.height), keep2 = MK.items; MK.items = baseOnly; mkPaint(mc, ppm, false); MK.items = keep2;
+            if (hasInk(mc)) { var bm = maskFromCanvas(mc); v.mask = bm.mask; v.printOnly = true; }
+        }
         if (scratch && !S.versions.length) {
             canvasBlob(c).then(function (b) { var f = new File([b], 'my-design.png', { type: 'image/png' }); startDesign(f, c, c.width, c.height, v); });
             return true;
         }
         var idx = -1; S.versions.forEach(function (x, i) { if (x.kind === 'made') idx = i; });
-        if (idx > 0) { var m = maskFromCanvas(c); v.mask = m.mask; v.thumb = thumbOf(c); v.id = S.versions[idx].id; S.versions[idx] = v; S.fitted = false; selectVersion(idx); }
+        if (idx > 0) { var m = maskFromCanvas(c); if (!v.mask) v.mask = m.mask; v.thumb = thumbOf(c); v.id = S.versions[idx].id; S.versions[idx] = v; S.fitted = false; selectVersion(idx); }
         else { S.fitted = false; addVersion(v); }
         goStep(2);
         return true;
@@ -2061,9 +2076,36 @@
                 .then(function () { busy = false; go.disabled = false; st.hidden = true; });
         });
     }
+    /* ------------------------------ AI with your own words (after a picture is uploaded) ------------------------------ */
+    function setupAiDesc() {
+        var btns = $('#ai-btns'); if (!btns) return;
+        var wrap = doc.createElement('div'); wrap.className = 'st-ai-desc';
+        wrap.innerHTML = '<label class="st-lbl" for="ai-desc">' + esc(T('Tell the AI what you want (optional)')) + '</label>' +
+            '<textarea id="ai-desc" rows="2" maxlength="200" placeholder="' + esc(T('e.g. turn my photo into a cute cartoon girl with a pink dress')) + '"></textarea>' +
+            '<p class="st-fine">' + esc(T('Write in your own words, then choose a button below. You can try as many times as you like.')) + '</p>';
+        btns.parentNode.insertBefore(wrap, btns);
+        var b1 = doc.createElement('button'); b1.type = 'button'; b1.className = 'st-btn st-ai'; b1.dataset.kind = 'custom';
+        b1.innerHTML = '<b>' + esc(T('Create from my description')) + '</b><small>' + esc(T('AI redraws your picture using your words')) + '</small>';
+        var b2 = doc.createElement('button'); b2.type = 'button'; b2.className = 'st-btn st-ai'; b2.id = 'ai-new';
+        b2.innerHTML = '<b>' + esc(T('Draw a new picture')) + '</b><small>' + esc(T('AI draws from your words only')) + '</small>';
+        btns.appendChild(b1); btns.appendChild(b2);
+        b2.addEventListener('click', function () {
+            var q = aiDesc(); if (S.busy) return;
+            if (q.length < 3) { toastMsg(T('Please describe what you would like to see.')); $('#ai-desc').focus(); return; }
+            if (blockedSubject(q)) { toastMsg(T('We cannot draw protected brands, cartoon characters, real people, religious figures or sensitive subjects. Please describe something original, for example a landmark, an animal or an object.')); return; }
+            if (needLogin()) { showAiNote(true); return; }
+            if (!aiOn()) { toastMsg(T('AI drawing is not available right now. Please upload your own picture, or choose "Write a message or monogram".')); return; }
+            S.busy = true; setBusy('custom');
+            B_ready().then(function () { return backend().studioGenerate(q, ISCAKE ? 'cute' : 'sketch', PRODUCT); }).then(blobToCanvas).then(function (c) {
+                if (!ISCAKE) c = bwToAlpha(c);
+                addVersion({ kind: 'custom', label: 'AI drawing', src: c, ai: true, gen: true, transparent: true });
+            }).catch(function (e) { toastMsg(T(/limit|describe|sign in|used your|busy/i.test(e && e.message) ? e.message : 'We could not draw this right now. Please try different words.')); })
+              .then(function () { S.busy = false; setBusy(null); });
+        });
+    }
     /* ------------------------------ start ------------------------------ */
     function init() {
-        setupSteps(); setupPlacement(); setupEditor(); setupAiDraw(); setupLegal();
+        setupSteps(); setupPlacement(); setupEditor(); setupAiDraw(); setupAiDesc(); setupLegal();
         var file = $('#st-file'), drop = $('#st-drop');
         file.addEventListener('change', function () { loadFile(file.files[0]); file.value = ''; });
         ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });

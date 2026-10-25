@@ -523,3 +523,10 @@ body[data-product=cake] #st-scene, body[data-product=cake] #st-preview{ backgrou
 .st-create-ic{ flex:0 0 auto; width:34px; text-align:center; }
 .st-create small{ line-height:1.45; margin-top:5px; }
 @media (max-width:600px){ .st-create + .st-create,.st-create-ai{ margin-top:18px; } }
+
+.st-ai-desc{ margin-top:12px; }
+.st-ai-desc textarea{ width:100%; border:1.5px solid rgba(var(--ink-rgb),.2); border-radius:12px; padding:10px 12px; font:inherit; font-size:16px; resize:vertical; min-height:64px; }
+.st-ai-desc .st-fine{ margin:6px 0 0; }
+
+.mk-cutnote{ margin:0; padding:8px 12px; border-radius:10px; background:#fff7e0; font-size:12.5px; line-height:1.4; }
+.mk-cutnote[hidden]{ display:none; }
