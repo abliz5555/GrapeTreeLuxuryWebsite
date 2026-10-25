@@ -55,7 +55,7 @@ body[data-admin] .gt-announce{ display:none !important; }
 .adm-stat{ background:#fff; border-radius:14px; padding:16px; display:grid; gap:2px; }
 .adm-stat.wide{ grid-column:span 2; }
 .adm-stat span{ font-size:13px; color:#6b5d52; }
-.adm-stat strong{ font-size:28px; font-family:var(--serif,serif); line-height:1.1; }
+.adm-stat strong{ font-size:28px; font-family:var(--sans,Inter,system-ui,sans-serif); font-weight:700; font-variant-numeric:lining-nums tabular-nums; line-height:1.1; }
 .adm-stat small{ color:#6b5d52; font-size:13px; }
 
 /* orders */
@@ -348,7 +348,7 @@ body[data-admin] header.adm-top .adm-tabs button{ white-space:normal; text-align
 .st-qc-top .check input{ width:auto; margin:0 }
 .st-x{ border:0; background:#f1ebe2; color:#7a2e45; width:26px; height:26px; border-radius:50%; font-size:1.1rem; line-height:1; cursor:pointer; flex:none }
 .st-qc-q{ display:flex; align-items:baseline; gap:6px }
-.st-qc-q input{ font-family:Georgia,serif; font-size:1.5rem!important; font-weight:700; width:100%; min-width:0; border:1.5px solid #e4dccf; border-radius:10px; padding:6px 8px; box-sizing:border-box }
+.st-qc-q input{ font-family:var(--sans,Inter,system-ui,sans-serif); font-size:1.5rem!important; font-weight:700; width:100%; min-width:0; border:1.5px solid #e4dccf; border-radius:10px; padding:6px 8px; box-sizing:border-box }
 .st-qc-q small{ color:#6b5d52 }
 .st-qc-p{ display:flex; align-items:center; gap:6px; color:#8a6528; font-weight:700 }
 .st-qc-p input{ width:100%; min-width:0; border:1.5px solid #e4dccf; border-radius:10px; padding:7px 8px; box-sizing:border-box; font:inherit; font-weight:700; color:#8a6528 }

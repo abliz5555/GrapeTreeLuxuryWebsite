@@ -45,7 +45,7 @@ function shell(site, title, intro, bodyHtml) {
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden">
 <tr><td align="center" style="background:${INK};padding:26px 20px"><img src="${site}/images/email-logo.png" alt="Grape Tree" height="46" style="height:46px;border:0;display:block;margin:0 auto"></td></tr>
 <tr><td style="height:4px;background:${GOLD};font-size:0;line-height:0">&nbsp;</td></tr>
-<tr><td style="padding:34px 32px 8px"><h1 style="margin:0 0 10px;font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:600;color:${INK}">${esc(title)}</h1><p style="margin:0;font-size:15px;line-height:1.6;color:${MUTED}">${intro}</p></td></tr>
+<tr><td style="padding:34px 32px 8px"><h1 style="margin:0 0 10px;font-family:Helvetica,Arial,sans-serif;font-size:26px;font-weight:700;color:${INK}">${esc(title)}</h1><p style="margin:0;font-size:15px;line-height:1.6;color:${MUTED}">${intro}</p></td></tr>
 <tr><td style="padding:12px 32px 32px">${bodyHtml}</td></tr>
 <tr><td align="center" style="background:${CREAM};padding:22px 24px;font-size:12px;line-height:1.7;color:${MUTED}">Grape Tree FZE · United Arab Emirates<br><a href="${site}" style="color:${GOLD};text-decoration:none">grapetree.ae</a> · Katanukiya &amp; GildArt</td></tr>
 </table></td></tr></table></body></html>`;
@@ -55,13 +55,13 @@ const hasTax = (o) => o.total != null && o.total !== '';
 const grand = (o) => (hasTax(o) ? Number(o.total) : Number(o.subtotal));
 function totalsRows(o) {
   const q = o.has_quote ? ' <span style="font-weight:400;color:' + MUTED + ';font-size:13px">+ quoted items</span>' : '';
-  if (!hasTax(o)) return `<tr><td style="padding:16px 0 4px;font-size:15px;color:${MUTED}">Estimated total</td><td align="right" style="padding:16px 0 4px;font-family:Georgia,serif;font-size:22px;font-weight:600;color:${INK}">${esc(money(o.subtotal))}${q}</td></tr>`;
+  if (!hasTax(o)) return `<tr><td style="padding:16px 0 4px;font-size:15px;color:${MUTED}">Estimated total</td><td align="right" style="padding:16px 0 4px;font-family:Helvetica,Arial,sans-serif;font-size:24px;font-weight:700;color:${INK}">${esc(money(o.subtotal))}${q}</td></tr>`;
   const row = (l, v) => `<tr><td style="padding:6px 0;font-size:14px;color:${MUTED}">${l}</td><td align="right" style="padding:6px 0;font-size:14px;color:${INK}">${v}</td></tr>`;
   const rate = Number(o.vat_rate) % 1 ? Number(o.vat_rate) : Math.round(Number(o.vat_rate));
   return row('Items' + (o.prices_include_vat ? ' (incl. VAT)' : ''), esc(money(o.subtotal))) +
     row('Delivery', Number(o.delivery_fee) > 0 ? esc(money(o.delivery_fee)) : '<strong style="color:#16602B">FREE</strong>') +
     row('VAT ' + rate + '%' + (o.prices_include_vat ? ' (included)' : ''), esc(money(o.vat_amount))) +
-    `<tr><td style="padding:14px 0 4px;font-size:15px;color:${INK};font-weight:600;border-top:1px solid ${LINE}">${o.has_quote ? 'Estimated total' : 'Total'}</td><td align="right" style="padding:14px 0 4px;font-family:Georgia,serif;font-size:22px;font-weight:600;color:${INK};border-top:1px solid ${LINE}">${esc(money(o.total))}${q}</td></tr>`;
+    `<tr><td style="padding:14px 0 4px;font-size:15px;color:${INK};font-weight:600;border-top:1px solid ${LINE}">${o.has_quote ? 'Estimated total' : 'Total'}</td><td align="right" style="padding:14px 0 4px;font-family:Helvetica,Arial,sans-serif;font-size:24px;font-weight:700;color:${INK};border-top:1px solid ${LINE}">${esc(money(o.total))}${q}</td></tr>`;
 }
 
 function orderBlock(o, forShop) {
@@ -70,7 +70,7 @@ function orderBlock(o, forShop) {
   const cell = (label, val) => `<td valign="top" style="padding:0 12px 14px 0;font-size:14px;line-height:1.55"><div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${GOLD};font-weight:700;padding-bottom:3px">${label}</div>${val}</td>`;
   return `
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${CREAM};border-radius:12px;margin:8px 0 22px"><tr>
-<td style="padding:16px 18px"><div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${GOLD};font-weight:700">Order number</div><div style="font-family:Georgia,serif;font-size:26px;font-weight:600;color:${INK}">#${esc(o.order_no)}</div></td>
+<td style="padding:16px 18px"><div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:${GOLD};font-weight:700">Order number</div><div style="font-family:Helvetica,Arial,sans-serif;font-size:26px;font-weight:700;color:${INK}">#${esc(o.order_no)}</div></td>
 <td align="right" style="padding:16px 18px;font-size:13px;color:${MUTED}">${new Date(o.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}<br><span style="color:${INK};font-weight:600">${esc(PAY[o.payment_method] || o.payment_method)}</span></td></tr></table>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemsRows(o)}
 ${totalsRows(o)}</table>
