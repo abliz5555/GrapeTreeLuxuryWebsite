@@ -24,7 +24,7 @@
         /* every "Customize" button opens the live design studio of that brand */
         if (p.customize && p.customize.builder === 'gildart') return 'chocolate-studio.html';
         if (p.customize && p.customize.builder === 'katanukiya') return 'cake-studio.html';
-        return 'customize.html';
+        return 'shop.html#custom';
     }
 
     function priceText(p) {
