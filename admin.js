@@ -288,7 +288,7 @@
             (art ? '<label>Design review<select data-f="art_review">' + opts(REVIEWS, o.art_review || 'pending') + '</select></label><label class="grow">Review note (reason / what to change)<input type="text" data-f="art_review_note" value="' + esc(o.art_review_note || '') + '"></label>' : '') +
             '<label class="grow">Private note (only you see this)<input type="text" data-f="admin_note" value="' + esc(o.admin_note || '') + '"></label></div>' +
             '<div class="o-msg"><label class="grow">Message the customer<select data-tpl>' + TEMPLATES.map(function (t) { return '<option value="' + t[0] + '">' + esc(t[1]) + '</option>'; }).join('') + '</select></label>' +
-            '<a class="adm-btn" data-wa href="' + wa + '" target="_blank" rel="noopener">WhatsApp</a>' + (o.email ? '<a class="adm-btn ghost" data-mail href="mailto:' + esc(o.email) + '?subject=' + encodeURIComponent('Grape Tree order #' + o.order_no) + '&body=' + encodeURIComponent(tplText(o, 'confirm')) + '">Email</a>' : '') + '<button class="adm-btn ghost" data-print>Print</button>' + (B.isAdmin() ? '<button class="adm-btn danger" data-del-order type="button">Delete order</button>' : '') + '</div>' +
+            '<a class="adm-btn" data-wa href="' + wa + '" target="_blank" rel="noopener">WhatsApp</a>' + (o.email ? '<a class="adm-btn ghost" data-mail href="mailto:' + esc(o.email) + '?subject=' + encodeURIComponent('Grape Tree order #' + o.order_no) + '&body=' + encodeURIComponent(tplText(o, 'confirm')) + '">Email</a>' : '') + '<button class="adm-btn ghost" data-print>Job sheet (PDF)</button><button class="adm-btn ghost" data-printc>Customer confirmation (PDF)</button>' + (B.isAdmin() ? '<button class="adm-btn danger" data-del-order type="button">Delete order</button>' : '') + '</div>' +
             historyBlock(o);
     }
     function renderBody(artEl, o) { var body = $('.o-body', artEl); body.innerHTML = orderBody(o); loadThumbs(body); var h = $('.o-head', artEl); $('.o-chips', h).innerHTML = chipsFor(o); }
@@ -302,7 +302,9 @@
             return;
         }
         var pr = e.target.closest('[data-print]');
-        if (pr) { printOrder(ORDERS.filter(function (o) { return o.id === pr.closest('.adm-order').getAttribute('data-id'); })[0]); return; }
+        if (pr) { printOrder(ORDERS.filter(function (o) { return o.id === pr.closest('.adm-order').getAttribute('data-id'); })[0], 'job'); return; }
+        var prc = e.target.closest('[data-printc]');
+        if (prc) { printOrder(ORDERS.filter(function (o) { return o.id === prc.closest('.adm-order').getAttribute('data-id'); })[0], 'customer'); return; }
         var op = e.target.closest('[data-open]'); if (op) { openOrder(op.getAttribute('data-open')); return; }
         var dl = e.target.closest('[data-del-order]');
         if (dl) {
@@ -366,15 +368,27 @@
             extra = { pub: true, msg: f.value === 'approved' ? 'Your design is approved for production.' : (f.value === 'changes' ? 'We need a change to your design.' : 'We cannot produce this design.') + ((o.art_review_note || '') ? ' ' + o.art_review_note : '') };
         saveOrder(o, patch, what, art, extra);
     });
-    function printOrder(o) {
+    function printOrder(o, mode) {
         var w = window.open('', '_blank'); if (!w) return toast('Please allow pop-ups to print.', true);
-        var rows = (o.items || []).map(function (l) {
-            return '<tr><td>' + esc(l.name) + ((l.meta || []).map(function (m) { return '<br><small>' + esc(m[0]) + ': ' + esc(m[1]) + '</small>'; }).join('')) + (l.note ? '<br><small>' + esc(l.note) + '</small>' : '') + '</td><td>' + esc(l.qty) + '</td><td>' + esc(money(l.total)) + '</td></tr>';
-        }).join('');
-        w.document.write('<!doctype html><title>Order #' + esc(o.order_no) + '</title><style>body{font:14px/1.5 Arial,sans-serif;margin:30px;color:#222}h1{font-size:22px;margin:0 0 4px}table{width:100%;border-collapse:collapse;margin:16px 0}td,th{border-bottom:1px solid #ddd;padding:8px;text-align:left;vertical-align:top}small{color:#666}</style>' +
-            '<h1>Grape Tree - Order #' + esc(o.order_no) + '</h1><div>' + esc(dt(o.created_at)) + '</div><p><strong>' + esc(o.name) + '</strong><br>' + esc(o.phone) + '<br>' + esc(o.emirate) + ', ' + esc(o.address) + '<br><strong>Deliver: ' + esc(o.delivery_date || '-') + '</strong></p>' +
-            '<table><tr><th>Item</th><th>Qty</th><th>Total</th></tr>' + rows + '</table><p><strong>Total: ' + esc(money(o.subtotal)) + (o.has_quote ? ' + quoted items' : '') + '</strong> (' + esc(o.payment_status) + ')</p>' + (o.notes ? '<p>Notes: ' + esc(o.notes) + '</p>' : '') + '<script>onload=function(){print()}<\/script>');
-        w.document.close();
+        w.document.write('<!doctype html><title>Preparing...</title><p style="font:16px Arial;padding:30px">Preparing the document...</p>');
+        var jobs = [], thumbs = {};
+        if (mode === 'job') (o.items || []).forEach(function (l) {
+            var a = l.art; if (!a || !a.folder || !a.files) return;
+            ['orig', 'preview'].forEach(function (k) {
+                if (!a.files[k]) return; var path = a.folder + '/' + a.files[k];
+                jobs.push(B.client.storage.from('order-art').createSignedUrl(path, 3600).then(function (r) { if (r && r.data && r.data.signedUrl) thumbs[path] = r.data.signedUrl; }).catch(function () { }));
+            });
+        });
+        var bankP = mode === 'job' ? Promise.resolve('') : B.content().then(function (c) { return (c.settings || {}).bank_details || ''; }).catch(function () { return ''; });
+        Promise.all(jobs.concat([bankP])).then(function (r) {
+            var bank = r[r.length - 1], base = location.href.replace(/[^\/]*$/, '');
+            w.document.open();
+            w.document.write('<!doctype html><html><head><meta charset="utf-8"><base href="' + base + '"><title>' + (mode === 'job' ? 'Job sheet' : 'Order') + ' #' + esc(o.order_no) + '</title>' +
+                '<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="invoice.css?v=17"></head><body>' +
+                '<div class="inv-bar no-print"><span class="inv-hint" style="margin:0">Choose "Save as PDF" in the print window to download</span><button type="button" class="inv-btn" onclick="print()">Print / Save PDF</button></div>' +
+                '<div id="d"></div><script src="shop-data.js?v=17"><\/script><script src="orderdoc.js?v=17"><\/script><script>document.getElementById("d").innerHTML=GTOrderDoc.build(' + JSON.stringify(o).replace(/</g, '\\u003c') + ',' + JSON.stringify({ mode: mode, bank: bank, thumbs: thumbs }).replace(/</g, '\\u003c') + ');setTimeout(function(){print()},900)<\/script></body></html>');
+            w.document.close();
+        });
     }
 
     /* ============================ PRODUCTS ============================ */

@@ -140,27 +140,44 @@
     }
 
     /* ------------------------------ signed in ------------------------------ */
-    function viewAccount() {
+    var TABS = [['orders', 'My orders'], ['receipts', 'Receipts & invoices'], ['details', 'My details'], ['password', 'Password']];
+    function viewAccount(which) {
         var p = B.profile || {}, u = B.user();
         var first = String(p.full_name || '').split(' ')[0];
         title.textContent = first ? 'Hello, ' + first : 'My Account';
+        var cur = which || (location.hash || '').replace('#', '');
+        if (!TABS.some(function (t) { return t[0] === cur; })) cur = 'orders';
+        var staff = B.isAdmin() || B.isStaff();
         root.innerHTML =
-            '<div class="acct-grid">' +
-            '<section class="acct-card acct-orders"><h2>My orders</h2><div id="a-orders"><p class="acct-loading">Loading...</p></div></section>' +
-            '<aside class="acct-side">' +
-            (B.isAdmin() ? '<a class="acct-card acct-admin" href="admin.html"><strong>Open the admin dashboard</strong><span>Manage products, orders and website images</span></a>' : (B.isStaff() ? '<a class="acct-card acct-admin" href="admin.html"><strong>Open the orders page</strong><span>See, track and update customer orders</span></a>' : '')) +
-            '<section class="acct-card"><h2>My details</h2><form id="a-prof" novalidate>' +
+            '<div class="acct-top"><div><strong>' + esc(first ? p.full_name : T('Welcome')) + '</strong><span>' + esc(u ? u.email : '') + '</span></div>' +
+            '<div class="acct-top-r">' + (staff ? '<a class="gt-btn gt-btn-outline" href="admin.html">' + esc(T('Admin dashboard')) + '</a>' : '') + '<button type="button" class="acct-link acct-out" id="a-out">' + esc(T('Sign out')) + '</button></div></div>' +
+            '<nav class="acct-tabs" role="tablist" aria-label="' + esc(T('My account')) + '">' + TABS.map(function (t) { return '<button type="button" role="tab" data-tab="' + t[0] + '" aria-selected="' + (t[0] === cur) + '" class="' + (t[0] === cur ? 'on' : '') + '">' + esc(T(t[1])) + '</button>'; }).join('') + '</nav>' +
+            '<section class="acct-pane" data-pane="orders"' + (cur === 'orders' ? '' : ' hidden') + '><div class="acct-card"><h2>' + esc(T('My orders')) + '</h2><p class="acct-muted">' + esc(T('Follow every order from confirmation to delivery.')) + '</p><div id="a-orders"><p class="acct-loading">Loading...</p></div></div></section>' +
+            '<section class="acct-pane" data-pane="receipts"' + (cur === 'receipts' ? '' : ' hidden') + '><div class="acct-card"><h2>' + esc(T('Receipts & invoices')) + '</h2><p class="acct-muted">' + esc(T('Download an order confirmation or receipt as a PDF.')) + '</p><div id="a-receipts"><p class="acct-loading">Loading...</p></div></div></section>' +
+            '<section class="acct-pane" data-pane="details"' + (cur === 'details' ? '' : ' hidden') + '><div class="acct-two">' +
+            '<div class="acct-card"><h2>' + esc(T('My details')) + '</h2><form id="a-prof" novalidate>' +
             '<div class="field"><label for="p-name">Full name</label><input id="p-name" type="text" value="' + esc(p.full_name || '') + '"></div>' +
             '<div class="field"><label for="p-phone">Phone / WhatsApp</label><input id="p-phone" type="tel" value="' + esc(p.phone || '') + '"></div>' +
             '<div class="field"><label>Email</label><input type="email" value="' + esc(u ? u.email : '') + '" disabled></div>' +
-            '<p class="acct-msg" role="status"></p><button class="gt-btn" type="submit">Save details</button></form></section>' +
-            '<section class="acct-card"><h2>Saved addresses</h2><div id="a-addrs"></div>' +
+            '<p class="acct-msg" role="status"></p><button class="gt-btn" type="submit">Save details</button></form></div>' +
+            '<div class="acct-card"><h2>' + esc(T('Saved addresses')) + '</h2><div id="a-addrs"></div>' +
             '<form id="a-addr" novalidate><div class="field"><label for="ad-em">Emirate</label><select id="ad-em"></select></div>' +
             '<div class="field"><label for="ad-text">Address</label><textarea id="ad-text" rows="2" placeholder="Building, street, area, landmark"></textarea></div>' +
-            '<p class="acct-msg" role="status"></p><button class="gt-btn gt-btn-outline" type="submit">Add address</button></form></section>' +
-            '<button type="button" class="acct-link acct-out" id="a-out">Sign out</button>' +
-            '</aside></div>';
+            '<p class="acct-msg" role="status"></p><button class="gt-btn gt-btn-outline" type="submit">Add address</button></form></div></div></section>' +
+            '<section class="acct-pane" data-pane="password"' + (cur === 'password' ? '' : ' hidden') + '><div class="acct-card acct-narrow"><h2>' + esc(T('Change password')) + '</h2>' +
+            '<form id="a-pw" novalidate>' +
+            '<div class="field"><label for="pw-old">Current password</label><input id="pw-old" type="password" autocomplete="current-password" required></div>' +
+            '<div class="field"><label for="pw-new">New password</label><input id="pw-new" type="password" autocomplete="new-password" minlength="8" required><p class="hint">At least 8 characters.</p></div>' +
+            '<div class="field"><label for="pw-new2">Repeat new password</label><input id="pw-new2" type="password" autocomplete="new-password" required></div>' +
+            '<p class="acct-msg" role="alert"></p><button class="gt-btn" type="submit">Save new password</button>' +
+            '<button type="button" class="acct-link" id="pw-forgot">I do not remember my current password</button></form></div></section>';
 
+        function show(t) {
+            $$('.acct-tabs button').forEach(function (b) { var on = b.dataset.tab === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+            $$('.acct-pane').forEach(function (s) { s.hidden = s.dataset.pane !== t; });
+            try { history.replaceState(null, '', '#' + t); } catch (x) { }
+        }
+        $('.acct-tabs').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) show(b.dataset.tab); });
         $('#ad-em').innerHTML = '<option value="">Choose an emirate</option>' + (CFG.emirates || []).map(function (e) { return '<option>' + esc(e) + '</option>'; }).join('');
         $('#a-out').addEventListener('click', function () { B.signOut(); });
         $('#a-prof').addEventListener('submit', function (e) {
@@ -177,6 +194,22 @@
             B.addAddress({ emirate: em, address: tx, phone: $('#p-phone').value.trim() }).then(function () { $('#ad-text').value = ''; msg(box, 'Address saved.', true); loadAddrs(); })
                 .catch(function (err) { msg(box, friendly(err)); });
         });
+        $('#a-pw').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var box = $('#a-pw'), btn = $('button[type=submit]', box), o = $('#pw-old').value, n = $('#pw-new').value, n2 = $('#pw-new2').value;
+            if (!o) return msg(box, 'Please enter your current password.');
+            if (n.length < 8) return msg(box, 'Please use a password with at least 8 characters.');
+            if (n !== n2) return msg(box, 'The two new passwords are not the same.');
+            if (n === o) return msg(box, 'Your new password must be different from the current one.');
+            busy(btn, true, 'Saving...');
+            B.signIn(u.email, o).then(function () { return B.setPassword(n); })
+                .then(function () { busy(btn, false); $('#pw-old').value = $('#pw-new').value = $('#pw-new2').value = ''; msg(box, 'Your password was changed.', true); })
+                .catch(function (err) { busy(btn, false); msg(box, /invalid login/i.test(String(err && err.message)) ? 'Your current password is not right.' : friendly(err)); });
+        });
+        $('#pw-forgot').addEventListener('click', function () {
+            var box = $('#a-pw'); if (!u) return;
+            B.resetPassword(u.email).then(function () { msg(box, 'We sent a password reset link to your email.', true); }).catch(function (err) { msg(box, friendly(err)); });
+        });
         loadOrders(); loadAddrs();
     }
 
@@ -191,23 +224,41 @@
         }).catch(function () { var box = $('#a-addrs'); if (box) box.innerHTML = ''; });
     }
 
+    var STEPS = ['new', 'confirmed', 'preparing', 'delivering', 'delivered'];
+    function progress(o) {
+        if (o.status === 'cancelled') return '<div class="prog off"><span>' + esc(T('Cancelled')) + '</span></div>';
+        var at = Math.max(0, STEPS.indexOf(o.status === 'ready' ? 'preparing' : o.status));
+        return '<div class="prog" aria-hidden="true">' + STEPS.map(function (s, i) { return '<i class="' + (i <= at ? 'on' : '') + '"></i>'; }).join('') + '</div>';
+    }
     function loadOrders() {
         Promise.all([B.myOrders(), B.products()]).then(function (r) {
-            var rows = r[0], prods = r[1], box = $('#a-orders'); if (!box) return;
-            if (!rows.length) { box.innerHTML = '<p class="acct-muted">You have not placed an order yet.</p><a class="gt-btn" href="shop.html">Browse the shop</a>'; return; }
+            var rows = r[0], prods = r[1], box = $('#a-orders'), rbox = $('#a-receipts'); if (!box) return;
+            if (!rows.length) {
+                box.innerHTML = '<p class="acct-muted">You have not placed an order yet.</p><a class="gt-btn" href="shop.html">Browse the shop</a>';
+                if (rbox) rbox.innerHTML = '<p class="acct-muted">Your receipts will appear here after your first order.</p>';
+                return;
+            }
             box.innerHTML = rows.map(function (o) {
                 var items = (o.items || []).map(function (l) {
                     return '<li><span>' + esc(l.name) + '</span><em>x ' + esc(l.qty) + '</em></li>';
                 }).join('');
                 var canRe = (o.items || []).some(function (l) { return !l.custom && prods.some(function (p) { return p.id === l.id; }); });
                 return '<article class="ord"><header><div><strong>Order #' + esc(o.order_no) + '</strong><span>' + esc(dateText(o.created_at)) + '</span></div>' +
-                    '<span class="chip st-' + esc(o.status) + '">' + esc(T(STATUS[o.status] || o.status)) + '</span></header>' +
+                    '<span class="chip st-' + esc(o.status) + '">' + esc(T(STATUS[o.status] || o.status)) + '</span></header>' + progress(o) +
                     '<ul>' + items + '</ul>' +
                     '<footer><span>' + (o.has_quote ? esc(money(o.subtotal)) + ' + ' + esc(T('quoted items')) : esc(money(o.subtotal))) + '</span>' +
-                    '<a class="acct-link" href="order-track.html?no=' + esc(o.order_no) + '">' + esc(T('Track order')) + '</a>' +
-                    '<a class="acct-link" href="invoice.html?no=' + esc(o.order_no) + '&print=1" target="_blank" rel="noopener">Download PDF</a>' +
-                    (canRe ? '<button type="button" class="acct-link" data-re="' + esc(o.id) + '">Order again</button>' : '') + '</footer></article>';
+                    '<span class="ord-links"><a class="gt-btn gt-btn-sm" href="order-track.html?no=' + esc(o.order_no) + '">' + esc(T('Track order')) + '</a>' +
+                    '<a class="acct-link" href="invoice.html?no=' + esc(o.order_no) + '&print=1" target="_blank" rel="noopener">' + esc(T('Download PDF')) + '</a>' +
+                    (canRe ? '<button type="button" class="acct-link" data-re="' + esc(o.id) + '">' + esc(T('Order again')) + '</button>' : '') + '</span></footer></article>';
             }).join('');
+            if (rbox) rbox.innerHTML = '<div class="rec-list">' + rows.map(function (o) {
+                var paid = o.payment_status === 'paid';
+                return '<div class="rec"><div class="rec-n"><strong>#' + esc(o.order_no) + '</strong><span>' + esc(dateText(o.created_at)) + '</span></div>' +
+                    '<div class="rec-t">' + esc(money(o.subtotal)) + (o.has_quote ? '<small> + ' + esc(T('quoted items')) + '</small>' : '') + '</div>' +
+                    '<span class="chip ' + (paid ? 'st-delivered' : 'st-new') + '">' + esc(T(paid ? 'Paid' : 'Payment pending')) + '</span>' +
+                    '<div class="rec-a"><a class="gt-btn gt-btn-sm" href="invoice.html?no=' + esc(o.order_no) + '&print=1" target="_blank" rel="noopener">' + esc(T(paid ? 'Download receipt' : 'Download confirmation')) + '</a>' +
+                    '<a class="acct-link" href="invoice.html?no=' + esc(o.order_no) + '" target="_blank" rel="noopener">' + esc(T('View')) + '</a></div></div>';
+            }).join('') + '</div>';
             $$('[data-re]', box).forEach(function (b) {
                 b.addEventListener('click', function () {
                     var o = rows.filter(function (x) { return x.id === b.getAttribute('data-re'); })[0], n = 0;
@@ -218,7 +269,7 @@
                     if (n) window.GT.cart.open();
                 });
             });
-        }).catch(function () { var box = $('#a-orders'); if (box) box.innerHTML = '<p class="acct-muted">We could not load your orders. Please refresh the page.</p>'; });
+        }).catch(function () { var box = $('#a-orders'); if (box) box.innerHTML = '<p class="acct-muted">We could not load your orders. Please refresh the page.</p>'; var rb = $('#a-receipts'); if (rb) rb.innerHTML = ''; });
     }
 
     /* ------------------------------ email links (confirm / reset) ------------------------------

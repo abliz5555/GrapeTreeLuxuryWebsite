@@ -36,32 +36,8 @@
     }
 
     function render(o, bank) {
-        var wa = CFG.whatsapp || '971555577478';
-        var items = (o.items || []).map(function (l) {
-            var meta = (l.meta || []).map(function (m) { return '<span class="sub">' + esc(m[0]) + ': ' + esc(m[1]) + '</span>'; }).join('');
-            var note = l.note ? '<span class="sub">' + esc(l.note) + '</span>' : '';
-            return '<tr><td><span class="nm" dir="auto">' + esc(l.name) + '</span>' + meta + note + '</td><td class="c">' + esc(l.qty) + '</td><td class="r">' + (l.quote ? '<span class="quote">Quote</span>' : esc(money(l.total))) + '</td></tr>';
-        }).join('');
-        var paid = o.payment_status === 'paid';
-        var bankBlock = (o.payment_method === 'bank' && bank)
-            ? '<div class="sec"><h4>Bank details</h4><pre dir="ltr">' + esc(bank) + '</pre><p>Please send the transfer receipt on WhatsApp with order #' + esc(o.order_no) + '. We prepare your order once the payment arrives.</p></div>' : '';
-        root.innerHTML =
-            '<article class="sheet">' +
-            '<div class="sheet-head"><img src="images/email-logo.png" alt="Grape Tree"><div class="doc"><b>Order summary</b><span>Katanukiya &middot; GildArt</span></div></div>' +
-            '<div class="sheet-body">' +
-            '<div class="meta"><div class="no"><span>Order number</span><b>#' + esc(o.order_no || '-') + '</b></div><div><span>Date</span><b>' + esc(short(o.created_at)) + '</b></div>' +
-            '<div><span>Status</span><b>' + esc(STATUS[o.status] || 'Received') + '</b></div><div><span>Payment</span><b>' + esc(PAY[o.payment_method] || 'WhatsApp') + '</b> <span class="pill' + (paid ? ' paid' : '') + '" style="margin-top:2px">' + (paid ? 'Paid' : 'Not paid yet') + '</span></div></div>' +
-            '<div class="cols"><div><h4>Customer</h4><p dir="auto"><b>' + esc(o.name) + '</b><br>' + esc(o.phone) + (o.email ? '<br>' + esc(o.email) : '') + '</p></div>' +
-            '<div><h4>Delivery</h4><p dir="auto">' + esc(o.emirate) + '<br>' + esc(o.address).replace(/\n/g, '<br>') + '<br><b>' + esc(nice(o.delivery_date)) + '</b></p></div></div>' +
-            '<table><thead><tr><th>Item</th><th class="c">Qty</th><th class="r">Amount</th></tr></thead><tbody>' + items + '</tbody></table>' +
-            '<div class="tot"><div><span>Estimated total</span><b>' + esc(money(o.subtotal)) + (o.has_quote ? '<small style="font:500 12px Inter,sans-serif"> + quoted items</small>' : '') + '</b></div></div>' +
-            (o.notes ? '<div class="sec"><h4>Your notes</h4><p style="color:inherit;font-size:14px" dir="auto">' + esc(o.notes) + '</p></div>' : '') +
-            bankBlock +
-            '<p class="note">This is a summary of your order request. Availability, final price and delivery are confirmed with you by Grape Tree FZE. Delivery fees, if any, are confirmed with your order. Thank you for choosing Katanukiya and GildArt.</p>' +
-            '</div>' +
-            '<div class="sheet-foot"><span><b>Grape Tree FZE</b> &middot; ' + esc(CO.address || 'United Arab Emirates') + '</span><span>WhatsApp +' + esc(wa) + (CO.email ? ' &middot; ' + esc(CO.email) : '') + ' &middot; ' + esc((CFG.siteUrl || 'https://grapetree.ae').replace(/^https?:\/\//, '')) + '</span></div>' +
-            '</article>';
-        doc.title = 'Grape Tree order #' + (o.order_no || '') ;
+        root.innerHTML = window.GTOrderDoc.build(o, { mode: 'customer', bank: bank });
+        doc.title = 'Grape Tree order #' + (o.order_no || '');
         if (q.get('print')) setTimeout(function () { window.print(); }, 700);
     }
 
