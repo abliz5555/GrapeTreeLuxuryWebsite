@@ -4,7 +4,12 @@
    Body: { action: 'create', email, password, name }
          { action: 'password', email, password }
          { action: 'delete', email }
-   Staff accounts only: admin accounts and customers can never be changed or deleted from here.
+         CUSTOMER actions (by id): { action: 'c_status' }  -> sign-in info for every customer
+                                   { action: 'c_password', id, password }
+                                   { action: 'c_update', id, name, phone, email }
+                                   { action: 'c_suspend', id, suspend: true|false }
+                                   { action: 'c_delete', id }
+   Staff actions only touch staff; customer actions only touch customers. Admin accounts can never be changed here.
    Supabase provides SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY by itself (no secret to add).
    Deploy with "Verify JWT" OFF (this function checks the login itself).
    ===================================================================== */
@@ -31,6 +36,49 @@ export async function handle(req: Request, env: (k: string) => string, doFetch: 
   const pr = await doFetch(url + '/rest/v1/profiles?select=role&id=eq.' + encodeURIComponent(me.id), { headers: svc });
   const pj = pr.ok ? await pr.json() : [];
   if (!pj[0] || pj[0].role !== 'admin') return json({ error: 'Only an admin can do this.' }, 403);
+
+  const action0 = String(body.action || '');
+  if (action0.indexOf('c_') === 0) {
+    if (action0 === 'c_status') {
+      const lr = await doFetch(url + '/auth/v1/admin/users?per_page=1000', { headers: svc });
+      const lj: any = lr.ok ? await lr.json().catch(() => ({})) : {};
+      const out: Record<string, any> = {};
+      (lj.users || []).forEach((u: any) => { out[u.id] = { last: u.last_sign_in_at || null, confirmed: !!u.email_confirmed_at, suspended: !!(u.banned_until && new Date(u.banned_until).getTime() > Date.now()) }; });
+      return json({ ok: true, users: out });
+    }
+    const id = String(body.id || '');
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'Customer not found.' }, 400);
+    const cr0 = await doFetch(url + '/rest/v1/profiles?select=id,role,email&id=eq.' + encodeURIComponent(id), { headers: svc });
+    const cu = (cr0.ok ? await cr0.json() : [])[0];
+    if (!cu || cu.role !== 'customer') return json({ error: 'Customer account not found. Admin and staff accounts cannot be changed here.' }, 404);
+    if (action0 === 'c_password') {
+      const pw = String(body.password || '');
+      if (pw.length < 8) return json({ error: 'The password must have at least 8 characters.' }, 400);
+      const r = await doFetch(url + '/auth/v1/admin/users/' + id, { method: 'PUT', headers: svc, body: JSON.stringify({ password: pw }) });
+      return r.ok ? json({ ok: true }) : json({ error: 'Could not change the password.' }, 400);
+    }
+    if (action0 === 'c_suspend') {
+      const r = await doFetch(url + '/auth/v1/admin/users/' + id, { method: 'PUT', headers: svc, body: JSON.stringify({ ban_duration: body.suspend ? '876000h' : 'none' }) });
+      return r.ok ? json({ ok: true }) : json({ error: 'Could not change the account.' }, 400);
+    }
+    if (action0 === 'c_update') {
+      const name = String(body.name || '').trim().slice(0, 120), phone = String(body.phone || '').trim().slice(0, 40), em = String(body.email || '').trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return json({ error: 'Please enter a valid email address.' }, 400);
+      if (em !== String(cu.email || '').toLowerCase()) {
+        const dup = await doFetch(url + '/rest/v1/profiles?select=id&email=ilike.' + encodeURIComponent(em), { headers: svc });
+        if (dup.ok && (await dup.json()).length) return json({ error: 'Another account already uses this email.' }, 400);
+        const r = await doFetch(url + '/auth/v1/admin/users/' + id, { method: 'PUT', headers: svc, body: JSON.stringify({ email: em, email_confirm: true }) });
+        if (!r.ok) return json({ error: 'Could not change the email.' }, 400);
+      }
+      const r2 = await doFetch(url + '/rest/v1/profiles?id=eq.' + encodeURIComponent(id), { method: 'PATCH', headers: svc, body: JSON.stringify({ full_name: name, phone, email: em }) });
+      return r2.ok ? json({ ok: true }) : json({ error: 'Could not save the details.' }, 400);
+    }
+    if (action0 === 'c_delete') {
+      const r = await doFetch(url + '/auth/v1/admin/users/' + id, { method: 'DELETE', headers: svc });   // their orders stay (the link to the account is cleared)
+      return r.ok ? json({ ok: true }) : json({ error: 'Could not delete the account.' }, 400);
+    }
+    return json({ error: 'Unknown action' }, 400);
+  }
 
   const email = String(body.email || '').trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'Please enter a valid email address.' }, 400);

@@ -218,10 +218,34 @@
                     r.readAsArrayBuffer(b);
                 });
             }
-            function sendOne(path, buf, type) {
+            function sendClient(path, buf, type) {
                 return withTimeout(B.client.storage.from('order-art').upload(path, buf, { contentType: type, upsert: false }), 90000).then(function (r) {
                     if (r.error && !/exist|duplicate/i.test(String(r.error.message || r.error.error || ''))) throw r.error;
                 });
+            }
+            /* second way in: plain fetch straight to the storage API (works even if the client library misbehaves on a phone) */
+            function sendDirect(path, buf, type) {
+                var tok = (B.session && B.session.access_token) || CFG.supabaseKey, ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null, t = setTimeout(function () { if (ctl) ctl.abort(); }, 90000);
+                return fetch(CFG.supabaseUrl + '/storage/v1/object/order-art/' + path.split('/').map(encodeURIComponent).join('/'), {
+                    method: 'POST', headers: { apikey: CFG.supabaseKey, Authorization: 'Bearer ' + tok, 'Content-Type': type, 'x-upsert': 'false', 'cache-control': 'max-age=3600' }, body: buf, signal: ctl ? ctl.signal : undefined
+                }).then(function (r) {
+                    clearTimeout(t);
+                    if (r.ok) return;
+                    return r.text().then(function (txt) { if (/exist|duplicate/i.test(txt)) return; throw new Error('storage ' + r.status + ' ' + String(txt).slice(0, 160)); });
+                }, function (e) { clearTimeout(t); throw e; });
+            }
+            function sendOne(path, buf, type) {
+                var tries = [sendClient, sendDirect, sendClient], i = 0, last;
+                function next() {
+                    if (i >= tries.length) throw last;
+                    var fn = tries[i++];
+                    return fn(path, buf, type).catch(function (e) {
+                        last = e;
+                        if (/policy|not allowed|jwt|unauthor/i.test(String(e && (e.message || e.error)))) throw e;
+                        return new Promise(function (r) { setTimeout(r, 1000 * i); }).then(next);
+                    });
+                }
+                return next();
             }
             jobs.forEach(function (j) {
                 chain = chain.then(function () {
@@ -230,16 +254,13 @@
                     var ex = (j[1].match(/\.([a-z]+)$/) || [0, ''])[1], path = art.id + '/' + j[1],
                         type = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', svg: 'image/svg+xml', json: 'application/json' }[ex] || 'application/octet-stream';
                     return readBytes(blob).then(function (buf) {
-                        if (!buf || !buf.byteLength) throw new Error('the ' + j[0] + ' file is empty (' + j[1] + ')');
-                        return sendOne(path, buf, type).catch(function (e) {
-                            if (/policy|not allowed|jwt|unauthor/i.test(String(e && e.message))) throw e;
-                            return new Promise(function (r) { setTimeout(r, 1200); }).then(function () { return sendOne(path, buf, type); });
-                        });
-                    }).then(function () { files[j[0]] = j[1]; });
+                        if (!buf || !buf.byteLength) { if (j[0] === 'print' || j[0] === 'preview') throw new Error('the ' + j[0] + ' file is empty (' + j[1] + ')'); return; }
+                        return sendOne(path, buf, type).then(function () { files[j[0]] = j[1]; });
+                    });
                 });
             });
             return chain.then(function () {
-                if (!files.print || !files.orig) throw new Error('upload incomplete');
+                if (!files.print) throw new Error('upload incomplete (no print file)');
                 return { id: art.id, folder: art.id, files: files, finish: art.finish, designer: !!art.designer, look: art.look };
             });
         });

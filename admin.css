@@ -286,3 +286,18 @@ body[data-admin] header.adm-top .adm-tabs button{ white-space:normal; text-align
 .adm-qbtn:hover{ background:#f3ebdd; }
 @media (min-width:1000px){ body[data-admin] header.adm-top .adm-tabs button{ padding:7px 12px; } .adm-grp{ padding-top:10px; } }
 @media (max-width:999px){ body[data-admin] header.adm-top .adm-tabs button{ border-radius:14px; padding:10px 14px; } }
+
+/* customers */
+.cu-item{ background:#fff; }
+.cu-head{ display:flex; flex-wrap:wrap; gap:4px 12px; align-items:center; width:100%; padding:14px 16px; border:0; background:transparent; font:inherit; text-align:start; cursor:pointer; color:inherit; box-sizing:border-box; }
+.cu-no{ font-weight:700; color:var(--gt-gold-dark,#8a6528); flex:1 1 180px; min-width:0; overflow-wrap:anywhere; }
+.cu-chips{ display:flex; gap:6px; flex-wrap:wrap; }
+.cu-sub{ flex:1 1 100%; color:#6b5d52; font-size:.9em; overflow-wrap:anywhere; }
+.cu-body{ padding:4px 16px 18px; border-top:1px solid rgba(0,0,0,.06); }
+.cu-body[hidden]{ display:none; }
+.cu-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+@media (max-width:760px){ .cu-grid{ grid-template-columns:1fr; } }
+.cu-form,.cu-acts{ display:grid; gap:8px; align-content:start; min-width:0; }
+.cu-acts small{ color:#6b5d52; margin:-4px 0 6px; }
+.cu-orders{ list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.cu-orders li{ padding:8px 10px; background:rgba(0,0,0,.03); border-radius:10px; overflow-wrap:anywhere; }

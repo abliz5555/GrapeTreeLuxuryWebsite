@@ -76,7 +76,7 @@
         if (!B.isAdmin()) t = 'orders';
         tab = t;
         $$('[data-tab]', tabsEl).forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-tab') === t); });
-        ({ dashboard: viewDashboard, team: viewTeam, business: viewBusiness, legal: viewLegal, orders: viewOrders, products: viewProducts, website: viewWebsite, studio: viewStudio, test: viewTest, settings: viewSettings })[t]();
+        ({ dashboard: viewDashboard, customers: viewCustomers, team: viewTeam, business: viewBusiness, legal: viewLegal, orders: viewOrders, products: viewProducts, website: viewWebsite, studio: viewStudio, test: viewTest, settings: viewSettings })[t]();
     }
 
     /* ============================ SMALL HELPERS (v9) ============================ */
@@ -406,7 +406,13 @@
         var f = e.target.closest('[data-f]'); if (!f) return;
         var art = f.closest('.adm-order'); if (!art) return;
         var o = ORDERS.filter(function (x) { return x.id === art.getAttribute('data-id'); })[0], patch = {}, key = f.getAttribute('data-f');
+        if (key === 'status' && f.value === 'cancelled' && o.status !== 'cancelled') {          // a cancellation always needs a reason
+            f.value = o.status; var cf = $('.o-cancel-form', art), co2 = $('[data-cancel-open]', art);
+            if (cf) { cf.hidden = false; if (co2) co2.hidden = true; cf.scrollIntoView({ block: 'center' }); }
+            toast('Please choose the reason to cancel this order.', true); return;
+        }
         patch[key] = f.value;
+        if (key === 'status' && o.status === 'cancelled' && f.value !== 'cancelled') { patch.cancel_reason = null; patch.cancelled_at = null; }
         var what = key === 'status' ? 'Status: ' + (STATUS_NAME[f.value] || f.value) : key === 'payment_status' ? 'Payment: ' + (f.value === 'paid' ? 'Paid' : 'Not paid') :
             key === 'art_review' ? 'Design review: ' + (REVIEW_NAME[f.value] || f.value) : key === 'art_review_note' ? 'Review note: ' + f.value : 'Private note: ' + f.value;
         var extra = null, pm = $('[data-pubmsg]', art), msg = pm ? pm.value.trim() : '';
@@ -963,6 +969,102 @@
             }).catch(function (x) { err.textContent = x.message || String(x); }).then(function () { btn.disabled = false; });
         });
         draw();
+    }
+
+    /* ============================ CUSTOMERS (admin only) ============================ */
+    function askTyped(title, text, word, yes) {
+        return new Promise(function (resolve) {
+            var d = doc.createElement('div'); d.className = 'adm-modal open';
+            d.innerHTML = '<div class="adm-dialog small"><h3 style="margin:0 0 6px">' + esc(title) + '</h3><p>' + esc(text) + '</p>' +
+                '<label>Type <strong>' + esc(word) + '</strong> to confirm<input type="text" id="ty-in" autocomplete="off" spellcheck="false"></label>' +
+                '<div class="adm-row end"><button class="adm-btn ghost" data-no>Cancel</button><button class="adm-btn danger" data-yes disabled>' + esc(yes) + '</button></div></div>';
+            doc.body.appendChild(d); var inp = $('#ty-in', d), go = $('[data-yes]', d);
+            inp.addEventListener('input', function () { go.disabled = inp.value.trim().toLowerCase() !== String(word).toLowerCase(); });
+            d.addEventListener('click', function (e) {
+                if (e.target.closest('[data-yes]') && !go.disabled) { d.remove(); resolve(true); }
+                else if (e.target.closest('[data-no]') || e.target === d) { d.remove(); resolve(false); }
+            });
+        });
+    }
+    function viewCustomers() {
+        root.innerHTML = '<div class="adm-bar"><h2>Customers</h2></div>' +
+            '<p class="adm-lead">Everyone who created an account. Open a customer to see their details and orders, send a password reset link, set a temporary password, stop their sign-in, or delete the account.</p>' +
+            '<div class="adm-row"><input type="search" id="cu-q" placeholder="Search name, email or phone" aria-label="Search customers" class="grow"></div><div id="cu-list"><p class="adm-loading">Loading...</p></div>';
+        var CU = [], OR = {}, ST = {}, q = '';
+        function load() {
+            return Promise.all([
+                B.client.from('profiles').select('id,email,full_name,phone,role,created_at').eq('role', 'customer').order('created_at', { ascending: false }).limit(1000).then(function (r) { if (r.error) throw r.error; return r.data || []; }),
+                B.client.from('orders').select('id,order_no,user_id,status,total,subtotal,created_at,cancel_reason,cancelled_at').not('user_id', 'is', null).order('created_at', { ascending: false }).limit(5000).then(function (r) { if (r.error) throw r.error; return r.data || []; }),
+                team({ action: 'c_status' }).then(function (d) { return d.users || {}; }, function () { return null; })
+            ]).then(function (a) {
+                CU = a[0]; OR = {}; a[1].forEach(function (o) { (OR[o.user_id] = OR[o.user_id] || []).push(o); }); ST = a[2] || {};
+                draw();
+            }).catch(function (e) { $('#cu-list').innerHTML = '<p class="adm-err">Could not load customers: ' + esc(e.message || e) + '</p>'; });
+        }
+        function money(n) { return 'AED ' + (Math.round(n * 100) / 100).toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+        function draw() {
+            var t = q.toLowerCase(), rows = CU.filter(function (c) { return !t || [c.full_name, c.email, c.phone].join(' ').toLowerCase().indexOf(t) > -1; });
+            var box = $('#cu-list');
+            if (!rows.length) { box.innerHTML = '<p class="adm-empty">' + (CU.length ? 'No customer matches your search.' : 'No customers yet.') + '</p>'; return; }
+            box.innerHTML = '<p class="adm-fine">' + rows.length + ' customer' + (rows.length === 1 ? '' : 's') + (ST && Object.keys(ST).length ? '' : ' (sign-in information needs the updated team-admin function)') + '</p>' + rows.map(function (c) {
+                var os = (OR[c.id] || []).filter(function (o) { return o.status !== 'cancelled'; }), sp = ST[c.id] || {}, spent = os.reduce(function (s, o) { return s + otot(o); }, 0);
+                return '<article class="adm-order cu-item" data-cid="' + esc(c.id) + '"><button type="button" class="cu-head" aria-expanded="false"><span class="cu-no">' + esc(c.full_name || c.email || 'No name') + '</span>' +
+                    '<span class="cu-chips">' + (sp.suspended ? '<span class="chip st-cancelled">Sign-in stopped</span>' : '') + '<span class="chip">' + (OR[c.id] || []).length + ' order' + ((OR[c.id] || []).length === 1 ? '' : 's') + '</span>' + (spent ? '<span class="chip st-confirmed">' + esc(money(spent)) + '</span>' : '') + '</span>' +
+                    '<span class="cu-sub">' + esc(c.email || '') + (c.phone ? ' &middot; ' + esc(c.phone) : '') + '</span></button><div class="cu-body" hidden></div></article>';
+            }).join('');
+        }
+        function detail(c) {
+            var os = OR[c.id] || [], sp = ST[c.id] || {};
+            return '<div class="cu-grid"><form class="cu-form"><h4>Details</h4>' +
+                '<label>Name<input name="name" value="' + esc(c.full_name || '') + '" maxlength="120"></label>' +
+                '<label>Phone<input name="phone" value="' + esc(c.phone || '') + '" maxlength="40"></label>' +
+                '<label>Email (their sign-in)<input name="email" type="email" value="' + esc(c.email || '') + '"></label>' +
+                '<p class="adm-fine">Joined ' + esc(dt(c.created_at)) + (sp.last ? ' &middot; Last signed in ' + esc(dt(sp.last)) : '') + '</p>' +
+                '<p class="adm-err" data-err role="alert"></p><div class="adm-row"><button class="adm-btn" type="submit">Save details</button>' +
+                (digits(c.phone) ? '<a class="adm-btn ghost" target="_blank" rel="noopener" href="https://wa.me/' + digits(c.phone) + '">WhatsApp</a>' : '') + '</div></form>' +
+                '<div class="cu-acts"><h4>Help this customer</h4>' +
+                '<button type="button" class="adm-btn ghost" data-cu="reset">Send password reset link</button><small>Emails them a link to choose a new password.</small>' +
+                '<button type="button" class="adm-btn ghost" data-cu="pw">Set a temporary password</button><small>You choose it and tell the customer. They can change it after signing in.</small>' +
+                '<button type="button" class="adm-btn ghost" data-cu="suspend">' + (sp.suspended ? 'Allow sign-in again' : 'Stop sign-in') + '</button><small>' + (sp.suspended ? 'This customer cannot sign in now.' : 'Blocks sign-in. Their orders and data are kept. You can allow it again any time.') + '</small>' +
+                '<button type="button" class="adm-btn danger" data-cu="delete">Delete account</button><small>Removes the account and saved addresses. Past orders stay in Orders for your records.</small></div></div>' +
+                '<h4>Orders (' + os.length + ')</h4>' + (os.length ? '<ul class="cu-orders">' + os.map(function (o) {
+                    return '<li><strong>#' + esc(o.order_no) + '</strong> <span class="chip st-' + esc(o.status) + '">' + esc(STATUS_NAME[o.status] || o.status) + '</span> ' + esc(money(otot(o))) + ' <small>' + esc(dt(o.created_at)) + '</small>' +
+                        (o.status === 'cancelled' ? '<br><small>Cancelled' + (o.cancelled_at ? ' ' + esc(dt(o.cancelled_at)) : '') + ' &mdash; reason: ' + esc(o.cancel_reason || 'not recorded') + '</small>' : '') + '</li>';
+                }).join('') + '</ul>' : '<p class="adm-empty">No orders yet.</p>');
+        }
+        function byId(id) { return CU.filter(function (c) { return c.id === id; })[0]; }
+        var list = $('#cu-list');
+        $('#cu-q').addEventListener('input', function (e) { q = e.target.value.trim(); draw(); });
+        list.addEventListener('click', function (e) {
+            var art = e.target.closest('.cu-item'); if (!art) return;
+            var c = byId(art.getAttribute('data-cid')), body = $('.cu-body', art);
+            var head = e.target.closest('.cu-head');
+            if (head) { var open = head.getAttribute('aria-expanded') === 'true'; head.setAttribute('aria-expanded', open ? 'false' : 'true'); body.hidden = open; if (!open) body.innerHTML = detail(c); return; }
+            var b = e.target.closest('[data-cu]'); if (!b || !c) return;
+            var act = b.getAttribute('data-cu'), who = c.email;
+            function done(msgText) { toast(msgText); return load().then(function () { var a = $('[data-cid="' + c.id + '"]'); if (a) { $('.cu-head', a).setAttribute('aria-expanded', 'true'); var bd = $('.cu-body', a); bd.hidden = false; bd.innerHTML = detail(byId(c.id) || c); } }); }
+            if (act === 'reset') {
+                confirmBox('Send a password reset email to ' + who + '?', 'Send link').then(function (yes) { if (yes) B.resetPassword(who).then(function () { toast('Reset link sent to ' + who); }).catch(fail); });
+            } else if (act === 'pw') {
+                askPassword('Set a temporary password', who).then(function (pw) { if (pw) team({ action: 'c_password', id: c.id, password: pw }).then(function () { toast('Password changed. Please tell the customer.'); }).catch(fail); });
+            } else if (act === 'suspend') {
+                var sus = !(ST[c.id] || {}).suspended;
+                confirmBox(sus ? 'Stop ' + who + ' from signing in? Their orders are kept.' : 'Allow ' + who + ' to sign in again?', sus ? 'Stop sign-in' : 'Allow sign-in').then(function (yes) { if (yes) team({ action: 'c_suspend', id: c.id, suspend: sus }).then(function () { return done(sus ? 'Sign-in stopped' : 'Sign-in allowed again'); }).catch(fail); });
+            } else if (act === 'delete') {
+                askTyped('Delete this account?', 'This permanently deletes the account of ' + who + ' and their saved addresses. This cannot be undone. Their ' + (OR[c.id] || []).length + ' past order(s) stay in Orders.', 'DELETE', 'Delete account').then(function (yes) {
+                    if (yes) team({ action: 'c_delete', id: c.id }).then(function () { toast('Account deleted'); return load(); }).catch(fail);
+                });
+            }
+        });
+        list.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var art = e.target.closest('.cu-item'), c = byId(art.getAttribute('data-cid')), f = e.target, err = $('[data-err]', f), btn = $('button[type=submit]', f); err.textContent = '';
+            btn.disabled = true;
+            team({ action: 'c_update', id: c.id, name: f.name.value, phone: f.phone.value, email: f.email.value }).then(function () {
+                toast('Customer details saved'); return load().then(function () { var a = $('[data-cid="' + c.id + '"]'); if (a) { $('.cu-head', a).setAttribute('aria-expanded', 'true'); var bd = $('.cu-body', a); bd.hidden = false; bd.innerHTML = detail(byId(c.id) || c); } });
+            }).catch(function (x) { err.textContent = x.message || String(x); btn.disabled = false; });
+        });
+        load();
     }
 
     /* ============================ LEGAL TEXTS ============================ */

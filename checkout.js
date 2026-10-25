@@ -222,29 +222,9 @@
 
     /* design files from the cake studio: tidy up once uploaded, or let the customer download them */
     function studioAfter(box, extra, wa) {
-        var arts = extra.arts || [], items = extra.items || [], failed = [];
-        arts.forEach(function (a, i) {
-            if (!a || !items[i] || !items[i].art) return;
-            if (a.failed || !extra.no) failed.push(items[i].art.id);
-            else if (window.GTStore) window.GTStore.del(items[i].art.id).catch(function () {});
-        });
-        if (!failed.length || !window.GTStore) return;
-        var note = doc.createElement('div');
-        note.className = 'co-bank';
-        note.innerHTML = '<strong>' + esc(T('Your design files')) + '</strong><p>' + esc(T('We could not upload your design files automatically. Please download them below and send them to us on WhatsApp together with your order.')) + '</p><div class="co-files"></div>';
-        if (window.GT.uploadErr) { var er = doc.createElement('p'); er.className = 'gt-fine'; er.textContent = 'Technical reason (for our team): ' + window.GT.uploadErr; note.appendChild(er); }
-        box.querySelector('.co-success').appendChild(note);
-        failed.forEach(function (id) {
-            window.GTStore.get(id).then(function (d) {
-                if (!d) return;
-                [['print', 'print-file.png', 'Print file'], ['preview', 'preview.png', 'Preview'], ['svg', 'cut-line.svg', 'Cut line'], ['orig', d.origName || 'original', 'Original image']].forEach(function (f) {
-                    if (!d[f[0]]) return;
-                    var a = doc.createElement('a');
-                    a.className = 'gt-link'; a.style.display = 'inline-block'; a.style.margin = '4px 14px 4px 0';
-                    a.href = URL.createObjectURL(d[f[0]]); a.download = f[1]; a.textContent = T(f[2]);
-                    note.querySelector('.co-files').appendChild(a);
-                });
-            });
+        var arts = extra.arts || [], items = extra.items || [];
+        arts.forEach(function (a, i) {                         // the files are with us now: clean the copy kept in this browser
+            if (a && !a.failed && items[i] && items[i].art && extra.no && window.GTStore) window.GTStore.del(items[i].art.id).catch(function () {});
         });
     }
 
@@ -263,7 +243,7 @@
         };
         if ($('[name="_gotcha"]').value) return;      // a bot filled the hidden field
         c.pay = ($('input[name=pay]:checked') || {}).value || 'whatsapp';
-        var btn = $('#co-submit');
+        var btn = $('#co-submit'), prevErr = $('#co-up-err'); if (prevErr) prevErr.style.display = 'none';
         btn.disabled = true;
         btn.textContent = T('Sending...');
 
@@ -275,6 +255,7 @@
             return B.uploadStudio(l.art).catch(function (e) { window.GT.uploadErr = String((e && (e.message || e.error)) || e || 'unknown'); try { console.warn('design upload failed:', window.GT.uploadErr); } catch (x) {} return { id: l.art.id, failed: true }; });
         })) : Promise.resolve(cartItems.map(function (l) { return l.art ? { id: l.art.id, failed: true } : null; }));
         var saved = artUp.then(function (arts) {
+            if (useDb && arts.some(function (a) { return a && a.failed; })) return { __abort: true };      // never place an order whose design files did not arrive
             artResults = arts;
             lines = cartItems.map(function (l, i) {
                 var o = { test: !!l.test, id: l.id, name: l.name, qty: l.qty, total: cartApi().lineTotal(l), quote: !!l.quote, meta: l.meta || [], note: l.note || '' };
@@ -287,6 +268,15 @@
                 source: lines.some(function (x) { return x.test; }) ? 'admin-test' : (window.GT.source ? window.GT.source() : '') }).catch(function () { return null; });
         });
         saved.then(function (res) {
+            if (res && res.__abort) {
+                var up = $('#co-up-err');
+                if (!up) { up = doc.createElement('p'); up.id = 'co-up-err'; up.className = 'co-legal-err'; up.setAttribute('role', 'alert'); btn.parentNode.insertBefore(up, btn); }
+                var adm = B && B.isAdmin && B.isAdmin();
+                up.textContent = T('We could not send your design files, so your order was not placed yet. Please check your internet connection and tap "Send order request" again. Your design is saved.') + (adm && window.GT.uploadErr ? ' [Admin only - technical reason: ' + window.GT.uploadErr + ']' : '');
+                up.hidden = false; up.style.display = 'block';
+                if (up.scrollIntoView) up.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                return;
+            }
             var no = res && res.order_no, text = orderText(c, no);
             var payload = {
                 _subject: (lines.some(function (x) { return x.test; }) ? '[TEST] ' : '') + 'New order request' + (no ? ' #' + no : '') + ' - Grape Tree',
