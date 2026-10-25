@@ -21,11 +21,10 @@
     var grid, countEl, chips, filter = 'all';
 
     function customizeUrl(p) {
-        if (!p.customize) return 'customize.html';
-        var q = Object.keys(p.customize).map(function (k) {
-            return encodeURIComponent(k) + '=' + encodeURIComponent(p.customize[k]);
-        }).join('&');
-        return 'customize.html?' + q;
+        /* every "Customize" button opens the live design studio of that brand */
+        if (p.customize && p.customize.builder === 'gildart') return 'chocolate-studio.html';
+        if (p.customize && p.customize.builder === 'katanukiya') return 'cake-studio.html';
+        return 'customize.html';
     }
 
     function priceText(p) {

@@ -530,3 +530,15 @@ body[data-product=cake] #st-scene, body[data-product=cake] #st-preview{ backgrou
 
 .mk-cutnote{ margin:0; padding:8px 12px; border-radius:10px; background:#fff7e0; font-size:12.5px; line-height:1.4; }
 .mk-cutnote[hidden]{ display:none; }
+
+/* choose-what-to-design page */
+.dy-choose{ max-width:980px; margin:0 auto; padding:8px 16px 70px; display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.dy-card{ display:flex; flex-direction:column; background:#fff; border-radius:20px; overflow:hidden; text-decoration:none; color:inherit; box-shadow:0 2px 14px rgba(42,24,16,.08); transition:transform .2s, box-shadow .2s; }
+.dy-card:hover{ transform:translateY(-3px); box-shadow:0 8px 26px rgba(42,24,16,.14); }
+.dy-card img{ width:100%; aspect-ratio:16/10; object-fit:cover; display:block; }
+.dy-body{ display:grid; gap:6px; padding:20px 22px 24px; }
+.dy-body b{ font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:#8a6528; }
+.dy-body strong{ font-family:var(--serif,'Playfair Display',serif); font-size:26px; }
+.dy-body small{ font-size:14px; line-height:1.55; color:#6b5d52; }
+.dy-body em{ font-style:normal; font-weight:600; color:#8a6528; margin-top:6px; }
+@media (max-width:700px){ .dy-choose{ grid-template-columns:1fr; } }
