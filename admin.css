@@ -338,3 +338,24 @@ body[data-admin] header.adm-top .adm-tabs button{ white-space:normal; text-align
 }
 .st-td .check{ display:flex; align-items:center; gap:6px; margin:0; font-size:.9rem }
 .st-td .check input{ width:auto; margin:0 }
+
+/* quantity option cards (same look as the customer page) */
+.st-cards{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; margin:8px 0 }
+.st-qc{ position:relative; border:1.5px solid #d8cfc3; border-radius:14px; padding:10px 12px 12px; background:#fff; display:grid; gap:6px; align-content:start; min-width:0 }
+.st-qc.pop{ border-color:#b08a3e; box-shadow:0 0 0 2px rgba(176,138,62,.18) }
+.st-qc-top{ display:flex; justify-content:space-between; align-items:center; gap:6px; font-size:.78rem; color:#6b5d52 }
+.st-qc-top .check{ display:flex; align-items:center; gap:5px; margin:0; font-size:.78rem }
+.st-qc-top .check input{ width:auto; margin:0 }
+.st-x{ border:0; background:#f1ebe2; color:#7a2e45; width:26px; height:26px; border-radius:50%; font-size:1.1rem; line-height:1; cursor:pointer; flex:none }
+.st-qc-q{ display:flex; align-items:baseline; gap:6px }
+.st-qc-q input{ font-family:Georgia,serif; font-size:1.5rem!important; font-weight:700; width:100%; min-width:0; border:1.5px solid #e4dccf; border-radius:10px; padding:6px 8px; box-sizing:border-box }
+.st-qc-q small{ color:#6b5d52 }
+.st-qc-p{ display:flex; align-items:center; gap:6px; color:#8a6528; font-weight:700 }
+.st-qc-p input{ width:100%; min-width:0; border:1.5px solid #e4dccf; border-radius:10px; padding:7px 8px; box-sizing:border-box; font:inherit; font-weight:700; color:#8a6528 }
+.st-qc-e{ color:#6b5d52; font-size:.85rem; font-weight:500 }
+.st-qadd{ cursor:pointer; justify-items:center; align-content:center; text-align:center; border-style:dashed; background:#fbf8f3; min-height:120px; color:#6b5d52 }
+.st-qadd b{ font-size:1.8rem; line-height:1; color:#222 }
+.st-box-panel{ border:1px solid rgba(0,0,0,.12); border-radius:14px; padding:12px 14px; margin:12px 0; background:#fcfaf6 }
+.st-bp-head{ display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap }
+.st-bp-head .st-fld{ flex:1 1 200px } .st-bp-head .st-narrow{ flex:0 1 150px }
+@media (max-width:520px){ .st-cards{ grid-template-columns:1fr } }

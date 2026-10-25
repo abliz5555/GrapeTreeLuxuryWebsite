@@ -534,8 +534,12 @@
         var v = stVal(sp), cake = sp === 'cake', form = $('#s-form');
         function cp(a) { return JSON.parse(JSON.stringify(a || [])); }
         var ST = {
-            tiers: cp(v.tiers), boxes: cp(v.boxes), bsets: cp(v.boxSets), disc: cp(v.discounts), thick: cp(v.thickness)
+            tiers: cp(v.tiers), boxes: cp(v.boxes), bsets: cp(v.boxSets), thick: cp(v.thickness)
         };
+        var OLDD = (v.discounts && v.discounts.length ? v.discounts : [{ min: 1, off: 0 }, { min: 10, off: 5 }, { min: 25, off: 10 }, { min: 50, off: 15 }, { min: 100, off: 20 }]);
+        ST.bsets.forEach(function (b) {            // older settings: price per box + percent discounts -> quantity options
+            if (!b.tiers || !b.tiers.length) b.tiers = OLDD.map(function (d) { var q = Math.max(1, n(d.min)); return { qty: q, price: Math.round(q * n(b.price) * (1 - n(d.off) / 100)) }; });
+        });
         function n(x) { x = Number(x); return isFinite(x) ? x : 0; }
         function aed(x) { return 'AED ' + (Math.round(x * 100) / 100).toLocaleString('en-GB', { maximumFractionDigits: 2 }); }
         function num(a, i, f, attrs) { return '<input type="number" inputmode="decimal" data-a="' + a + '" data-i="' + i + '" data-f="' + f + '" value="' + esc(ST[a][i][f]) + '" ' + (attrs || '') + '>'; }
@@ -550,20 +554,22 @@
                 var ts = ST.tiers.slice().sort(function (a, b) { return a.qty - b.qty; }), lo = ts[0];
                 s = lo ? 'Customers must order <b>at least ' + lo.qty + ' pieces</b>, from <b>' + aed(lo.price) + '</b>. They can choose ' + ts.length + ' quantit' + (ts.length === 1 ? 'y' : 'ies') + ' (up to ' + ts[ts.length - 1].qty + ' pieces).' : 'Add at least one quantity.';
             } else {
-                var mb = Math.max(1, parseInt($('#s-minbox') ? $('#s-minbox').value : v.minBoxes, 10) || 1), mp = Math.max(0, parseInt($('#s-minpcs') ? $('#s-minpcs').value : v.minPieces, 10) || 0);
-                s = ST.bsets.map(function (b) { var need = Math.max(mb, Math.ceil(mp / Math.max(1, n(b.pieces)))); return '<b>' + esc(b.label || 'Box') + '</b>: at least ' + need + ' box' + (need === 1 ? '' : 'es') + ' (' + need * n(b.pieces) + ' piece' + (need * n(b.pieces) === 1 ? '' : 's') + ')'; }).join(' &middot; ');
-                s = 'Minimum order &mdash; ' + s;
+                s = '';
             }
             return '<div class="st-live" id="s-live">' + s + '</div>';
         }
-        function tiersHtml() {
-            return '<div class="st-tbl st-t-tiers"><div class="st-th">Quantity (pieces)</div><div class="st-th">Total price (AED)</div><div class="st-th">Price per piece</div><div class="st-th">Best seller</div><div class="st-th"></div>' +
-                ST.tiers.map(function (t, i) {
-                    return '<div class="st-row"><div class="st-td" data-l="Quantity (pieces)">' + num('tiers', i, 'qty', 'min="1" step="1"') + '</div><div class="st-td" data-l="Total price (AED)">' + num('tiers', i, 'price', 'min="0" step="1"') + '</div>' +
-                        '<div class="st-td st-calc" data-l="Price per piece" data-pp="' + i + '">' + (n(t.qty) > 0 ? aed(n(t.price) / n(t.qty)) : '-') + '</div>' +
-                        '<div class="st-td" data-l="Best seller"><label class="check"><input type="radio" name="pop" data-pop="' + i + '"' + (t.popular ? ' checked' : '') + '> Mark</label></div><div class="st-td">' + (ST.tiers.length > 1 ? rm('tiers', i) : '') + '</div></div>';
-                }).join('') + '</div><p><button type="button" class="adm-btn ghost" data-add="tiers">+ Add a quantity</button></p>';
+        function cardsHtml(kind, bi, arr, unit) {
+            var P = kind === 'btiers' ? ' data-b="' + bi + '"' : '';
+            return '<div class="st-cards">' + arr.map(function (t, i) {
+                return '<div class="st-qc' + (t.popular ? ' pop' : '') + '"' + P + '>' +
+                    '<div class="st-qc-top"><label class="check"><input type="radio" name="pop' + kind + bi + '" data-pop="' + i + '"' + P + ' data-k="' + kind + '"' + (t.popular ? ' checked' : '') + '> Popular tag</label>' +
+                    (arr.length > 1 ? '<button type="button" class="st-x" data-rm="' + kind + '" data-i="' + i + '"' + P + ' aria-label="Remove this option">&times;</button>' : '') + '</div>' +
+                    '<div class="st-qc-q"><input type="number" inputmode="numeric" min="1" step="1" data-a="' + kind + '"' + P + ' data-i="' + i + '" data-f="qty" value="' + esc(t.qty) + '" aria-label="Quantity"><small>' + unit + '</small></div>' +
+                    '<div class="st-qc-p"><span>AED</span><input type="number" inputmode="decimal" min="0" step="1" data-a="' + kind + '"' + P + ' data-i="' + i + '" data-f="price" value="' + esc(t.price) + '" aria-label="Total price"></div>' +
+                    '<div class="st-qc-e st-calc" data-ce="' + kind + '|' + bi + '|' + i + '">' + (n(t.qty) > 0 ? aed(n(t.price) / n(t.qty)) + ' each' : '-') + '</div></div>';
+            }).join('') + '<button type="button" class="st-qc st-qadd" data-add="' + kind + '"' + P + '><b>+</b><span>Add a quantity option</span></button></div>';
         }
+        function tiersHtml() { return cardsHtml('tiers', 0, ST.tiers, 'pcs'); }
         function boxesHtml() {
             return '<div class="st-tbl st-t-col"><div class="st-th">Colour</div><div class="st-th">Name shown to customer</div><div class="st-th">Extra price (AED per piece)</div><div class="st-th"></div>' +
                 ST.boxes.map(function (b, i) {
@@ -572,19 +578,21 @@
                 }).join('') + '</div><p><button type="button" class="adm-btn ghost" data-add="boxes">+ Add a colour</button></p>';
         }
         function bsetsHtml() {
-            return '<div class="st-tbl st-t-bs"><div class="st-th">Box name</div><div class="st-th">Pieces in the box</div><div class="st-th">Price per box (AED)</div><div class="st-th">Price per piece</div><div class="st-th"></div>' +
-                ST.bsets.map(function (b, i) {
-                    return '<div class="st-row"><div class="st-td" data-l="Box name">' + txt('bsets', i, 'label', 'Box name') + '</div><div class="st-td" data-l="Pieces">' + num('bsets', i, 'pieces', 'min="1" max="12" step="1"') + '</div>' +
-                        '<div class="st-td" data-l="Price per box (AED)">' + num('bsets', i, 'price', 'min="0" step="0.5"') + '</div><div class="st-td st-calc" data-l="Price per piece" data-bp="' + i + '">' + (n(b.pieces) > 0 ? aed(n(b.price) / n(b.pieces)) : '-') + '</div><div class="st-td">' + (ST.bsets.length > 1 ? rm('bsets', i) : '') + '</div></div>';
-                }).join('') + '</div><p><button type="button" class="adm-btn ghost" data-add="bsets">+ Add a box type</button></p>';
+            return ST.bsets.map(function (b, i) {
+                var ts = b.tiers.slice().sort(function (x, y) { return n(x.qty) - n(y.qty); }), lo = ts[0] || { qty: 0, price: 0 };
+                return '<div class="st-box-panel"><div class="st-bp-head">' +
+                    '<label class="st-fld"><span class="st-lb">Box name</span>' + txt('bsets', i, 'label', 'Box name') + '</label>' +
+                    '<label class="st-fld st-narrow"><span class="st-lb">Pieces in the box</span>' + num('bsets', i, 'pieces', 'min="1" max="12" step="1"') + '</label>' +
+                    (ST.bsets.length > 1 ? '<button type="button" class="adm-btn ghost sm danger" data-rm="bsets" data-i="' + i + '">Remove this box</button>' : '') + '</div>' +
+                    '<div class="st-live" data-bl="' + i + '"></div>' +
+                    '<p class="st-help">Quantity options customers can choose for this box. Quantity = number of boxes. Price = total for that quantity. The smallest quantity is the minimum order.</p>' +
+                    cardsHtml('btiers', i, b.tiers, n(b.pieces) === 1 ? 'pcs' : 'boxes') + '</div>';
+            }).join('') + '<p><button type="button" class="adm-btn ghost" data-add="bsets">+ Add a box type</button></p>';
         }
-        function discHtml() {
-            var b0 = ST.bsets[0] || { price: 0, label: 'box' };
-            return '<div class="st-tbl st-t-disc"><div class="st-th">When they order this many boxes or more</div><div class="st-th">Discount (%)</div><div class="st-th">Example: ' + esc(b0.label || 'first box') + ' becomes</div><div class="st-th"></div>' +
-                ST.disc.map(function (d, i) {
-                    return '<div class="st-row"><div class="st-td" data-l="From boxes">' + num('disc', i, 'min', 'min="1" step="1"') + '</div><div class="st-td" data-l="Discount %">' + num('disc', i, 'off', 'min="0" max="90" step="0.5"') + '</div>' +
-                        '<div class="st-td st-calc" data-l="Example" data-dp="' + i + '">' + aed(n(b0.price) * (1 - n(d.off) / 100)) + ' per box</div><div class="st-td">' + (ST.disc.length > 1 ? rm('disc', i) : '') + '</div></div>';
-                }).join('') + '</div><p><button type="button" class="adm-btn ghost" data-add="disc">+ Add a discount level</button></p>';
+        function blLive(i) {
+            var b = ST.bsets[i]; if (!b) return '';
+            var ts = b.tiers.slice().sort(function (x, y) { return n(x.qty) - n(y.qty); }), lo = ts[0];
+            return lo ? 'Minimum order: <b>' + n(lo.qty) + ' ' + (n(b.pieces) === 1 ? 'pcs' : 'boxes') + '</b>' + (n(b.pieces) > 1 ? ' (' + n(lo.qty) * n(b.pieces) + ' pieces)' : '') + ' &middot; from <b>' + aed(n(lo.price)) + '</b> &middot; ' + ts.length + ' option' + (ts.length === 1 ? '' : 's') : 'Add at least one quantity option.';
         }
         function thickHtml() {
             return '<div class="st-tbl st-t-th"><div class="st-th">Name shown to customer</div><div class="st-th">Thickness (mm)</div><div class="st-th">Extra price (AED per piece)</div><div class="st-th"></div>' +
@@ -597,24 +605,20 @@
 
         var h = '<p class="st-help st-top">' + (cake ? 'This is the page customers use to design a <b>Katanukiya cut-out cake</b>.' : 'This is the page customers use to design <b>GildArt printed chocolates</b>.') + ' Everything below can be changed. Press <b>Save changes</b> at the bottom when you finish. It goes live straight away.</p>';
         if (cake) {
-            h += sec(1, 'Minimum order and prices', 'Each row is one choice the customer sees. The <b>smallest quantity is the minimum order</b>. The price is the <b>total</b> for that quantity (it includes the first die setup and delivery in the UAE).', summary() + '<div id="s-tiers">' + tiersHtml() + '</div>');
+            h += sec(1, 'Minimum order and prices', 'Each card below is one choice the customer sees on the order page. The <b>smallest quantity is the minimum order</b>. The price is the <b>total</b> for that quantity (it includes the first die setup and delivery in the UAE).', summary() + '<div id="s-tiers">' + tiersHtml() + '</div>');
             h += sec(2, 'Box colours', 'The boxes the customer can pick. If a colour costs more, type the extra price for each piece (use 0 for no extra charge).', '<div id="s-boxes">' + boxesHtml() + '</div>');
         } else {
-            h += sec(1, 'Minimum order', 'The smallest order a customer can place. Use either one or both. The customer cannot go below it.',
-                '<div class="st-two">' + field('Minimum number of boxes', 'Example: 1 means a customer can order a single box.', '<input type="number" min="1" step="1" id="s-minbox" value="' + esc(v.minBoxes || 1) + '">') +
-                field('Minimum pieces in total (optional)', 'Counts all pieces in all boxes. Example: 100 means 34 boxes of 3 pieces. Use 0 for no minimum.', '<input type="number" min="0" step="1" id="s-minpcs" value="' + esc(v.minPieces || 0) + '">') + '</div>' + summary());
-            h += sec(2, 'Box types and prices', 'The boxes customers can choose. The price is for <b>one box</b>. Every piece in a box can carry a different print.', '<div id="s-bsets">' + bsetsHtml() + '</div>');
-            h += sec(3, 'Discounts for more boxes', 'The more boxes the customer orders, the lower the price per box. The first level should stay at <b>0%</b> (the normal price).', '<div id="s-disc">' + discHtml() + '</div>');
-            h += sec(4, 'Thickness', 'The chocolate thickness options. The extra price is added for <b>each piece</b>. Use 0 for the standard thickness.', '<div id="s-thick">' + thickHtml() + '</div>');
-            h += sec(5, 'Custom flavour and custom box', 'Small orders get the standard flavour and box. From the number of pieces below, the customer can ask for their own flavour and a custom box.',
+            h += sec(1, 'Box types, minimum order and quantity options', 'Customers pick a box, then one of the quantity options below it (like the cake page). <b>The smallest quantity is the minimum order</b> for that box. For example: single chocolate from 50 pieces, 3-piece set from 20 boxes. Prices include delivery in the UAE.', '<div id="s-bsets">' + bsetsHtml() + '</div>');
+            h += sec(2, 'Thickness', 'The chocolate thickness options. The extra price is added for <b>each piece</b>. Use 0 for the standard thickness.', '<div id="s-thick">' + thickHtml() + '</div>');
+            h += sec(3, 'Custom flavour and custom box', 'Small orders get the standard flavour and box. From the number of pieces below, the customer can ask for their own flavour and a custom box.',
                 field('Unlocks from this many pieces in total', 'Example: 300.', '<input type="number" min="1" step="1" id="s-moq" value="' + esc(v.customMinQty || 300) + '">') +
                 field('Flavours customers can choose (one per line)', 'The first line is the standard flavour. The others need the quantity above.', '<textarea id="s-flav" rows="5">' + esc((v.flavours || []).join('\n')) + '</textarea>'));
         }
-        h += sec(cake ? 3 : 6, 'Words on the page', 'The headline, introduction and short highlights at the top of the design page.',
+        h += sec(cake ? 3 : 4, 'Words on the page', 'The headline, introduction and short highlights at the top of the design page.',
             field('Headline', 'Big title at the top.', '<input id="s-title" value="' + esc(v.title || '') + '">') +
             field('Introduction', 'Two or three sentences under the headline.', '<textarea id="s-lead" rows="3">' + esc(v.lead || '') + '</textarea>') +
             field('Short highlights (one per line, up to 4)', 'Small tags, for example the size or the minimum order.', '<textarea id="s-chips" rows="3">' + esc((v.chips || []).join('\n')) + '</textarea>'));
-        h += sec(cake ? 4 : 7, 'Delivery time and designer help', '',
+        h += sec(cake ? 4 : 5, 'Delivery time and designer help', '',
             '<div class="st-two">' + field('Delivery time (business days)', 'Shown to customers as the estimated shipping date.', '<input type="number" min="1" id="s-lead-d" value="' + esc(v.leadBusinessDays || 14) + '">') +
             field('Designer fee (AED)', 'Extra charge when the customer asks our designer to create the artwork. 0 = free.', '<input type="number" min="0" id="s-fee" value="' + esc(v.designerFee || 0) + '">') + '</div>');
         var sf = v.surface || (cake ? { w: 63, h: 48 } : { w: 50, h: 50 });
@@ -626,34 +630,33 @@
         h += '<p class="adm-err" id="s-err" hidden></p><div class="st-savebar"><button type="button" class="adm-btn" id="s-save">Save changes</button> <button type="button" class="adm-btn ghost" id="s-reset">Back to website defaults</button></div>';
         form.innerHTML = h;
 
-        function refresh() {   // update the calculated numbers without redrawing the rows
-            $$('[data-pp]', form).forEach(function (el) { var t = ST.tiers[+el.dataset.pp]; el.textContent = t && n(t.qty) > 0 ? aed(n(t.price) / n(t.qty)) : '-'; });
-            $$('[data-bp]', form).forEach(function (el) { var b = ST.bsets[+el.dataset.bp]; el.textContent = b && n(b.pieces) > 0 ? aed(n(b.price) / n(b.pieces)) : '-'; });
-            var b0 = ST.bsets[0] || { price: 0 };
-            $$('[data-dp]', form).forEach(function (el) { var d = ST.disc[+el.dataset.dp]; el.textContent = d ? aed(n(b0.price) * (1 - n(d.off) / 100)) + ' per box' : ''; });
+        function arrOf(kind, bi) { return kind === 'btiers' ? (ST.bsets[bi] ? ST.bsets[bi].tiers : []) : ST.tiers; }
+        function refresh() {   // update the calculated numbers without redrawing the cards
+            $$('[data-ce]', form).forEach(function (el) { var p = el.dataset.ce.split('|'), t = arrOf(p[0], +p[1])[+p[2]]; el.textContent = t && n(t.qty) > 0 ? aed(n(t.price) / n(t.qty)) + ' each' : '-'; });
+            $$('[data-bl]', form).forEach(function (el) { el.innerHTML = blLive(+el.dataset.bl); });
             var lv = $('#s-live'); if (lv) lv.outerHTML = summary();
         }
         function redraw(id, fn) { var el = $(id); if (el) el.innerHTML = fn(); refresh(); }
-        var REDRAW = { tiers: ['#s-tiers', tiersHtml], boxes: ['#s-boxes', boxesHtml], bsets: ['#s-bsets', bsetsHtml], disc: ['#s-disc', discHtml], thick: ['#s-thick', thickHtml] };
+        var REDRAW = { tiers: ['#s-tiers', tiersHtml], boxes: ['#s-boxes', boxesHtml], bsets: ['#s-bsets', bsetsHtml], btiers: ['#s-bsets', bsetsHtml], thick: ['#s-thick', thickHtml] };
+        refresh();
         form.oninput = function (e) {
             var d = e.target.dataset;
-            if (d.a) { var r = ST[d.a][+d.i], val = e.target.type === 'number' ? e.target.value : e.target.value; r[d.f] = (e.target.type === 'number') ? (val === '' ? '' : Number(val)) : val; refresh(); }
-            else if (e.target.id === 's-minbox' || e.target.id === 's-minpcs') refresh();
+            if (d.a) { var arr = d.b != null ? arrOf(d.a, +d.b) : ST[d.a], r = arr[+d.i], val = e.target.value; r[d.f] = (e.target.type === 'number') ? (val === '' ? '' : Number(val)) : val; if (d.a === 'bsets' && d.f === 'pieces') redraw('#s-bsets', bsetsHtml); else refresh(); }
         };
         form.onchange = function (e) {
-            if (e.target.dataset.pop != null) ST.tiers.forEach(function (t, i) { t.popular = i === +e.target.dataset.pop; });
+            var d = e.target.dataset;
+            if (d.pop != null) { var arr = d.b != null ? arrOf(d.k, +d.b) : ST.tiers; arr.forEach(function (t, i) { t.popular = i === +d.pop; }); }
         };
         form.onclick = function (e) {
             var a = e.target.closest('[data-add]'), r = e.target.closest('[data-rm]');
             if (a) {
-                var k = a.dataset.add, L = ST[k][ST[k].length - 1] || {};
-                if (k === 'tiers') ST.tiers.push({ qty: n(L.qty || 100) * 2, price: n(L.price || 1000) * 2 });
+                var k = a.dataset.add, arr = k === 'btiers' ? arrOf(k, +a.dataset.b) : ST[k], L = arr[arr.length - 1] || {};
+                if (k === 'tiers' || k === 'btiers') arr.push({ qty: Math.round(n(L.qty || 50) * 2), price: Math.round(n(L.price || 1000) * 1.9) });
                 if (k === 'boxes') ST.boxes.push({ id: 'colour-' + (ST.boxes.length + 1), label: 'New colour', extra: 3, color: '#cccccc' });
-                if (k === 'bsets') ST.bsets.push({ id: 'b' + (ST.bsets.length + 1) + '-' + Date.now().toString(36).slice(-3), pieces: 6, label: '6-piece gift box', price: 180 });
-                if (k === 'disc') ST.disc.push({ min: n(L.min || 1) * 2, off: n(L.off || 0) + 5 });
+                if (k === 'bsets') ST.bsets.push({ id: 'b' + (ST.bsets.length + 1) + '-' + Date.now().toString(36).slice(-3), pieces: 6, label: '6-piece gift box', price: 180, tiers: [{ qty: 20, price: 3200 }, { qty: 50, price: 7500, popular: true }, { qty: 100, price: 14000 }] });
                 if (k === 'thick') ST.thick.push({ id: '8', mm: 8, label: '8 mm', extra: 0.5 });
                 redraw(REDRAW[k][0], REDRAW[k][1]);
-            } else if (r) { var kk = r.dataset.rm; ST[kk].splice(+r.dataset.i, 1); redraw(REDRAW[kk][0], REDRAW[kk][1]); }
+            } else if (r) { var kk = r.dataset.rm, ar = kk === 'btiers' ? arrOf(kk, +r.dataset.b) : ST[kk]; ar.splice(+r.dataset.i, 1); redraw(REDRAW[kk][0], REDRAW[kk][1]); }
         };
         $('#s-save').onclick = function () {
             var err = $('#s-err'); err.hidden = true;
@@ -669,14 +672,22 @@
                 if (!out.boxes.some(function (b) { return b.standard; })) out.boxes[0].standard = true;
                 out.margin = Math.max(0, n($('#s-mar').value));
             } else {
-                out.minBoxes = Math.max(1, parseInt($('#s-minbox').value, 10) || 1);
-                out.minPieces = Math.max(0, parseInt($('#s-minpcs').value, 10) || 0);
                 var ids = {};
-                out.boxSets = ST.bsets.map(function (b, i) { var o = {}; for (var k in b) o[k] = b[k]; o.label = String(b.label || '').trim() || 'Box ' + (i + 1); o.pieces = Math.min(12, Math.max(1, Math.round(n(b.pieces)))); o.price = Math.max(0, n(b.price)); var id = String(b.id || '') || String(o.pieces); while (ids[id]) id += 'x'; ids[id] = 1; o.id = id; return o; });
+                out.boxSets = ST.bsets.map(function (b, i) {
+                    var o = {}; for (var k in b) o[k] = b[k];
+                    o.label = String(b.label || '').trim() || 'Box ' + (i + 1); o.pieces = Math.min(12, Math.max(1, Math.round(n(b.pieces))));
+                    var id = String(b.id || '') || String(o.pieces); while (ids[id]) id += 'x'; ids[id] = 1; o.id = id;
+                    var ts = (b.tiers || []).slice().sort(function (x, y) { return n(x.qty) - n(y.qty); });
+                    o.tiers = ts.map(function (t) { var q = { qty: Math.round(n(t.qty)), price: Math.max(0, n(t.price)) }; if (t.popular) q.popular = true; return q; });
+                    o.price = o.tiers.length ? Math.round(o.tiers[0].price / Math.max(1, o.tiers[0].qty) * 100) / 100 : 0;   // price per box at the minimum order
+                    return o;
+                });
                 if (!out.boxSets.length) return bad('Please keep at least one box type.');
-                var ds = ST.disc.slice().sort(function (a, b) { return n(a.min) - n(b.min); });
-                for (var j = 0; j < ds.length; j++) { if (!(n(ds[j].min) >= 1) || !(n(ds[j].off) >= 0 && n(ds[j].off) <= 90)) return bad('Please check the discount levels.'); if (j && n(ds[j].min) === n(ds[j - 1].min)) return bad('Two discount levels start at the same number of boxes.'); }
-                out.discounts = ds.map(function (d) { return { min: Math.round(n(d.min)), off: n(d.off) }; });
+                for (var bi = 0; bi < out.boxSets.length; bi++) {
+                    var tl = out.boxSets[bi].tiers, nm = out.boxSets[bi].label;
+                    if (!tl.length) return bad('"' + nm + '" needs at least one quantity option.');
+                    for (var ti = 0; ti < tl.length; ti++) { if (!(tl[ti].qty >= 1)) return bad('Please check the quantities for "' + nm + '".'); if (ti && tl[ti].qty === tl[ti - 1].qty) return bad('"' + nm + '" has two options with the same quantity.'); }
+                }
                 var tids = {};
                 out.thickness = ST.thick.map(function (t, i) { var mm = Math.max(1, Math.round(n(t.mm) || 5)); var id = String(mm); while (tids[id]) id += '0'; tids[id] = 1; return { id: id, label: String(t.label || '').trim() || mm + ' mm', extra: Math.max(0, n(t.extra)) }; });
                 if (!out.thickness.length) return bad('Please keep at least one thickness.');

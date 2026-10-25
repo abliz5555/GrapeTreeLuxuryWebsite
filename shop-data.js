@@ -59,18 +59,16 @@ window.GT_DATA = {
             leadBusinessDays: 14,
             designerFee: 0,
             customMinQty: 300,                      // total pieces from which the customer can ask for their own flavour and box
-            minBoxes: 1,
-            boxSets: [                              // price per box (SAMPLE prices)
-                { id: '1', pieces: 1, label: 'Single chocolate', price: 35 },
-                { id: '3', pieces: 3, label: '3-piece gift set', price: 95 },
-                { id: '9', pieces: 9, label: '9-piece gift box', price: 260 }
-            ],
-            discounts: [                            // percent off the price per box, from this many boxes
-                { min: 1, off: 0 },
-                { min: 10, off: 5 },
-                { min: 25, off: 10 },
-                { min: 50, off: 15 },
-                { min: 100, off: 20 }
+            /* Each box type has its own quantity options. qty = number of boxes, price = TOTAL for that quantity (SAMPLE prices).
+               The first option is the minimum order. 'popular: true' shows a Popular tag.
+               All of this can be changed in Admin > Custom design prices. */
+            boxSets: [
+                { id: '1', pieces: 1, label: 'Single chocolate', price: 35, tiers: [
+                    { qty: 50, price: 1750 }, { qty: 100, price: 3200, popular: true }, { qty: 200, price: 5800 }, { qty: 500, price: 13000 }, { qty: 1000, price: 23000 } ] },
+                { id: '3', pieces: 3, label: '3-piece gift set', price: 95, tiers: [
+                    { qty: 20, price: 1900 }, { qty: 50, price: 4400, popular: true }, { qty: 100, price: 8200 }, { qty: 200, price: 15200 }, { qty: 500, price: 35000 } ] },
+                { id: '9', pieces: 9, label: '9-piece gift box', price: 260, tiers: [
+                    { qty: 10, price: 2600 }, { qty: 25, price: 6000, popular: true }, { qty: 50, price: 11100 }, { qty: 100, price: 20500 }, { qty: 200, price: 38000 } ] }
             ],
             thickness: [
                 { id: '5', label: '5 mm thin', extra: 0 },

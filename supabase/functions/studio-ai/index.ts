@@ -94,6 +94,11 @@ async function addUse(env: (k: string) => string, who: string, doFetch: typeof f
   const url = env('SUPABASE_URL'); if (!url || !env('SUPABASE_SERVICE_ROLE_KEY')) return;
   try { const n = await usedToday(env, who, doFetch); await doFetch(`${url}/rest/v1/ai_usage`, { method: 'POST', headers: { ...sbHeaders(env), Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify({ day: day(), ip: who, n: n + 1 }) }); } catch (_e) { /* a counting problem must never block a customer */ }
 }
+/* admin and staff accounts have no AI limit */
+async function isTeam(uid: string, env: (k: string) => string, doFetch: typeof fetch): Promise<boolean> {
+  const url = env('SUPABASE_URL'); if (!url || !env('SUPABASE_SERVICE_ROLE_KEY')) return false;
+  try { const r = await doFetch(`${url}/rest/v1/profiles?select=role&id=eq.${encodeURIComponent(uid)}`, { headers: sbHeaders(env) }); const rows = await r.json(); return !!(rows && rows[0] && (rows[0].role === 'admin' || rows[0].role === 'staff')); } catch (_e) { return false; }
+}
 /* who is calling? Returns the signed-in customer's id, or null for visitors who are not signed in */
 async function signedInUser(req: Request, env: (k: string) => string, doFetch: typeof fetch): Promise<string | null> {
   const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
@@ -124,8 +129,9 @@ export async function handle(req: Request, env: (k: string) => string, doFetch: 
   if (!uid) return json({ error: 'Please sign in (it is free) to use AI.' }, 401);
   const who = 'u:' + uid;
   const perUser = parseInt(env('AI_DAILY_LIMIT') || '10', 10) || 10, global = parseInt(env('AI_GLOBAL_LIMIT') || '150', 10) || 150;
-  if ((await usedToday(env, who, doFetch)) >= perUser) return json({ error: 'You have used your ' + perUser + ' AI pictures for today. Please come back tomorrow, or send it to our designer.' }, 429);
-  if ((await usedToday(env, 'global', doFetch)) >= global) return json({ error: 'AI is very busy today. Please try again tomorrow, or send it to our designer.' }, 429);
+  const team = await isTeam(uid, env, doFetch);          // admin and staff: no daily limit, and they do not use up the customers' share
+  if (!team && (await usedToday(env, who, doFetch)) >= perUser) return json({ error: 'You have used your ' + perUser + ' AI pictures for today. Please come back tomorrow, or send it to our designer.' }, 429);
+  if (!team && (await usedToday(env, 'global', doFetch)) >= global) return json({ error: 'AI is very busy today. Please try again tomorrow, or send it to our designer.' }, 429);
 
   if (gen) {
     const gr = await doFetch('https://api.openai.com/v1/images/generations', {
@@ -136,7 +142,7 @@ export async function handle(req: Request, env: (k: string) => string, doFetch: 
     if (!gr.ok) { console.error('openai', gr.status, JSON.stringify(gj).slice(0, 300)); return json({ error: 'AI could not draw this. Please try different words.', detail: 'OpenAI ' + gr.status + ': ' + String((gj && gj.error && gj.error.message) || '').slice(0, 240) }, 502); }
     const gb = gj && gj.data && gj.data[0] && gj.data[0].b64_json;
     if (!gb) return json({ error: 'AI returned nothing' }, 502);
-    await addUse(env, who, doFetch); await addUse(env, 'global', doFetch);
+    if (!team) { await addUse(env, who, doFetch); await addUse(env, 'global', doFetch); }
     return json({ image: 'data:image/png;base64,' + gb });
   }
   let blob: Blob; try { blob = dataUrlToBlob(body.image); } catch (_e) { return json({ error: 'bad image' }, 400); }
@@ -156,7 +162,7 @@ export async function handle(req: Request, env: (k: string) => string, doFetch: 
   if (!r.ok) { console.error('openai', r.status, JSON.stringify(j).slice(0, 300)); return json({ error: 'AI could not process this image', detail: 'OpenAI ' + r.status + ': ' + String((j && j.error && j.error.message) || '').slice(0, 240) }, 502); }
   const b64 = j && j.data && j.data[0] && j.data[0].b64_json;
   if (!b64) return json({ error: 'AI returned nothing' }, 502);
-  await addUse(env, who, doFetch); await addUse(env, 'global', doFetch);
+  if (!team) { await addUse(env, who, doFetch); await addUse(env, 'global', doFetch); }
   return json({ image: 'data:image/png;base64,' + b64 });
 }
 
