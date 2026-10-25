@@ -210,14 +210,32 @@
             var ext = (String(d.origName || '').match(/\.(png|jpe?g|webp|gif)$/i) || [0, 'png'])[1].toLowerCase();
             var jobs = [['orig', 'original.' + ext, d.orig], ['print', 'print.png', d.print], ['preview', 'preview.png', d.preview], ['cutline', 'cutline.svg', d.svg], ['spec', 'spec.json', d.spec]];
             var files = {}, chain = Promise.resolve();
+            /* phones (iPhone Safari especially) can send an empty body when a file comes straight out of the browser's
+               storage, so each file is first read into memory and then sent as plain bytes; one retry per file */
+            function readBytes(b) {
+                return new Promise(function (res, rej) {
+                    var r = new FileReader(); r.onload = function () { res(r.result); }; r.onerror = function () { rej(r.error || new Error('could not read file')); };
+                    r.readAsArrayBuffer(b);
+                });
+            }
+            function sendOne(path, buf, type) {
+                return withTimeout(B.client.storage.from('order-art').upload(path, buf, { contentType: type, upsert: false }), 90000).then(function (r) {
+                    if (r.error && !/exist|duplicate/i.test(String(r.error.message || r.error.error || ''))) throw r.error;
+                });
+            }
             jobs.forEach(function (j) {
                 chain = chain.then(function () {
                     var blob = j[2]; if (!blob) return;
-                    var path = art.id + '/' + j[1];
-                    return withTimeout(B.client.storage.from('order-art').upload(path, blob, { contentType: blob.type || 'application/octet-stream', upsert: false }), 60000).then(function (r) {
-                        if (r.error && !/exist|duplicate/i.test(String(r.error.message || r.error.error || ''))) throw r.error;
-                        files[j[0]] = j[1];
-                    });
+                    if (typeof blob === 'string') blob = new Blob([blob]);
+                    var ex = (j[1].match(/\.([a-z]+)$/) || [0, ''])[1], path = art.id + '/' + j[1],
+                        type = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', svg: 'image/svg+xml', json: 'application/json' }[ex] || 'application/octet-stream';
+                    return readBytes(blob).then(function (buf) {
+                        if (!buf || !buf.byteLength) throw new Error('the ' + j[0] + ' file is empty (' + j[1] + ')');
+                        return sendOne(path, buf, type).catch(function (e) {
+                            if (/policy|not allowed|jwt|unauthor/i.test(String(e && e.message))) throw e;
+                            return new Promise(function (r) { setTimeout(r, 1200); }).then(function () { return sendOne(path, buf, type); });
+                        });
+                    }).then(function () { files[j[0]] = j[1]; });
                 });
             });
             return chain.then(function () {
