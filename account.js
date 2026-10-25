@@ -10,6 +10,20 @@
     var esc = function (s) { return window.GT.esc(s); };
     var money = function (n) { return window.GT.money(n); };
     var tab = 'in';
+    /* "?next=checkout.html": after signing in, go back to where the customer was (checkout) */
+    var QSN = new URLSearchParams(location.search);
+    if (QSN.get('mode') === 'signup') tab = 'up';
+    (function () {
+        var n = QSN.get('next');
+        if (n && /^[a-z0-9-]+\.html$/i.test(n)) { try { localStorage.setItem('gt-next', JSON.stringify({ u: n, t: Date.now() })); } catch (e) { } }
+    })();
+    function takeNext() {
+        try {
+            var v = JSON.parse(localStorage.getItem('gt-next') || 'null'); localStorage.removeItem('gt-next');
+            if (v && v.u && Date.now() - v.t < 86400000 && /^[a-z0-9-]+\.html$/i.test(v.u)) return v.u;
+        } catch (e) { }
+        return '';
+    }
 
     function $(s, c) { return (c || doc).querySelector(s); }
     function $$(s, c) { return Array.prototype.slice.call((c || doc).querySelectorAll(s)); }
@@ -151,7 +165,7 @@
         root.innerHTML =
             '<div class="acct-top"><div><strong>' + esc(first ? p.full_name : T('Welcome')) + '</strong><span>' + esc(u ? u.email : '') + '</span></div>' +
             '<div class="acct-top-r">' + (staff ? '<a class="gt-btn gt-btn-outline" href="admin.html">' + esc(T('Admin dashboard')) + '</a>' : '') + '<button type="button" class="acct-link acct-out" id="a-out">' + esc(T('Sign out')) + '</button></div></div>' +
-            '<nav class="acct-tabs" role="tablist" aria-label="' + esc(T('My account')) + '">' + TABS.map(function (t) { return '<button type="button" role="tab" data-tab="' + t[0] + '" aria-selected="' + (t[0] === cur) + '" class="' + (t[0] === cur ? 'on' : '') + '">' + esc(T(t[1])) + '</button>'; }).join('') + '</nav>' +
+            '<nav class="acct-nav" role="tablist" aria-label="' + esc(T('My account')) + '">' + TABS.map(function (t) { return '<button type="button" role="tab" data-tab="' + t[0] + '" aria-selected="' + (t[0] === cur) + '" class="' + (t[0] === cur ? 'on' : '') + '">' + esc(T(t[1])) + '</button>'; }).join('') + '</nav>' +
             '<section class="acct-pane" data-pane="orders"' + (cur === 'orders' ? '' : ' hidden') + '><div class="acct-card"><h2>' + esc(T('My orders')) + '</h2><p class="acct-muted">' + esc(T('Follow every order from confirmation to delivery.')) + '</p><div id="a-orders"><p class="acct-loading">Loading...</p></div></div></section>' +
             '<section class="acct-pane" data-pane="receipts"' + (cur === 'receipts' ? '' : ' hidden') + '><div class="acct-card"><h2>' + esc(T('Receipts & invoices')) + '</h2><p class="acct-muted">' + esc(T('Download an order confirmation or receipt as a PDF.')) + '</p><div id="a-receipts"><p class="acct-loading">Loading...</p></div></div></section>' +
             '<section class="acct-pane" data-pane="details"' + (cur === 'details' ? '' : ' hidden') + '><div class="acct-two">' +
@@ -173,11 +187,11 @@
             '<button type="button" class="acct-link" id="pw-forgot">I do not remember my current password</button></form></div></section>';
 
         function show(t) {
-            $$('.acct-tabs button').forEach(function (b) { var on = b.dataset.tab === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+            $$('.acct-nav button').forEach(function (b) { var on = b.dataset.tab === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
             $$('.acct-pane').forEach(function (s) { s.hidden = s.dataset.pane !== t; });
             try { history.replaceState(null, '', '#' + t); } catch (x) { }
         }
-        $('.acct-tabs').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) show(b.dataset.tab); });
+        $('.acct-nav').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) show(b.dataset.tab); });
         $('#ad-em').innerHTML = '<option value="">Choose an emirate</option>' + (CFG.emirates || []).map(function (e) { return '<option>' + esc(e) + '</option>'; }).join('');
         $('#a-out').addEventListener('click', function () { B.signOut(); });
         $('#a-prof').addEventListener('submit', function (e) {
@@ -301,7 +315,7 @@
         if (!B.enabled) return viewOff();
         if (TH && /^(recovery|signup|email|email_change|invite|magiclink)$/.test(TT || '')) return viewEmailLink();
         if (B.recovery) return viewRecovery();
-        if (B.session) return viewAccount();
+        if (B.session) { var nx = takeNext(); if (nx) { location.replace(nx); return; } return viewAccount(); }
         viewAuth();
     }
     B.ready.then(function () { route(); });

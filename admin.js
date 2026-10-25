@@ -34,6 +34,7 @@
             });
         });
     }
+    function otot(o) { return o.total != null && o.total !== '' ? Number(o.total) : Number(o.subtotal || 0); }
     function dt(s) { try { return new Date(s).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
     function digits(s) { return String(s || '').replace(/\D/g, ''); }
 
@@ -97,7 +98,7 @@
         var box = $('#d-box'); if (!box) return;
         var live = ORDERS.filter(function (o) { return o.status !== 'cancelled' && o.source !== 'admin-test'; });
         var now = new Date(), ms = new Date(now.getFullYear(), now.getMonth(), 1), ds = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        var sum = function (a) { return a.reduce(function (t, o) { return t + Number(o.subtotal || 0); }, 0); };
+        var sum = function (a) { return a.reduce(function (t, o) { return t + Number(otot(o) || 0); }, 0); };
         var newO = live.filter(function (o) { return o.status === 'new'; });
         var review = live.filter(function (o) { return reviewOf(o) === 'pending' && o.status !== 'delivered'; });
         var unpaid = live.filter(function (o) { return o.payment_status !== 'paid' && o.status !== 'delivered'; });
@@ -109,7 +110,7 @@
         var src = {}; live.forEach(function (o) { var k = (o.source || 'direct').split(' / ')[0] || 'direct'; src[k] = (src[k] || 0) + 1; });
         var top = Object.keys(src).sort(function (a, b) { return src[b] - src[a]; }).slice(0, 5).map(function (k) { return esc(k) + ' <b>' + src[k] + '</b>'; }).join(' &nbsp;&middot;&nbsp; ');
         function row(o, extra) {
-            return '<button type="button" class="adm-row-btn" data-open="' + esc(o.id) + '"><span class="o-no">#' + esc(o.order_no) + '</span><span class="grow"><strong>' + esc(o.name) + '</strong><small>' + esc(dt(o.created_at)) + (o.delivery_date ? ' &middot; deliver ' + esc(o.delivery_date) : '') + '</small></span>' + (extra || '') + '<span class="o-total">' + esc(money(o.subtotal)) + '</span></button>';
+            return '<button type="button" class="adm-row-btn" data-open="' + esc(o.id) + '"><span class="o-no">#' + esc(o.order_no) + '</span><span class="grow"><strong>' + esc(o.name) + '</strong><small>' + esc(dt(o.created_at)) + (o.delivery_date ? ' &middot; deliver ' + esc(o.delivery_date) : '') + '</small></span>' + (extra || '') + '<span class="o-total">' + esc(money(otot(o))) + '</span></button>';
         }
         box.innerHTML = '<div class="adm-stats">' +
             statLink('New orders', newO.length, 'waiting for you', 'status=new') +
@@ -187,7 +188,7 @@
             return '<article class="adm-order" data-id="' + esc(o.id) + '">' +
                 '<button type="button" class="o-head" aria-expanded="false"><span class="o-no">#' + esc(o.order_no) + (o.source === 'admin-test' ? ' <em class="testtag">TEST</em>' : '') + '</span>' +
                 '<span class="o-who"><strong>' + esc(o.name) + '</strong><small>' + esc(dt(o.created_at)) + ' &middot; ' + esc(o.emirate) + (o.delivery_date ? ' &middot; deliver ' + esc(o.delivery_date) : '') + '</small></span>' +
-                '<span class="o-total">' + esc(money(o.subtotal)) + (o.has_quote ? ' +' : '') + '</span><span class="o-chips">' + chipsFor(o) + '</span></button>' +
+                '<span class="o-total">' + esc(money(otot(o))) + (o.has_quote ? ' +' : '') + '</span><span class="o-chips">' + chipsFor(o) + '</span></button>' +
                 '<div class="o-body" hidden></div></article>';
         }).join('');
         if (focusId) { var el = $('.adm-order[data-id="' + focusId + '"] .o-head'); focusId = null; if (el) { el.click(); el.scrollIntoView({ block: 'start' }); } }
@@ -245,12 +246,12 @@
 
     /* quick messages to the customer (WhatsApp / email) */
     var TEMPLATES = [
-        ['confirm', 'Order confirmed', function (o) { return 'Hello ' + o.name + ', thank you for your order #' + o.order_no + ' with Grape Tree. We have confirmed it' + (o.delivery_date ? ' for delivery on ' + o.delivery_date : '') + '. Total: ' + money(o.subtotal) + '. We will keep you updated.'; }],
+        ['confirm', 'Order confirmed', function (o) { return 'Hello ' + o.name + ', thank you for your order #' + o.order_no + ' with Grape Tree. We have confirmed it' + (o.delivery_date ? ' for delivery on ' + o.delivery_date : '') + '. Total: ' + money(otot(o)) + '. We will keep you updated.'; }],
         ['image', 'Please send a better image', function (o) { return 'Hello ' + o.name + ', this is Grape Tree about order #' + o.order_no + '. To print your design well we need a clearer, higher-resolution image (a PNG or JPG of at least 1000 px). Could you please send it here?'; }],
         ['proof', 'Design ready: please approve', function (o) { return 'Hello ' + o.name + ', your design for order #' + o.order_no + ' is ready. Please check the attached proof and reply "APPROVED" so we can start production. Production starts only after your approval.'; }],
         ['rights', 'We need proof of rights / permission', function (o) { return 'Hello ' + o.name + ', this is Grape Tree about order #' + o.order_no + '. Your design may include a logo, character or artwork that belongs to someone else. Before we can produce it, please send us the written permission or licence from the owner. Thank you for understanding.'; }],
         ['cannot', 'We cannot print this design', function (o) { return 'Hello ' + o.name + ', thank you for your order #' + o.order_no + '. Unfortunately we cannot produce this design because it does not meet our Content & Copyright Policy (copyright, trademark or content reasons). You are welcome to send us a different design and we will gladly continue. Any payment made will be refunded.'; }],
-        ['payment', 'Payment reminder', function (o) { return 'Hello ' + o.name + ', a friendly reminder that order #' + o.order_no + ' (' + money(o.subtotal) + ') is waiting for payment. We start production once it is received. Thank you!'; }],
+        ['payment', 'Payment reminder', function (o) { return 'Hello ' + o.name + ', a friendly reminder that order #' + o.order_no + ' (' + money(otot(o)) + ') is waiting for payment. We start production once it is received. Thank you!'; }],
         ['delivering', 'Out for delivery', function (o) { return 'Hello ' + o.name + ', your Grape Tree order #' + o.order_no + ' is out for delivery today. Please keep your phone nearby.'; }],
         ['thanks', 'Delivered: thank you', function (o) { return 'Hello ' + o.name + ', thank you for choosing Grape Tree! We hope you love your order #' + o.order_no + '. We would be happy to see a photo of it.'; }]
     ];
@@ -275,7 +276,8 @@
         var wa = 'https://wa.me/' + digits(o.phone) + '?text=' + encodeURIComponent(tplText(o, 'confirm'));
         var art = hasArt(o);
         return '<div class="o-grid"><div><h4>Items</h4><ul class="o-items">' + items + '</ul>' +
-            '<p class="o-sum"><span>Estimated total</span><strong>' + esc(money(o.subtotal)) + (o.has_quote ? ' + quoted items' : '') + '</strong></p></div>' +
+            (o.total != null && o.total !== '' ? '<p class="adm-fine">Items ' + esc(money(o.subtotal)) + ' &middot; Delivery ' + (Number(o.delivery_fee) > 0 ? esc(money(o.delivery_fee)) : 'FREE') + ' &middot; VAT ' + esc(o.vat_rate) + '% ' + esc(money(o.vat_amount)) + (o.prices_include_vat ? ' (included)' : '') + (o.trn ? ' &middot; TRN ' + esc(o.trn) : '') + '</p>' : '') +
+            '<p class="o-sum"><span>' + (o.total != null && o.total !== '' ? 'Order total' : 'Estimated total') + '</span><strong>' + esc(money(otot(o))) + (o.has_quote ? ' + quoted items' : '') + '</strong></p></div>' +
             '<div><h4>Customer</h4><p><strong>' + esc(o.name) + '</strong><br><a href="tel:' + esc(o.phone) + '">' + esc(o.phone) + '</a>' + (o.email ? '<br><a href="mailto:' + esc(o.email) + '">' + esc(o.email) + '</a>' : '') + '</p>' +
             '<h4>Delivery</h4><p>' + esc(o.emirate) + '<br>' + esc(o.address).replace(/\n/g, '<br>') + '<br><strong>' + (o.delivery_date ? esc(o.delivery_date) : 'No date') + '</strong></p>' +
             (o.notes ? '<h4>Customer notes</h4><p>' + esc(o.notes) + '</p>' : '') +
@@ -379,14 +381,14 @@
                 jobs.push(B.client.storage.from('order-art').createSignedUrl(path, 3600).then(function (r) { if (r && r.data && r.data.signedUrl) thumbs[path] = r.data.signedUrl; }).catch(function () { }));
             });
         });
-        var bankP = mode === 'job' ? Promise.resolve('') : B.content().then(function (c) { return (c.settings || {}).bank_details || ''; }).catch(function () { return ''; });
+        var bankP = B.content().then(function (c) { return { bank: (c.settings || {}).bank_details || '', biz: c.business || {} }; }).catch(function () { return { bank: '', biz: {} }; });
         Promise.all(jobs.concat([bankP])).then(function (r) {
-            var bank = r[r.length - 1], base = location.href.replace(/[^\/]*$/, '');
+            var bk = r[r.length - 1], bank = mode === 'job' ? '' : bk.bank, base = location.href.replace(/[^\/]*$/, '');
             w.document.open();
             w.document.write('<!doctype html><html><head><meta charset="utf-8"><base href="' + base + '"><title>' + (mode === 'job' ? 'Job sheet' : 'Order') + ' #' + esc(o.order_no) + '</title>' +
                 '<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"><link rel="stylesheet" href="invoice.css?v=17"></head><body>' +
                 '<div class="inv-bar no-print"><span class="inv-hint" style="margin:0">Choose "Save as PDF" in the print window to download</span><button type="button" class="inv-btn" onclick="print()">Print / Save PDF</button></div>' +
-                '<div id="d"></div><script src="shop-data.js?v=17"><\/script><script src="orderdoc.js?v=17"><\/script><script>document.getElementById("d").innerHTML=GTOrderDoc.build(' + JSON.stringify(o).replace(/</g, '\\u003c') + ',' + JSON.stringify({ mode: mode, bank: bank, thumbs: thumbs }).replace(/</g, '\\u003c') + ');setTimeout(function(){print()},900)<\/script></body></html>');
+                '<div id="d"></div><script src="shop-data.js?v=17"><\/script><script src="pricing.js?v=17"><\/script><script src="orderdoc.js?v=17"><\/script><script>document.getElementById("d").innerHTML=GTOrderDoc.build(' + JSON.stringify(o).replace(/</g, '\\u003c') + ',' + JSON.stringify({ mode: mode, bank: bank, thumbs: thumbs, biz: bk.biz }).replace(/</g, '\\u003c') + ');setTimeout(function(){print()},900)<\/script></body></html>');
             w.document.close();
         });
     }
@@ -456,7 +458,7 @@
             if (r.error) throw r.error;
             var rows = r.data || [], box = $('#t-orders'); if (!box) return;
             if (!rows.length) { box.innerHTML = '<p>No test orders yet.</p>'; return; }
-            box.innerHTML = '<ul class="adm-checklist">' + rows.map(function (o) { return '<li><b>#' + esc(o.order_no) + '</b><span>' + esc(new Date(o.created_at).toLocaleString()) + ' \u00b7 ' + esc(money(o.subtotal)) + '</span></li>'; }).join('') + '</ul>' +
+            box.innerHTML = '<ul class="adm-checklist">' + rows.map(function (o) { return '<li><b>#' + esc(o.order_no) + '</b><span>' + esc(new Date(o.created_at).toLocaleString()) + ' \u00b7 ' + esc(money(otot(o))) + '</span></li>'; }).join('') + '</ul>' +
                 '<p><button class="adm-btn ghost" id="t-del">Delete all test orders</button></p>';
             $('#t-del').addEventListener('click', function () {
                 if (!confirm('Delete all ' + rows.length + ' test orders? Their design files stay in storage.')) return;
@@ -704,6 +706,20 @@
             ['instagramGildart', 'GildArt Instagram link', 'https://instagram.com/...', ''],
             ['tiktok', 'TikTok link', 'https://tiktok.com/@...', ''],
             ['facebook', 'Facebook link', 'https://facebook.com/...', '']]],
+        ['Tax and delivery (printed on every invoice, receipt and order email)', [
+            ['trn', 'Tax Registration Number (TRN)', '15 digits, e.g. 100123456700003', 'Printed on invoices and receipts. Leave empty until you have it.'],
+            ['vat_percent', 'VAT rate (%)', '5', 'UAE standard rate is 5.'],
+            ['prices_include_vat', 'Are your shop prices VAT-inclusive?', '', 'Choose "No" if VAT is added on top at checkout (shown as a separate line).', [['no', 'No: add VAT on top of the prices'], ['yes', 'Yes: prices already include VAT']]],
+            ['delivery_fee', 'Standard delivery charge (AED)', '25', 'Used for any emirate that has no price of its own below.'],
+            ['free_over', 'Free delivery when the order is over (AED)', '200', 'Orders above this amount get FREE delivery. Enter 0 to switch this off.'],
+            ['fee_abu_dhabi', 'Delivery to Abu Dhabi (AED)', 'empty = standard charge', 'Farther places can cost more. Leave empty to use the standard charge.'],
+            ['fee_ajman', 'Delivery to Ajman (AED)', 'empty = standard charge', ''],
+            ['fee_dubai', 'Delivery to Dubai (AED)', 'empty = standard charge', ''],
+            ['fee_fujairah', 'Delivery to Fujairah (AED)', 'empty = standard charge', ''],
+            ['fee_ras_al_khaimah', 'Delivery to Ras Al Khaimah (AED)', 'empty = standard charge', ''],
+            ['fee_sharjah', 'Delivery to Sharjah (AED)', 'empty = standard charge', ''],
+            ['fee_umm_al_quwain', 'Delivery to Umm Al Quwain (AED)', 'empty = standard charge', ''],
+            ['free_delivery', 'Free delivery offer for everyone right now?', '', 'Switch to "Yes" during a promotion. Customers then see FREE delivery. Switch back when it ends.', [['no', 'No: charge delivery as normal'], ['yes', 'Yes: FREE delivery offer is on']]]]],
         ['Order emails', [
             ['notify_emails', 'Email addresses that receive every new order (separate with commas)', 'you@gmail.com, partner@gmail.com', 'The order email with design files is sent here. If empty, the ADMIN_EMAILS secret in Supabase is used.'],
             ['reply_to', 'Reply-to email for customers', 'support@grapetree.ae', 'When a customer replies to the confirmation email, it goes here.']]]
@@ -713,13 +729,13 @@
         B.content().then(function (c) {
             CONTENT = c || {};
             var cur = CONTENT.business || {}, co = CFG.company || {}, so = CFG.social || {};
-            var def = { whatsapp: CFG.whatsapp, phone: co.phone, email: co.email, address: co.address, mapQuery: co.mapQuery, hours: co.hours, instagramKatanukiya: so.instagramKatanukiya, instagramGildart: so.instagramGildart, tiktok: so.tiktok, facebook: so.facebook };
+            var def = { vat_percent: '5', delivery_fee: '25', free_over: '200', prices_include_vat: 'no', free_delivery: 'no', whatsapp: CFG.whatsapp, phone: co.phone, email: co.email, address: co.address, mapQuery: co.mapQuery, hours: co.hours, instagramKatanukiya: so.instagramKatanukiya, instagramGildart: so.instagramGildart, tiktok: so.tiktok, facebook: so.facebook };
             var html = '<form class="adm-card" id="b-form">';
             BIZ_FIELDS.forEach(function (g) {
                 html += '<h3>' + esc(g[0]) + '</h3><div class="adm-form">';
                 g[1].forEach(function (f) {
                     var v = cur[f[0]] != null ? cur[f[0]] : (def[f[0]] || '');
-                    html += '<label class="full">' + esc(f[1]) + '<input name="' + f[0] + '" value="' + esc(v) + '" placeholder="' + esc(f[2]) + '" autocomplete="off">' + (f[3] ? '<small>' + esc(f[3]) + '</small>' : '') + '</label>';
+                    html += '<label class="full">' + esc(f[1]) + (f[4] ? '<select name="' + f[0] + '">' + f[4].map(function (op) { return '<option value="' + op[0] + '"' + (String(v || f[4][0][0]) === op[0] ? ' selected' : '') + '>' + esc(op[1]) + '</option>'; }).join('') + '</select>' : '<input name="' + f[0] + '" value="' + esc(v) + '" placeholder="' + esc(f[2]) + '" autocomplete="off">') + (f[3] ? '<small>' + esc(f[3]) + '</small>' : '') + '</label>';
                 });
                 html += '</div>';
             });
@@ -744,6 +760,12 @@
                     if (!isFinite(parseFloat(la)) || !isFinite(parseFloat(ln)) || Math.abs(la) > 90 || Math.abs(ln) > 180) err = 'The map pin is not valid. Click the map to place it again, or press "Remove pin".';
                     else { v.lat = Math.round(parseFloat(la) * 1e6) / 1e6; v.lng = Math.round(parseFloat(ln) * 1e6) / 1e6; }
                 } else { v.lat = ''; v.lng = ''; }
+                if (!err && v.trn && !/^\d{15}$/.test(v.trn.replace(/\s/g, ''))) err = 'The TRN should be exactly 15 digits.';
+                if (v.trn) v.trn = v.trn.replace(/\s/g, '');
+                if (!err && !/^\d+(\.\d+)?$/.test(v.vat_percent || '')) err = 'The VAT rate must be a number, for example 5.';
+                if (!err && !/^\d+(\.\d+)?$/.test(v.delivery_fee || '')) err = 'The delivery charge must be a number, for example 25 (use 0 for free).';
+                if (!err && v.free_over && !/^\d+(\.\d+)?$/.test(v.free_over)) err = 'The free-delivery amount must be a number, for example 200 (0 switches it off).';
+                if (!err) Object.keys(v).forEach(function (k) { if (!err && /^fee_/.test(k) && v[k] && !/^\d+(\.\d+)?$/.test(v[k])) err = 'Each delivery price must be a number, for example 30 (or leave it empty).'; });
                 if (!err && v.whatsapp && v.whatsapp.length < 9) err = 'The WhatsApp number looks too short. Use digits only, with the country code (for example 971555577478).';
                 var mail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
                 if (!err && v.email && !mail.test(v.email)) err = 'The public email address is not valid.';

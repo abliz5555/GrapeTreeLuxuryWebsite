@@ -106,7 +106,7 @@ window.GT_DATA = {
         },
         leadDays: 2,                         // earliest delivery date = today + this many days
         emirates: ['Abu Dhabi', 'Ajman', 'Dubai', 'Fujairah', 'Ras Al Khaimah', 'Sharjah', 'Umm Al Quwain'],
-        deliveryNote: 'Delivery fee and timing are confirmed with your order.',
+        deliveryNote: 'Delivery fee and VAT are included in the total. We confirm timing with you.',
         paymentNote: 'We confirm availability and the final price on WhatsApp, then send a secure payment link. Nothing is charged when you send this request.'
     },
 

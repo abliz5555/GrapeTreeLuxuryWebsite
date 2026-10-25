@@ -19,6 +19,21 @@
     function $$(s, c) { return Array.prototype.slice.call((c || doc).querySelectorAll(s)); }
 
     var finished = false;
+    /* an account is needed to place an order: browsing, the basket and the design studio stay open to everyone */
+    var authKnown = false;
+    function needAuth() { var B = window.GT.backend; return !!(B && B.enabled && authKnown && !B.session); }
+    function drawGate() {
+        var g = $('#co-gate');
+        if (!g) {
+            g = doc.createElement('div'); g.id = 'co-gate'; g.className = 'co-card co-gate';
+            g.innerHTML = '<h2>' + esc(T('Create your free account to place your order')) + '</h2>' +
+                '<p>' + esc(T('Your basket and designs are saved. An account lets you track your order, download receipts and order again in one tap.')) + '</p>' +
+                '<div class="co-gate-btns"><a class="gt-btn" href="account.html?next=checkout.html&mode=signup">' + esc(T('Create account')) + '</a>' +
+                '<a class="gt-btn gt-btn-outline" href="account.html?next=checkout.html">' + esc(T('I already have an account')) + '</a></div>';
+            $('#co-form').parentNode.insertBefore(g, $('#co-form'));
+        }
+        return g;
+    }
 
     /* ------------------------------ dates ------------------------------ */
     function pad(n) { return (n < 10 ? '0' : '') + n; }
@@ -47,7 +62,9 @@
         var form = $('#co-form'), empty = $('#co-empty'), summary = $('#co-summary'), done = $('#co-done');
         if (finished) return;
 
-        form.hidden = !items.length;
+        var gate = drawGate(), blocked = needAuth() || (!authKnown && window.GT.backend && window.GT.backend.enabled);
+        form.hidden = !items.length || blocked;
+        gate.hidden = !items.length || !needAuth();
         empty.hidden = !!items.length;
         summary.hidden = !items.length;
         done.hidden = true;
@@ -73,10 +90,17 @@
         }).join('');
 
         var t = cartApi().totals();
-        $('#co-totals').innerHTML =
-            '<div class="gt-sum"><span>Estimated total' + (t.hasQuote ? ' <em>(quoted items extra)</em>' : '') + '</span>' +
-            '<strong>' + esc(CFG.showPrices === false ? 'On request' : money(t.subtotal)) + '</strong></div>' +
-            '<p class="gt-fine">' + esc(CFG.deliveryNote || '') + '</p>';
+        if (CFG.showPrices === false) {
+            $('#co-totals').innerHTML = '<div class="gt-sum"><span>Total</span><strong>On request</strong></div><p class="gt-fine">' + esc(CFG.deliveryNote || '') + '</p>';
+        } else {
+            var P = window.GT.pricing.calc(t.subtotal, ($('#f-emirate') || {}).value), vl = 'VAT ' + (P.vatRate % 1 ? P.vatRate : Math.round(P.vatRate)) + '%' + (P.incl ? ' (' + T('included') + ')' : '');
+            $('#co-totals').innerHTML =
+                '<div class="gt-sum co-row"><span>' + esc(T('Items')) + '</span><strong>' + esc(money(P.subtotal)) + '</strong></div>' +
+                '<div class="gt-sum co-row"><span>' + esc(T('Delivery')) + '</span><strong>' + (P.freeDelivery ? '<em class="co-free">' + esc(T('FREE')) + '</em>' + (P.standardFee > 0 ? ' <s>' + esc(money(P.standardFee)) + '</s>' : '') : esc(money(P.deliveryFee))) + '</strong></div>' +
+                '<div class="gt-sum co-row"><span>' + esc(vl) + '</span><strong>' + esc(money(P.vat)) + '</strong></div>' +
+                '<div class="gt-sum co-total"><span>' + esc(t.hasQuote ? T('Estimated total') : T('Total')) + (t.hasQuote ? ' <em>(' + esc(T('quoted items extra')) + ')</em>' : '') + '</span><strong>' + esc(money(P.total)) + '</strong></div>' +
+                '<p class="gt-fine">' + esc(CFG.deliveryNote || '') + '</p>';
+        }
 
         /* default the date to the latest custom-order date, if there is one */
         var dateInput = $('#f-date');
@@ -129,7 +153,10 @@
             (l.meta || []).forEach(function (m) { out.push('   - ' + m[0] + ': ' + m[1]); });
             if (l.note) out.push('   - Notes: ' + l.note);
         });
-        if (CFG.showPrices !== false) out.push('', 'Estimated total: ' + money(t.subtotal) + (t.hasQuote ? ' + quoted items' : ''));
+        if (CFG.showPrices !== false) {
+            var P = window.GT.pricing.calc(t.subtotal, c.emirate);
+            out.push('', 'Items: ' + money(P.subtotal), 'Delivery: ' + (P.freeDelivery ? 'FREE' : money(P.deliveryFee)), 'VAT ' + P.vatRate + '%' + (P.incl ? ' (included)' : '') + ': ' + money(P.vat), 'Total: ' + money(P.total) + (t.hasQuote ? ' + quoted items' : ''));
+        }
         if (c.notes) out.push('', 'Notes: ' + c.notes);
         out.push('', 'Payment: ' + (c.pay === 'bank' ? 'Bank transfer' : 'Confirm on WhatsApp'));
         var from = window.GT && window.GT.source ? window.GT.source() : '';
@@ -222,6 +249,7 @@
 
     function onSubmit(e) {
         e.preventDefault();
+        if (needAuth()) { renderSummary(); return; }
         if (!validate()) return;
         var c = {
             name: $('#f-name').value.trim(),
@@ -269,7 +297,10 @@
                 try {
                     localStorage.setItem('gt-last-order', JSON.stringify({ order_no: no || '', created_at: new Date().toISOString(), name: c.name, phone: c.phone, email: c.email,
                         emirate: c.emirate, address: c.address, delivery_date: c.date, notes: c.notes, payment_method: c.pay, items: lines,
-                        subtotal: tot.subtotal, has_quote: !!tot.hasQuote, status: 'new', payment_status: 'unpaid' }));
+                        subtotal: tot.subtotal, has_quote: !!tot.hasQuote, status: 'new', payment_status: 'unpaid',
+                        delivery_fee: res && res.delivery_fee != null ? res.delivery_fee : window.GT.pricing.calc(tot.subtotal, c.emirate).deliveryFee, vat_rate: res && res.vat_rate != null ? res.vat_rate : window.GT.pricing.calc(tot.subtotal, c.emirate).vatRate,
+                        vat_amount: res && res.vat_amount != null ? res.vat_amount : window.GT.pricing.calc(tot.subtotal, c.emirate).vat, total: res && res.total != null ? res.total : window.GT.pricing.calc(tot.subtotal, c.emirate).total,
+                        trn: res && res.trn != null ? res.trn : window.GT.pricing.calc(tot.subtotal, c.emirate).trn, prices_include_vat: res && res.prices_include_vat != null ? res.prices_include_vat : window.GT.pricing.calc(tot.subtotal, c.emirate).incl }));
                 } catch (e) {}
                 showDone(!!(no || mailOk), text, c.name, { no: no, pay: c.pay, arts: artResults, items: cartItems });
             });
@@ -287,10 +318,15 @@
         sel.innerHTML = '<option value="">Choose an emirate</option>' +
             (CFG.emirates || []).map(function (e) { return '<option>' + esc(e) + '</option>'; }).join('');
 
+        sel.addEventListener('change', function () { renderSummary(); });
         $('#f-date').min = minDate();
         $('#co-note').textContent = (CFG.paymentNote || '');
         $('#co-note').hidden = !CFG.paymentNote;
 
+        var B0 = window.GT.backend;
+        if (B0 && B0.enabled) { B0.ready.then(function () { authKnown = true; renderSummary(); }); B0.onAuth(function () { authKnown = true; renderSummary(); }); }
+        else authKnown = true;
+        doc.addEventListener('gt:content', function () { renderSummary(); });
         $('#co-form').addEventListener('submit', onSubmit);
         $('#co-form').addEventListener('input', function (e) {
             var f = e.target.closest('.field');

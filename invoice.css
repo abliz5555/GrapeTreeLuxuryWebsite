@@ -85,3 +85,5 @@ td .sub b{ color:var(--ink); font-weight:600; } td .sub.it{ font-style:italic; }
 .sheet-foot .dn{ font-weight:600; color:var(--ink); }
 @media (max-width:760px){ .steps{ grid-template-columns:1fr; } .chk{ grid-template-columns:1fr; } .sign{ gap:12px; } .tots .l,.tots .tot{ min-width:0; width:100%; } .tots{ justify-content:stretch; } }
 @media print{ .art,.steps div,.banner div{ break-inside:avoid; } }
+
+.tots .free{ color:#16602B; font-weight:700; letter-spacing:.04em; }

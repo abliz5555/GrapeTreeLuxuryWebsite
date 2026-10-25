@@ -58,12 +58,25 @@
         return out ? '<div class="sec"><h4>Design files</h4>' + out + '<p class="note-s">Full-size print and cut files are in the admin page (Orders) and were emailed to the shop.</p></div>' : '';
     }
 
+    function totalsHtml(o, P, job) {
+        var q = o.has_quote ? ' <small>+ quoted items</small>' : '';
+        if (P.legacy) return '<div class="tot"><span>' + (o.has_quote ? 'Estimated total' : 'Total') + '</span><b>' + money(P.total) + q + '</b></div>';
+        var vatLbl = 'VAT ' + (P.vatRate % 1 ? P.vatRate : Math.round(P.vatRate)) + '%' + (P.incl ? ' (included)' : '');
+        return '<div class="l"><span>Items' + (P.incl ? ' (incl. VAT)' : '') + '</span><b>' + money(P.subtotal) + '</b></div>' +
+            '<div class="l"><span>Delivery</span><b>' + (P.freeDelivery ? '<span class="free">FREE</span>' : money(P.deliveryFee)) + '</b></div>' +
+            '<div class="l"><span>' + vatLbl + '</span><b>' + money(P.vat) + '</b></div>' +
+            '<div class="tot"><span>' + (o.has_quote ? 'Estimated total' : 'Total') + '</span><b>' + money(P.total) + q + '</b></div>' +
+            (o.has_quote ? '<p class="note-s" style="text-align:right;margin:4px 0 0">Quoted items are added once confirmed, with VAT.</p>' : '');
+    }
+
     function build(o, opts) {
         opts = opts || {}; var job = opts.mode === 'job', wa = (CFG.whatsapp || '971555577478');
+        var biz = opts.biz || {}, P = (G.pricing ? G.pricing.ofOrder(o) : { legacy: true, total: o.subtotal });
+        var trn = String(o.trn || biz.trn || '').trim();
         var paid = o.payment_status === 'paid';
         var hasArt = (o.items || []).some(function (l) { return l.art; });
-        var title = job ? 'Production job sheet' : (paid ? 'Receipt' : 'Order confirmation');
-        var sub = job ? 'Internal &middot; not for the customer' : 'Katanukiya &middot; GildArt';
+        var title = job ? 'Production job sheet' : (paid ? (trn ? 'Tax invoice' : 'Receipt') : 'Order confirmation');
+        var sub = job ? 'Internal &middot; not for the customer' : (trn ? 'TRN ' + esc(trn) : 'Katanukiya &middot; GildArt');
         var total = money(o.subtotal) + (o.has_quote ? ' <small>+ quoted items</small>' : '');
         var bankBlock = (!job && o.payment_method === 'bank' && opts.bank)
             ? '<div class="sec"><h4>Bank details</h4><pre dir="ltr">' + esc(opts.bank) + '</pre><p>Please send the transfer receipt on WhatsApp with order #' + esc(o.order_no) + '. We prepare your order once payment is confirmed.</p></div>' : '';
@@ -88,13 +101,12 @@
             '<div class="cols"><div><h4>Customer</h4><p dir="auto"><b>' + esc(o.name) + '</b><br>' + esc(o.phone) + (o.email ? '<br>' + esc(o.email) : '') + '</p></div>' +
             '<div><h4>Delivery</h4><p dir="auto">' + esc(o.emirate) + '<br>' + esc(o.address).replace(/\n/g, '<br>') + (job ? '' : '<br><b>' + esc(nice(o.delivery_date)) + '</b>') + '</p></div></div>' +
             '<table><thead><tr><th class="n">#</th><th>Item</th><th class="c">Qty</th><th class="r">Amount</th></tr></thead><tbody>' + itemsHtml(o, job) + '</tbody></table>' +
-            '<div class="tots">' + (o.has_quote ? '' : '<div class="l"><span>Subtotal</span><b>' + esc(money(o.subtotal)) + '</b></div><div class="l"><span>Delivery</span><b>Confirmed with you</b></div>') +
-            '<div class="tot"><span>' + (o.has_quote ? 'Estimated total' : 'Total') + '</span><b>' + total + '</b></div></div>' +
+            '<div class="tots">' + totalsHtml(o, P, job) + '</div>' +
             (o.notes ? '<div class="sec"><h4>Customer notes</h4><p class="ink" dir="auto">' + esc(o.notes) + '</p></div>' : '') +
             (job ? artHtml(o, opts.thumbs) : '') + bankBlock + next + internal + checklist +
             '<p class="note">' + (job ? 'Internal document. Handle customer details with care.' : 'This document confirms your order request. Availability, final price and delivery are confirmed with you by Grape Tree FZE. Custom designs are produced only after you approve the final preview, and approved designs cannot be changed or returned.') + '</p>' +
             '</div>' +
-            '<div class="sheet-foot"><span><b>Grape Tree FZE</b>' + (co ? ' &middot; ' + co : ' &middot; United Arab Emirates') + '</span><span>WhatsApp +' + esc(wa) + ' &middot; grapetree.ae</span><span class="dn">' + esc(docNo(o)) + '</span></div>' +
+            '<div class="sheet-foot"><span><b>Grape Tree FZE</b>' + (co ? ' &middot; ' + co : ' &middot; United Arab Emirates') + '</span><span>WhatsApp +' + esc(wa) + ' &middot; grapetree.ae</span><span class="dn">' + (trn ? 'TRN ' + esc(trn) + ' &middot; ' : '') + esc(docNo(o)) + '</span></div>' +
             '</article>';
     }
     window.GTOrderDoc = { build: build, docNo: docNo };

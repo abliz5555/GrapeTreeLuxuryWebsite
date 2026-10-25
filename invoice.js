@@ -35,8 +35,8 @@
         return null;
     }
 
-    function render(o, bank) {
-        root.innerHTML = window.GTOrderDoc.build(o, { mode: 'customer', bank: bank });
+    function render(o, bank, biz) {
+        root.innerHTML = window.GTOrderDoc.build(o, { mode: 'customer', bank: bank, biz: biz || {} });
         doc.title = 'Grape Tree order #' + (o.order_no || '');
         if (q.get('print')) setTimeout(function () { window.print(); }, 700);
     }
@@ -46,7 +46,7 @@
 
     find().then(function (o) {
         if (!o) { root.innerHTML = '<div class="inv-empty"><p>We could not find that order.</p><p><a href="account.html">Open my account</a></p></div>'; return; }
-        var p = B.enabled ? B.content().then(function (c) { return (c.settings || {}).bank_details || ''; }) : Promise.resolve('');
-        p.then(function (bank) { render(o, bank); });
+        var p = B.enabled ? B.content().then(function (c) { return { bank: (c.settings || {}).bank_details || '', biz: c.business || {} }; }).catch(function () { return { bank: '', biz: {} }; }) : Promise.resolve({ bank: '', biz: {} });
+        p.then(function (x) { render(o, x.bank, x.biz); });
     });
 })();
