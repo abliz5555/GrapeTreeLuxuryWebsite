@@ -318,3 +318,14 @@ html, body, body *{ font-variant-numeric:lining-nums; font-feature-settings:"lnu
     .gt-hdr .lang-btn svg{ display:none; }
     .gt-hdr .gt-logo img{ height:30px; max-width:38vw; }
 }
+
+/* language menu on phone / tablet: the button is now on the left (right in Arabic), so open the menu inward */
+@media (max-width:1100px){
+    .gt-hdr .lang-menu{ inset-inline-start:0; inset-inline-end:auto; min-width:160px; max-width:calc(100vw - 20px); max-height:calc(100vh - var(--hdr-h) - 24px); overflow:auto; }
+    .gt-hdr .lang-menu button{ padding:13px 16px; font-size:16px; }
+}
+
+/* home: direct button to the customise page */
+.gt-home-cta{ display:inline-flex; align-items:center; gap:8px; margin-top:20px; padding:13px 28px; border-radius:999px; background:var(--gold,#b8893a); color:#fff !important; font:600 15px/1 var(--sans); letter-spacing:.04em; text-decoration:none; pointer-events:auto; box-shadow:0 8px 24px rgba(0,0,0,.28); transition:transform .2s, background .2s; min-height:44px; }
+.gt-home-cta:hover{ transform:translateY(-2px); background:#a37830; }
+html[dir="rtl"] .gt-home-cta span{ display:inline-block; transform:scaleX(-1); }

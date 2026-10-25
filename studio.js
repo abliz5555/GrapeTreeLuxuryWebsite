@@ -107,7 +107,7 @@
         sh: { x: 0, y: 0, w: 38, prop: 1 },
         off: 2, smooth: 1.5, move: 'art', limited: false, fitted: false,
         boxSet: 1, nbox: 1, slots: [], slot: 0,
-        qty: ISCAKE ? 3 : 2, box: 'white', thick: '5', flavour: 0, customBox: false, boxNote: '',
+        qty: ISCAKE ? 3 : 2, qtyPicked: false, box: 'white', thick: '5', flavour: 0, customBox: false, boxNote: '',
         test: false
     };
     function surfW() { return S.orient === 'portrait' ? SURF.h : SURF.w; }
@@ -1371,7 +1371,7 @@
     function renderPricing() {
         if (!ISCAKE) $('#st-tiers').className = 'st-nbwrap';
         $('#st-tiers').innerHTML = !ISCAKE ? boxQtyHtml() : TIERS.map(function (t, i) {
-            return '<label class="st-tier' + (i === S.qty ? ' on' : '') + '"><input type="radio" name="tier" value="' + i + '"' + (i === S.qty ? ' checked' : '') + '>' +
+            return '<label class="st-tier' + (S.qtyPicked && i === S.qty ? ' on' : '') + '"><input type="radio" name="tier" value="' + i + '"' + (S.qtyPicked && i === S.qty ? ' checked' : '') + '>' +
                 (t.popular ? '<em>' + esc(T('Popular')) + '</em>' : '') +
                 '<b>' + t.qty + ' <small>' + esc(T('pcs')) + '</small></b><strong>' + esc(money(t.price)) + '</strong><span>' + esc(money(t.price / t.qty)) + ' ' + esc(T('each')) + '</span></label>';
         }).join('');
@@ -1399,7 +1399,7 @@
         }
         $('#st-extras').innerHTML = h;
         if (!ISCAKE) wireBoxQty();
-        $$('input[name=tier]').forEach(function (r) { r.addEventListener('change', function () { S.qty = +r.value; if (!customUnlocked()) { S.flavour = 0; S.customBox = false; } renderPricing(); updateSummary(); }); });
+        $$('input[name=tier]').forEach(function (r) { r.addEventListener('change', function () { S.qty = +r.value; S.qtyPicked = true; if (!customUnlocked()) { S.flavour = 0; S.customBox = false; } renderPricing(); updateSummary(); }); });
         $$('input[name=boxc]').forEach(function (r) { r.addEventListener('change', function () { S.box = r.value; renderPricing(); updateSummary(); }); });
         $$('input[name=thk]').forEach(function (r) { r.addEventListener('change', function () { S.thick = r.value; renderPricing(); updateSummary(); }); });
         $$('input[name=flav]').forEach(function (r) { r.addEventListener('change', function () { S.flavour = +r.value; updateSummary(); }); });
@@ -1413,7 +1413,7 @@
         return '<div class="st-nb"><button type="button" class="st-step" id="nb-dec" aria-label="' + esc(T('Fewer boxes')) + '">−</button>' +
             '<label><input type="number" id="nb-in" inputmode="numeric" min="' + MINBOX + '" max="5000" value="' + S.nbox + '" aria-label="' + esc(T('Number of boxes')) + '"><span>' + esc(T(S.nbox === 1 ? 'box' : 'boxes')) + '</span></label>' +
             '<button type="button" class="st-step" id="nb-inc" aria-label="' + esc(T('More boxes')) + '">+</button></div>' +
-            '<div class="st-nb-chips">' + mins.map(function (m) { var o = discountFor(m); return '<button type="button" class="st-chipbtn' + (m === S.nbox ? ' on' : '') + '" data-n="' + m + '"><b>' + m + '</b><small>' + (o ? '−' + o + '%' : esc(T('standard'))) + '</small></button>'; }).join('') + '</div>' +
+            '<div class="st-nb-chips">' + mins.map(function (m) { var o = discountFor(m); return '<button type="button" class="st-chipbtn' + (S.qtyPicked && m === S.nbox ? ' on' : '') + '" data-n="' + m + '"><b>' + m + '</b><small>' + (o ? '−' + o + '%' : esc(T('standard'))) + '</small></button>'; }).join('') + '</div>' +
             '<div class="st-nb-sum"><div><span>' + esc(T(bs.label)) + '</span><b>' + esc(money(bs.price)) + ' ' + esc(T('per box')) + '</b></div>' +
             (off ? '<div><span>' + esc(T('Quantity discount')) + '</span><b>−' + off + '%</b></div>' : '') +
             '<div><span>' + esc(T('Pieces in total')) + '</span><b>' + totalPieces() + '</b></div>' +
@@ -1421,7 +1421,7 @@
             '<p class="st-fine">' + esc(T('Every box is printed with the same set of designs. The price is lower per box when you order more boxes.')) + '</p>';
     }
     function wireBoxQty() {
-        function set(n) { S.nbox = clamp(Math.round(n) || MINBOX, MINBOX, 5000); if (!customUnlocked()) { S.flavour = 0; S.customBox = false; } renderPricing(); updateSummary(); }
+        function set(n) { S.qtyPicked = true; S.nbox = clamp(Math.round(n) || MINBOX, MINBOX, 5000); if (!customUnlocked()) { S.flavour = 0; S.customBox = false; } renderPricing(); updateSummary(); }
         $('#nb-dec').addEventListener('click', function () { set(S.nbox - (S.nbox > 25 ? 5 : 1)); });
         $('#nb-inc').addEventListener('click', function () { set(S.nbox + (S.nbox >= 25 ? 5 : 1)); });
         $('#nb-in').addEventListener('change', function () { set(+this.value); });
@@ -1436,22 +1436,22 @@
     }
     function updateSummary() {
         var started = ISCAKE ? S.versions.length > 0 : (function () { for (var z = 0; z < pieces(); z++) if (slotFilled(z)) return true; return false; })();
-        var shown = started ? totalPrice() : 0;                                  // nothing to price until the customer has a design
+        var shown = started && S.qtyPicked ? totalPrice() : 0;                                  // nothing to price until the customer has a design
         $('#sum-total').textContent = money(shown);
         $('#bar-total').textContent = money(shown);
         $('#bar-step').textContent = T('Step') + ' ' + S.step + '/4';
         var rows;
-        if (ISCAKE) { var t = tier(); rows = [[T('Finish'), finishLabel()], [T('Quantity'), t.qty + ' ' + T('pcs')], [T('Box'), T(box().label)], [T('Per piece'), started ? money(totalPrice() / t.qty) : '\u2014']]; }
+        if (ISCAKE) { var t = tier(); rows = [[T('Finish'), finishLabel()], [T('Quantity'), S.qtyPicked ? t.qty + ' ' + T('pcs') : T('Not chosen yet')], [T('Box'), T(box().label)], [T('Per piece'), started && S.qtyPicked ? money(totalPrice() / t.qty) : '\u2014']]; }
         else {
             var done = 0; for (var q = 0; q < pieces(); q++) if (slotFilled(q)) done++;
-            rows = [[T('Box'), T(boxSet().label)], [T('Designs ready'), done + ' / ' + pieces()], [T('Boxes'), S.nbox], [T('Pieces in total'), totalPieces()], [T('Thickness'), thick().label], [T('Per box'), started ? money(boxUnit()) : '\u2014']];
+            rows = [[T('Box'), T(boxSet().label)], [T('Designs ready'), done + ' / ' + pieces()], [T('Boxes'), S.qtyPicked ? S.nbox : T('Not chosen yet')], [T('Pieces in total'), S.qtyPicked ? totalPieces() : '\u2014'], [T('Thickness'), thick().label], [T('Per box'), started && S.qtyPicked ? money(boxUnit()) : '\u2014']];
         }
         $('#sum-list').innerHTML = rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('');
         var ship = addBusinessDays(new Date(), LEAD);
         $('#sum-ship').textContent = ship.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
         $('#sum-ship-n').textContent = LEAD + ' ' + T('business days from the next business day after confirmation');
     }
-    function updateAddBtn() { $('#st-add').disabled = !$$('.st-ap').every(function (c) { return c.checked; }); }
+    function updateAddBtn() { var b = $('#st-add'); b.disabled = !S.qtyPicked || !$$('.st-ap').every(function (c) { return c.checked; }); var n = $('#st-qty-note'); if (n) n.hidden = S.qtyPicked; }
 
     /* ------------------------------ 9. files + cart ------------------------------ */
     function blobOf(cv, type, q) { return new Promise(function (res) { cv.toBlob(function (b) { res(b); }, type, q); }); }
@@ -1713,7 +1713,11 @@
         if (edit && MK.sel > -1 && MK.items[MK.sel]) {
             var it = MK.items[MK.sel], sz = itemSize(it);
             cx.save(); cx.translate(it.x * ppm, it.y * ppm); cx.rotate(it.rot * Math.PI / 180);
-            cx.strokeStyle = '#2b6cff'; cx.lineWidth = 1.5; cx.setLineDash([5, 4]); cx.strokeRect(-sz.w * ppm / 2 - 3, -sz.h * ppm / 2 - 3, sz.w * ppm + 6, sz.h * ppm + 6); cx.restore();
+            cx.strokeStyle = '#2b6cff'; cx.lineWidth = 1.5; cx.setLineDash([5, 4]); cx.strokeRect(-sz.w * ppm / 2 - 3, -sz.h * ppm / 2 - 3, sz.w * ppm + 6, sz.h * ppm + 6); cx.setLineDash([]);
+            var hr = 11, hx = sz.w * ppm / 2 + 3, hy = -sz.h * ppm / 2 - 3;
+            cx.rotate(-it.rot * Math.PI / 180); var c0 = Math.cos(it.rot * Math.PI / 180), s0 = Math.sin(it.rot * Math.PI / 180); cx.translate(hx * c0 - hy * s0, hx * s0 + hy * c0);
+            cx.beginPath(); cx.arc(0, 0, hr, 0, 7); cx.fillStyle = '#d33'; cx.fill(); cx.strokeStyle = '#fff'; cx.lineWidth = 2; cx.stroke();
+            cx.beginPath(); cx.moveTo(-4, -4); cx.lineTo(4, 4); cx.moveTo(4, -4); cx.lineTo(-4, 4); cx.stroke(); cx.restore();
         }
     }
     function mkRedraw() {
@@ -1755,6 +1759,19 @@
             friend: '<p class="st-fine">' + esc(T('Our own friendly characters. You can change their colours.')) + '</p><div class="mk-grid mk-flowers" id="mk-friends">' + FRIENDS.map(function (f) { return '<button type="button" data-friend="' + f.id + '"><canvas width="64" height="64" data-k="friend" data-f="' + f.id + '"></canvas><span>' + esc(T(f.label)) + '</span></button>'; }).join('') + '</div>',
             flower: '<div class="mk-grid mk-flowers" id="mk-flowers">' + FLOWERS.map(function (f) { return '<button type="button" data-flower="' + f.id + '"><canvas width="64" height="64" data-k="flower" data-f="' + f.id + '"></canvas><span>' + esc(T(f.label)) + '</span></button>'; }).join('') + '</div>'
         };
+        var q = doc.createElement('div'); q.className = 'mk-quick'; q.id = 'mk-quick';
+        q.innerHTML = '<div class="mk-chips" id="mk-chips"></div><div class="mk-qbtns"><button type="button" class="st-btn mk-qdel" id="mk-qdel" disabled>' + esc(T('Delete selected')) + '</button><button type="button" class="st-btn mk-qall" id="mk-qall" disabled>' + esc(T('Delete all')) + '</button></div>';
+        $('#mk-cv').parentNode.insertBefore(q, $('#mk-cv').nextSibling);
+        var allT = 0, allTxt = T('Delete all');
+        q.addEventListener('click', function (e) {
+            var b = e.target.closest('button'); if (!b) return;
+            if (b.dataset.i != null) { MK.sel = +b.dataset.i; mkRedraw(); return; }
+            if (b.id === 'mk-qdel' && MK.items[MK.sel]) { MK.items.splice(MK.sel, 1); MK.sel = -1; mkRedraw(); return; }
+            if (b.id === 'mk-qall') {
+                if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = T('Tap again to delete all'); allT = setTimeout(function () { b.classList.remove('armed'); b.textContent = allTxt; }, 3500); return; }
+                clearTimeout(allT); b.classList.remove('armed'); b.textContent = allTxt; MK.items = []; MK.sel = -1; mkRedraw();
+            }
+        });
         $('#mk-sel').innerHTML =
             '<div class="mk-sel-top"><b>' + esc(T('Selected')) + '</b><span><button type="button" class="st-btn" id="mk-dup">' + esc(T('Duplicate')) + '</button> <button type="button" class="st-btn" id="mk-front">' + esc(T('To front')) + '</button> <button type="button" class="st-btn" id="mk-del">' + esc(T('Delete')) + '</button></span></div>' +
             '<div class="mk-colors" id="mk-cols"></div><div class="mk-colors" id="mk-cols2" hidden></div>' +
@@ -1807,7 +1824,18 @@
         if (ta && it && it.type === 'text' && document.activeElement !== ta) ta.value = it.text;
         $$('#mk-fonts .mk-font').forEach(function (x) { x.classList.toggle('on', x.dataset.font === cur); });
     }
+    function itemName(it, n) {
+        var k = it.type === 'text' ? (it.text || '').trim().slice(0, 8) || T('Text') : it.type === 'emoji' ? it.emoji : T(it.type === 'shape' ? 'Shape' : it.type === 'flower' ? 'Flower' : it.type === 'friend' ? 'Friend' : 'Image');
+        return (n + 1) + '. ' + k;
+    }
+    function mkSyncQuick() {
+        var ch = $('#mk-chips'); if (!ch) return;
+        ch.innerHTML = MK.items.length ? MK.items.map(function (it, i) { return '<button type="button" class="mk-chip' + (i === MK.sel ? ' on' : '') + '" data-i="' + i + '">' + esc(itemName(it, i)) + '</button>'; }).join('') : '<span class="mk-none">' + esc(T('Nothing added yet')) + '</span>';
+        $('#mk-qdel').disabled = !MK.items[MK.sel]; $('#mk-qall').disabled = !MK.items.length;
+        var on = ch.querySelector('.on'); if (on && on.scrollIntoView) { try { ch.scrollLeft = on.offsetLeft - ch.clientWidth / 2 + on.offsetWidth / 2; } catch (e) { } }
+    }
     function mkSync() {
+        mkSyncQuick();
         mkSyncTab();
         var it = MK.items[MK.sel], on = !!it;
         $('#mk-sel').hidden = !on; if (!on) return;
@@ -1836,6 +1864,9 @@
             e.preventDefault(); mkcv.setPointerCapture(e.pointerId); ptr[e.pointerId] = mm(e);
             var ids = Object.keys(ptr);
             if (ids.length === 1) {
+                var hd = MK.items[MK.sel];
+                if (hd) { var szh = itemSize(hd), rr = hd.rot * Math.PI / 180, ox = szh.w / 2 + 0.4, oy = -szh.h / 2 - 0.4, hx = hd.x + ox * Math.cos(rr) - oy * Math.sin(rr), hy = hd.y + ox * Math.sin(rr) + oy * Math.cos(rr);
+                    if (Math.hypot(ptr[e.pointerId].x - hx, ptr[e.pointerId].y - hy) < 3.2) { MK.items.splice(MK.sel, 1); MK.sel = -1; delete ptr[e.pointerId]; g = null; mkRedraw(); return; } }
                 var h = mkHit(ptr[e.pointerId]); MK.sel = h; mkRedraw();
                 if (h > -1) { var it = MK.items[h]; g = { mode: 'move', ox: ptr[e.pointerId].x - it.x, oy: ptr[e.pointerId].y - it.y }; } else g = null;
             } else if (ids.length === 2 && MK.items[MK.sel]) {

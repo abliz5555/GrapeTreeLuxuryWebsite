@@ -496,3 +496,30 @@ body[data-product=cake] #st-scene, body[data-product=cake] #st-preview{ backgrou
 .st-agree a, .st-check a{ text-decoration:underline; text-underline-offset:3px; }
 
 .st-rights a,.st-agree a,.co-legal a{color:var(--gold-dark,#8a6a12);text-decoration:underline}
+
+/* design editor: always-visible item list + delete buttons (phone friendly) */
+.mk-quick{ width:min(100%,560px); margin-top:10px; display:grid; gap:8px; }
+.mk-chips{ display:flex; gap:6px; overflow-x:auto; padding:2px 2px 4px; -webkit-overflow-scrolling:touch; scrollbar-width:thin; }
+.mk-chip{ flex:0 0 auto; padding:9px 12px; border:1.5px solid rgba(var(--ink-rgb),.2); border-radius:999px; background:#fff; font:inherit; font-size:13px; font-weight:600; color:var(--ink); cursor:pointer; white-space:nowrap; min-height:40px; }
+.mk-chip.on{ border-color:#2b6cff; background:#eef3ff; }
+.mk-none{ font-size:13px; opacity:.6; padding:10px 4px; }
+.mk-qbtns{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.mk-qbtns .st-btn{ padding:11px 10px; font-size:14px; min-height:44px; }
+.mk-qdel:not(:disabled){ background:#d33; border-color:#d33; color:#fff; }
+.mk-qall.armed{ background:#d33; border-color:#d33; color:#fff; }
+.mk-qbtns .st-btn:disabled{ opacity:.45; }
+.mk-sel-top .st-btn{ min-height:40px; }
+.st-qty-note{ margin:10px 0 0; padding:10px 14px; border-radius:12px; background:var(--cream); font-size:14px; font-weight:600; }
+.st-qty-note[hidden]{ display:none; }
+@media (max-width:860px){ .mk-stage{ justify-content:flex-start; } .mk-stage canvas{ width:min(100%,30vh,300px); } .mk-quick{ margin-top:8px; } }
+
+/* more room between the upload / create / AI choices */
+.st-create + .st-create{ margin-top:16px; }
+.st-create-ai{ margin-top:16px; margin-bottom:6px; }
+.st-aidraw{ margin-top:16px; }
+#st-aidraw-open + .st-aidraw, .st-create-ai + * { margin-top:16px; }
+.st-create{ gap:16px; padding:18px 18px; }
+.st-create > span:last-child{ min-width:0; flex:1; }
+.st-create-ic{ flex:0 0 auto; width:34px; text-align:center; }
+.st-create small{ line-height:1.45; margin-top:5px; }
+@media (max-width:600px){ .st-create + .st-create,.st-create-ai{ margin-top:18px; } }
