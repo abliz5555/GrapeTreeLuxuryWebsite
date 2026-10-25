@@ -82,7 +82,7 @@ window.GT_DATA = {
 
     /* ---------------------------- SETTINGS ---------------------------- */
     config: {
-        previewBanner: true,                 // true = shows a "sample prices" bar. Set to false when ready.
+        previewBanner: false,                // true = shows a "sample prices" bar. Set to false when ready.
         currency: 'AED',
         showPrices: true,                    // false = every price shows as "Price on request"
         whatsapp: '971555577478',            // WhatsApp number, digits only (country code first)
