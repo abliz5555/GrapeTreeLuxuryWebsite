@@ -1077,3 +1077,8 @@ html.gt-drawer-open body{ overflow:hidden; }
 .co-agree input{ width:20px; height:20px; margin-top:2px; flex:none; accent-color:var(--gold,#b8863c); }
 .co-agree a{ text-decoration:underline; text-underline-offset:3px; }
 .co-legal-err{ color:#b3261e; font-size:13.5px; margin:8px 0 0; }
+
+/* date picker: same size and look as the other fields (iPhone shows it wider and centred by default) */
+.field input[type="date"]{ -webkit-appearance:none; appearance:none; display:block; width:100%; max-width:100%; min-width:0; box-sizing:border-box; text-align:start; min-height:52px; line-height:1.4; background-color:#fff; }
+.field input[type="date"]::-webkit-date-and-time-value{ text-align:start; margin:0; }
+.field input[type="date"]::-webkit-calendar-picker-indicator{ opacity:.7; }

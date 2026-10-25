@@ -208,7 +208,7 @@
         }).then(function (d) {
             if (!d) throw new Error('design files not found');
             var ext = (String(d.origName || '').match(/\.(png|jpe?g|webp|gif)$/i) || [0, 'png'])[1].toLowerCase();
-            var jobs = [['orig', 'original.' + ext, d.orig], ['print', 'print.png', d.print], ['preview', 'preview.png', d.preview], ['cutline', 'cutline.svg', d.svg], ['spec', 'spec.json', d.spec]];
+            var jobs = [['orig', 'original.' + ext, d.orig], ['print', 'print.png', d.print], ['preview', 'preview.png', d.preview], ['cutline', 'cutline.svg', art.product === 'chocolate' ? null : d.svg], ['spec', 'spec.json', d.spec]];   // chocolate is printed, not cut: no cut-line file
             var files = {}, chain = Promise.resolve();
             /* phones (iPhone Safari especially) can send an empty body when a file comes straight out of the browser's
                storage, so each file is first read into memory and then sent as plain bytes; one retry per file */
