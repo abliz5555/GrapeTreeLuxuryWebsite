@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="theme.css?v=20">
     <link rel="stylesheet" href="app.css?v=20">
-    <link rel="stylesheet" href="admin.css?v=20">
+    <link rel="stylesheet" href="admin.css?v=24">
 </head>
 <body data-admin>
 
@@ -18,20 +18,21 @@
     <a class="adm-brand" href="index.html" aria-label="Grape Tree website"><img src="images/logo.svg" alt="Grape Tree"><span>Admin</span></a>
     <button type="button" class="adm-menu" id="adm-menu" aria-expanded="false" aria-controls="adm-tabs" hidden><span aria-hidden="true">&#9776;</span> Menu</button>
     <nav class="adm-tabs" id="adm-tabs" role="tablist" hidden>
-        <span class="adm-grp">Sales</span>
-        <button type="button" role="tab" data-tab="dashboard" class="on">Dashboard</button>
-        <button type="button" role="tab" data-tab="orders">Orders <b id="adm-new" hidden></b></button>
-        <button type="button" role="tab" data-tab="test">Test studio</button>
+        <span class="adm-grp">Orders</span>
+        <button type="button" role="tab" data-tab="dashboard" class="on"><span class="tl">Dashboard</span><small>Today at a glance</small></button>
+        <button type="button" role="tab" data-tab="orders"><span class="tl">Orders <b id="adm-new" hidden></b></span><small>New, in progress, cancelled</small></button>
         <span class="adm-grp">Shop</span>
-        <button type="button" role="tab" data-tab="products">Products</button>
-        <button type="button" role="tab" data-tab="studio">Studio prices</button>
+        <button type="button" role="tab" data-tab="products"><span class="tl">Products</span><small>Items, photos and prices</small></button>
+        <button type="button" role="tab" data-tab="studio"><span class="tl">Custom design prices</span><small>Cakes and chocolates made by customers</small></button>
+        <span class="adm-grp">Website</span>
+        <button type="button" role="tab" data-tab="website"><span class="tl">Edit website</span><small>Texts, fonts and pictures</small></button>
+        <button type="button" role="tab" data-tab="settings"><span class="tl">Top bar and bank</span><small>Announcement, bank details</small></button>
+        <button type="button" role="tab" data-tab="legal"><span class="tl">Legal pages</span><small>Terms, privacy, copyright</small></button>
         <span class="adm-grp">Business</span>
-        <button type="button" role="tab" data-tab="business">Business info</button>
-        <button type="button" role="tab" data-tab="legal">Legal</button>
-        <button type="button" role="tab" data-tab="website">Website</button>
-        <span class="adm-grp">Admin</span>
-        <button type="button" role="tab" data-tab="team">Team</button>
-        <button type="button" role="tab" data-tab="settings">Settings</button>
+        <button type="button" role="tab" data-tab="business"><span class="tl">Business info</span><small>Contact, TRN, VAT, delivery prices</small></button>
+        <button type="button" role="tab" data-tab="team"><span class="tl">Team</span><small>Staff and admin access</small></button>
+        <span class="adm-grp">Tools</span>
+        <button type="button" role="tab" data-tab="test"><span class="tl">Test and checks</span><small>Try the studio, check connections</small></button>
     </nav>
     <div class="adm-right">
         <a class="adm-view" href="index.html" target="_blank" rel="noopener">View website</a>
@@ -46,6 +47,6 @@
 <script src="legal.js?v=20"></script>
 <script src="cart.js?v=20"></script>
 <script src="backend.js?v=21"></script>
-<script src="admin.js?v=20"></script>
+<script src="admin.js?v=24"></script>
 </body>
 </html>

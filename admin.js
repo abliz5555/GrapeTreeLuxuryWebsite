@@ -68,6 +68,7 @@
     function card(html) { return '<div class="adm-card narrow">' + html + '</div>'; }
 
     outBtn.addEventListener('click', function () { B.signOut(); });
+    doc.addEventListener('click', function (e) { var g = e.target.closest ? e.target.closest('[data-go]') : null; if (g) show(g.getAttribute('data-go')); });
     tabsEl.addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (b) { show(b.getAttribute('data-tab')); closeMenu(); } });
     function closeMenu() { var t = doc.querySelector('.adm-top'); t.classList.remove('open'); menuBtn.setAttribute('aria-expanded', 'false'); }
     menuBtn.addEventListener('click', function () { var t = doc.querySelector('.adm-top'), on = !t.classList.contains('open'); t.classList.toggle('open', on); menuBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); });
@@ -115,7 +116,9 @@
         function row(o, extra) {
             return '<button type="button" class="adm-row-btn" data-open="' + esc(o.id) + '"><span class="o-no">#' + esc(o.order_no) + '</span><span class="grow"><strong>' + esc(o.name) + '</strong><small>' + esc(dt(o.created_at)) + (o.delivery_date ? ' &middot; deliver ' + esc(o.delivery_date) : '') + '</small></span>' + (extra || '') + '<span class="o-total">' + esc(money(otot(o))) + '</span></button>';
         }
-        box.innerHTML = '<div class="adm-stats">' +
+        var quick = '<div class="adm-quick"><h3>Quick actions</h3><div class="adm-qgrid">' +
+            [['orders', 'See all orders'], ['products', 'Add or edit a product'], ['business', 'Delivery prices, TRN and VAT'], ['website', 'Edit website texts and photos'], ['settings', 'Announcement and bank details'], ['test', 'Test the studio']].map(function (q) { return '<button type="button" class="adm-qbtn" data-go="' + q[0] + '">' + esc(q[1]) + ' <span aria-hidden="true">&rarr;</span></button>'; }).join('') + '</div></div>';
+        box.innerHTML = quick + '<div class="adm-stats">' +
             statLink('New orders', newO.length, 'waiting for you', 'status=new') +
             statLink('Designs to review', review.length, 'check copyright and content', 'review=pending') +
             statLink('Not paid yet', unpaid.length, money(sum(unpaid)), 'pay=unpaid') +
@@ -466,7 +469,7 @@
 
     /* ============================ TEST STUDIO ============================ */
     function viewTest() {
-        root.innerHTML = '<div class="adm-card"><h3>Test the design studio</h3>' +
+        root.innerHTML = '<div class="adm-card"><h2>Test and checks</h2><h3>Test the design studio</h3>' +
             '<p>You are signed in as admin, so any order you place from the studios is marked <b>TEST</b>. The customer email is not sent for test orders, and you can delete them below.</p>' +
             '<p><a class="adm-btn" href="cake-studio.html" target="_blank" rel="noopener">Open cake studio</a> <a class="adm-btn" href="chocolate-studio.html" target="_blank" rel="noopener">Open chocolate studio</a></p>' +
             '<p class="adm-note">Tip: on each studio page use "Try the sample character" so you do not need a file. Go through all 4 steps and place the order with the sample.</p></div>' +
@@ -515,7 +518,7 @@
     function stDefaults(p) { return (window.GT_DATA && GT_DATA.studio && GT_DATA.studio[p]) || {}; }
     function stVal(p) { var d = stDefaults(p), o = SC[p] || {}, r = {}, k; for (k in d) r[k] = d[k]; for (k in o) if (o[k] != null && o[k] !== '') r[k] = o[k]; return r; }
     function viewStudio() {
-        root.innerHTML = '<div class="adm-card"><h3>Studio prices &amp; page text</h3><p>Change prices, minimum order, options and the words on the two design pages. Changes go live as soon as you save.</p>' +
+        root.innerHTML = '<div class="adm-card"><h3>Custom design prices and page text</h3><p>Change prices, minimum order, options and the words on the two design pages. Changes go live as soon as you save.</p>' +
             '<div class="adm-seg" id="s-seg"><button type="button" data-p="cake">Katanukiya cake studio</button><button type="button" data-p="chocolate">GildArt chocolate studio</button></div><div id="s-form"><p class="adm-loading">Loading...</p></div></div>';
         $('#s-seg').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) { sp = b.dataset.p; drawStudio(); } });
         B.content().then(function (c) { SC = (c && c.studio) || {}; drawStudio(); });
@@ -657,7 +660,7 @@
 
     /* ============================ WEBSITE IMAGES ============================ */
     function viewWebsite() {
-        root.innerHTML = '<div class="adm-bar"><h2>Website: texts, fonts and pictures</h2></div>' +
+        root.innerHTML = '<div class="adm-bar"><h2>Edit website</h2></div>' +
             '<div class="adm-card"><h3>Edit the website</h3><p class="adm-lead">Open the website in edit mode. Then tap or click any text to change the words, the font and the size, or to delete it. The bar at the bottom has <b>Fonts</b> (font of the whole website), <b>Pages</b> (go to another page) and <b>Finish</b>. It works on phone, iPad and computer, and everything is saved for every visitor.</p>' +
             '<div class="adm-row"><a class="adm-btn" target="_blank" rel="noopener" href="index.html?edit=1">Go to edit mode</a></div></div>' +
             '<div class="adm-card" id="w-texts"><h3>Your text changes</h3><p class="adm-loading">Loading...</p></div>' +
@@ -718,7 +721,7 @@
 
     /* ============================ SETTINGS ============================ */
     function viewSettings() {
-        root.innerHTML = '<div class="adm-bar"><h2>Settings</h2></div><div id="s-box"><p class="adm-loading">Loading...</p></div>';
+        root.innerHTML = '<div class="adm-bar"><h2>Top bar and bank details</h2></div><div id="s-box"><p class="adm-loading">Loading...</p></div>';
         B.content().then(function (c) {
             CONTENT = c || {}; var st = CONTENT.settings || {};
             $('#s-box').innerHTML = '<form class="adm-card" id="s-form"><div class="adm-form">' +
@@ -964,7 +967,7 @@
 
     /* ============================ LEGAL TEXTS ============================ */
     function viewLegal() {
-        root.innerHTML = '<div class="adm-bar"><h2>Legal &amp; copyright protection</h2></div>' +
+        root.innerHTML = '<div class="adm-bar"><h2>Legal pages</h2></div>' +
             '<p class="adm-lead">These texts appear on your Terms, Content &amp; Copyright and Privacy pages, in the reminder customers see before uploading, and in the agreements they must tick before ordering. Every order saves which version the customer accepted, with the date, time and IP address, as proof.</p>' +
             '<div class="adm-note"><b>Please have a UAE lawyer review these texts once.</b> They are a careful starting point, not legal advice. Tip: start a line with <code># </code> for a heading and <code>- </code> for a bullet point.</div><div id="g-box"><p class="adm-loading">Loading...</p></div>';
         B.content().then(function (c) {
