@@ -10,22 +10,27 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="theme.css?v=14">
     <link rel="stylesheet" href="app.css?v=14">
-    <link rel="stylesheet" href="admin.css?v=14">
+    <link rel="stylesheet" href="admin.css?v=18">
 </head>
 <body data-admin>
 
 <header class="adm-top">
     <a class="adm-brand" href="index.html" aria-label="Grape Tree website"><img src="images/logo.svg" alt="Grape Tree"><span>Admin</span></a>
+    <button type="button" class="adm-menu" id="adm-menu" aria-expanded="false" aria-controls="adm-tabs" hidden><span aria-hidden="true">&#9776;</span> Menu</button>
     <nav class="adm-tabs" id="adm-tabs" role="tablist" hidden>
+        <span class="adm-grp">Sales</span>
         <button type="button" role="tab" data-tab="dashboard" class="on">Dashboard</button>
         <button type="button" role="tab" data-tab="orders">Orders <b id="adm-new" hidden></b></button>
+        <button type="button" role="tab" data-tab="test">Test studio</button>
+        <span class="adm-grp">Shop</span>
         <button type="button" role="tab" data-tab="products">Products</button>
         <button type="button" role="tab" data-tab="studio">Studio prices</button>
-        <button type="button" role="tab" data-tab="team">Team</button>
+        <span class="adm-grp">Business</span>
         <button type="button" role="tab" data-tab="business">Business info</button>
         <button type="button" role="tab" data-tab="legal">Legal</button>
         <button type="button" role="tab" data-tab="website">Website</button>
-        <button type="button" role="tab" data-tab="test">Test studio</button>
+        <span class="adm-grp">Admin</span>
+        <button type="button" role="tab" data-tab="team">Team</button>
         <button type="button" role="tab" data-tab="settings">Settings</button>
     </nav>
     <div class="adm-right">
@@ -41,6 +46,6 @@
 <script src="legal.js?v=14"></script>
 <script src="cart.js?v=14"></script>
 <script src="backend.js?v=14"></script>
-<script src="admin.js?v=17"></script>
+<script src="admin.js?v=18"></script>
 </body>
 </html>

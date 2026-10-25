@@ -7,7 +7,7 @@
     'use strict';
 
     var doc = document, B = window.GT.backend, CFG = (window.GT_DATA || {}).config || {};
-    var root = doc.getElementById('adm-root'), tabsEl = doc.getElementById('adm-tabs'), outBtn = doc.getElementById('adm-out');
+    var root = doc.getElementById('adm-root'), tabsEl = doc.getElementById('adm-tabs'), outBtn = doc.getElementById('adm-out'), menuBtn = doc.getElementById('adm-menu');
     var esc = function (s) { return window.GT.esc(s); };
     var money = function (n) { return 'AED ' + (Number(n) % 1 ? Number(n).toFixed(2) : String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ',')); };
     function $(s, c) { return (c || doc).querySelector(s); }
@@ -40,7 +40,7 @@
 
     /* ------------------------------ gate ------------------------------ */
     function gate() {
-        tabsEl.hidden = true; outBtn.hidden = !B.session;
+        tabsEl.hidden = true; menuBtn.hidden = true; outBtn.hidden = !B.session;
         if (!B.enabled) { root.innerHTML = card('<h2>Database not connected</h2><p>Check <code>supabaseUrl</code> and <code>supabaseKey</code> in shop-data.js.</p>'); return; }
         if (!B.session) {
             root.innerHTML = '<div class="adm-card narrow"><h2>Admin sign in</h2><form id="adm-login" novalidate>' +
@@ -62,12 +62,15 @@
             return;
         }
         $$('[data-tab]', tabsEl).forEach(function (b) { b.hidden = !B.isAdmin() && b.getAttribute('data-tab') !== 'orders'; });   // staff see the Orders tab only
-        tabsEl.hidden = false; show(tab);
+        $$('.adm-grp', tabsEl).forEach(function (g) { g.hidden = !B.isAdmin(); });
+        tabsEl.hidden = false; menuBtn.hidden = false; show(tab);
     }
     function card(html) { return '<div class="adm-card narrow">' + html + '</div>'; }
 
     outBtn.addEventListener('click', function () { B.signOut(); });
-    tabsEl.addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (b) show(b.getAttribute('data-tab')); });
+    tabsEl.addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (b) { show(b.getAttribute('data-tab')); closeMenu(); } });
+    function closeMenu() { var t = doc.querySelector('.adm-top'); t.classList.remove('open'); menuBtn.setAttribute('aria-expanded', 'false'); }
+    menuBtn.addEventListener('click', function () { var t = doc.querySelector('.adm-top'), on = !t.classList.contains('open'); t.classList.toggle('open', on); menuBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); });
     function show(t) {
         if (!B.isAdmin()) t = 'orders';
         tab = t;
@@ -291,10 +294,49 @@
             '<label class="grow">Private note (only you see this)<input type="text" data-f="admin_note" value="' + esc(o.admin_note || '') + '"></label></div>' +
             '<div class="o-msg"><label class="grow">Message the customer<select data-tpl>' + TEMPLATES.map(function (t) { return '<option value="' + t[0] + '">' + esc(t[1]) + '</option>'; }).join('') + '</select></label>' +
             '<a class="adm-btn" data-wa href="' + wa + '" target="_blank" rel="noopener">WhatsApp</a>' + (o.email ? '<a class="adm-btn ghost" data-mail href="mailto:' + esc(o.email) + '?subject=' + encodeURIComponent('Grape Tree order #' + o.order_no) + '&body=' + encodeURIComponent(tplText(o, 'confirm')) + '">Email</a>' : '') + '<button class="adm-btn ghost" data-print>Job sheet (PDF)</button><button class="adm-btn ghost" data-printc>Customer confirmation (PDF)</button>' + (B.isAdmin() ? '<button class="adm-btn danger" data-del-order type="button">Delete order</button>' : '') + '</div>' +
+            cancelBlock(o) +
             historyBlock(o);
+    }
+    var CANCEL_REASONS = ['Customer asked to cancel', 'Design cannot be produced', 'Item or date not available', 'Delivery not possible to this address', 'Payment not received', 'Duplicate order', 'Other'];
+    function cancelBlock(o) {
+        if (o.status === 'cancelled') {
+            return '<div class="o-cancel done"><h4>Order cancelled</h4><p><strong>Reason:</strong> ' + esc(o.cancel_reason || 'Not recorded') + (o.cancelled_at ? '<br><small>' + esc(dt(o.cancelled_at)) + '</small>' : '') + '</p>' +
+                '<button type="button" class="adm-btn ghost" data-reopen>Reopen this order</button></div>';
+        }
+        return '<div class="o-cancel"><button type="button" class="adm-btn danger ghost" data-cancel-open>Cancel this order</button>' +
+            '<div class="o-cancel-form" hidden><h4>Cancel order #' + esc(o.order_no) + '</h4>' +
+            '<label>Reason<select data-c-reason>' + CANCEL_REASONS.map(function (r) { return '<option>' + esc(r) + '</option>'; }).join('') + '</select></label>' +
+            '<label>Details for the customer (optional)<input type="text" data-c-detail maxlength="300" placeholder="e.g. The design uses a protected brand, so we cannot print it"></label>' +
+            (o.email ? '<label class="chk"><input type="checkbox" data-c-mail checked> Email the customer with this reason (' + esc(o.email) + ')</label>' : '<p class="adm-fine">This customer left no email, so they will see the reason in their account only.</p>') +
+            '<div class="adm-row"><button type="button" class="adm-btn danger" data-cancel-go>Yes, cancel the order</button><button type="button" class="adm-btn ghost" data-cancel-close>Keep the order</button></div></div></div>';
+    }
+    function doCancel(o, artEl, reason, detail, sendMail) {
+        var full = reason + (detail ? ': ' + detail : '');
+        var patch = { status: 'cancelled', cancel_reason: full, cancelled_at: new Date().toISOString() };
+        return saveOrder(o, patch, 'Order cancelled. Reason: ' + full, artEl, { pub: true, status: 'cancelled', msg: 'Your order was cancelled. Reason: ' + full }).then(function () {
+            if (o.status !== 'cancelled' || !o.email || !sendMail) return;
+            return B.client.functions.invoke('smart-endpoint', { body: { action: 'cancel', order_id: o.id } }).then(function (r) {
+                if (r && r.error) throw r.error;
+                toast('Cancelled. The customer was emailed.');
+            }).catch(function () { toast('Order cancelled, but the email could not be sent. Please tell the customer on WhatsApp.', true); });
+        });
     }
     function renderBody(artEl, o) { var body = $('.o-body', artEl); body.innerHTML = orderBody(o); loadThumbs(body); var h = $('.o-head', artEl); $('.o-chips', h).innerHTML = chipsFor(o); }
     doc.addEventListener('click', function (e) {
+        var cb = e.target.closest('[data-cancel-open],[data-cancel-close],[data-cancel-go],[data-reopen]');
+        if (cb) {
+            var ca = cb.closest('.adm-order'), co = ORDERS.filter(function (x) { return x.id === ca.getAttribute('data-id'); })[0], form = $('.o-cancel-form', ca);
+            if (cb.hasAttribute('data-cancel-open')) { form.hidden = false; cb.hidden = true; }
+            else if (cb.hasAttribute('data-cancel-close')) { form.hidden = true; $('[data-cancel-open]', ca).hidden = false; }
+            else if (cb.hasAttribute('data-cancel-go')) {
+                cb.disabled = true;
+                doCancel(co, ca, $('[data-c-reason]', ca).value, $('[data-c-detail]', ca).value.trim(), !!($('[data-c-mail]', ca) && $('[data-c-mail]', ca).checked)).then(function () { cb.disabled = false; });
+            } else if (cb.hasAttribute('data-reopen')) {
+                if (!window.confirm('Reopen order #' + co.order_no + '? It will go back to Confirmed.')) return;
+                saveOrder(co, { status: 'confirmed', cancel_reason: null, cancelled_at: null }, 'Order reopened', ca, { pub: true, status: 'confirmed', msg: 'Your order is active again.' });
+            }
+            return;
+        }
         var head = e.target.closest('.o-head');
         if (head) {
             var art = head.parentNode, body = $('.o-body', art), open = head.getAttribute('aria-expanded') === 'true';

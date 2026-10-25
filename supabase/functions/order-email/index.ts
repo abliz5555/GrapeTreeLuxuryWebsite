@@ -95,6 +95,17 @@ export function customerEmail(o, site, bank, wa) {
   return { subject: `Your Grape Tree order #${o.order_no}`, html };
 }
 
+
+export function cancelEmail(o, site, wa) {
+  const reason = esc(o.cancel_reason || 'Please contact us for details.');
+  const html = shell(site, 'Your order was cancelled', 'Order #' + esc(o.order_no) + ' has been cancelled. We are sorry for any inconvenience.',
+    `<div style="background:#fff5f4;border:1px solid #f0c9c5;border-radius:12px;padding:16px 18px;margin:0 0 20px"><div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#b3261e;font-weight:700;padding-bottom:6px">Reason</div><div style="font-size:15px;line-height:1.6;color:${INK}">${reason}</div></div>` +
+    orderBlock(o, false) +
+    `<p style="font-size:14px;line-height:1.7;color:${MUTED};margin:6px 0 18px">If you paid anything for this order, we will contact you about the refund. If you think this is a mistake, or you would like to order again, just message us.</p>` +
+    btn('https://wa.me/' + wa + '?text=' + encodeURIComponent('Hello Grape Tree, about my cancelled order #' + o.order_no), 'Message us on WhatsApp', false) + btn(site + '/account.html#receipts', 'View my orders', true));
+  return { subject: `Your Grape Tree order #${o.order_no} was cancelled`, html };
+}
+
 function reviewNote(o, site) {
   const hasArt = (o.items || []).some((l) => l.art);
   const lg = o.legal || {};
@@ -143,9 +154,37 @@ async function send(key, from, to, subject, html, replyTo, attachments) {
   if (!r.ok) throw new Error('Resend ' + r.status + ': ' + (await r.text()));
 }
 
+const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-secret', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
 if (typeof Deno !== 'undefined' && Deno.serve) {
   Deno.serve(async (req) => {
     const env = (k) => Deno.env.get(k) || '';
+    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
+    // A staff member cancelling an order from the admin page: the reason is emailed to the customer
+    if (!req.headers.get('x-webhook-secret') && req.headers.get('authorization')) {
+      const jr = (obj, status) => new Response(JSON.stringify(obj), { status: status || 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
+      try {
+        const tok = req.headers.get('authorization');
+        const chk = await fetch(env('SUPABASE_URL') + '/rest/v1/rpc/is_staff', { method: 'POST', headers: { apikey: env('SUPABASE_ANON_KEY'), Authorization: tok, 'Content-Type': 'application/json' }, body: '{}' });
+        if (!chk.ok || (await chk.json()) !== true) return jr({ error: 'not allowed' }, 403);
+        const b = await req.json();
+        if (b.action !== 'cancel' || !b.order_id) return jr({ error: 'bad request' }, 400);
+        const sh = { apikey: env('SUPABASE_SERVICE_ROLE_KEY'), Authorization: 'Bearer ' + env('SUPABASE_SERVICE_ROLE_KEY') };
+        const rr = await fetch(env('SUPABASE_URL') + '/rest/v1/orders?id=eq.' + encodeURIComponent(b.order_id) + '&select=*', { headers: sh });
+        const o = ((await rr.json()) || [])[0];
+        if (!o || o.status !== 'cancelled') return jr({ error: 'order is not cancelled' }, 400);
+        if (!o.email || o.source === 'admin-test') return jr({ ok: true, skipped: true });
+        let wa2 = env('WHATSAPP') || '971555577478', rep = env('REPLY_TO') || undefined;
+        try {
+          const br = await fetch(env('SUPABASE_URL') + '/rest/v1/site_content?key=eq.business&select=value', { headers: sh });
+          const bz = (((await br.json()) || [])[0] || {}).value || {};
+          if (bz.whatsapp) wa2 = String(bz.whatsapp).replace(/\D/g, '') || wa2;
+          if (bz.reply_to && String(bz.reply_to).trim()) rep = String(bz.reply_to).trim();
+        } catch (e) {}
+        const m = cancelEmail(o, (env('SITE_URL') || 'https://grapetree.ae').replace(/\/$/, ''), wa2);
+        await send(env('RESEND_API_KEY'), env('FROM_EMAIL'), o.email, m.subject, m.html, rep);
+        return jr({ ok: true });
+      } catch (e) { console.error('cancel mail', e.message); return jr({ error: String(e.message || e) }, 500); }
+    }
     if (req.headers.get('x-webhook-secret') !== env('WEBHOOK_SECRET') || !env('WEBHOOK_SECRET')) return new Response('forbidden', { status: 403 });
     let body; try { body = await req.json(); } catch (e) { return new Response('bad request', { status: 400 }); }
     const o = body && body.record;

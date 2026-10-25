@@ -240,7 +240,7 @@
 
     var STEPS = ['new', 'confirmed', 'preparing', 'delivering', 'delivered'];
     function progress(o) {
-        if (o.status === 'cancelled') return '<div class="prog off"><span>' + esc(T('Cancelled')) + '</span></div>';
+        if (o.status === 'cancelled') return '<div class="prog off"><span>' + esc(T('Cancelled')) + (o.cancel_reason ? ': ' + esc(o.cancel_reason) : '') + '</span></div>';
         var at = Math.max(0, STEPS.indexOf(o.status === 'ready' ? 'preparing' : o.status));
         return '<div class="prog" aria-hidden="true">' + STEPS.map(function (s, i) { return '<i class="' + (i <= at ? 'on' : '') + '"></i>'; }).join('') + '</div>';
     }
