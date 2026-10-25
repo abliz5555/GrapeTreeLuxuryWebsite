@@ -600,13 +600,11 @@
     /* ============================ WEBSITE IMAGES ============================ */
     function viewWebsite() {
         root.innerHTML = '<div class="adm-bar"><h2>Website: texts, fonts and pictures</h2></div>' +
-            '<div class="adm-card"><h3>1. Change the words on any page</h3><p class="adm-lead">Open a page, then tap or click any text (for example "Japanese craftsmanship. UAE luxury.") to change the words, the font and the size, or to delete it. The "Fonts" button in the bar changes the font of the whole website. Everything is saved for every visitor. To change the Arabic, Turkish, Chinese, Russian or Japanese version, switch the language button on that page first.</p>' +
-            '<div class="adm-pages">' + [['Home page', 'index.html'], ['Katanukiya', 'katanukiya.html'], ['GildArt', 'gildart.html'], ['Shop', 'shop.html'], ['Contact', 'contact.html'], ['Cake designer', 'cake-studio.html'], ['Chocolate designer', 'chocolate-studio.html'], ['Track order', 'order-track.html'], ['My account', 'account.html'], ['Checkout', 'checkout.html']].map(function (p) { return '<a class="adm-btn ghost" target="_blank" rel="noopener" href="' + p[1] + '?edit=1">' + p[0] + '</a>'; }).join('') + '</div>' +
-            '<p class="adm-hint">The page opens in a new tab with a dark bar at the bottom. Press <b>Finish</b> when you are done.</p></div>' +
+            '<div class="adm-card"><h3>Edit the website</h3><p class="adm-lead">Open the website in edit mode. Then tap or click any text to change the words, the font and the size, or to delete it. The bar at the bottom has <b>Fonts</b> (font of the whole website), <b>Pages</b> (go to another page) and <b>Finish</b>. It works on phone, iPad and computer, and everything is saved for every visitor.</p>' +
+            '<div class="adm-row"><a class="adm-btn" target="_blank" rel="noopener" href="index.html?edit=1">Go to edit mode</a></div></div>' +
             '<div class="adm-card" id="w-texts"><h3>Your text changes</h3><p class="adm-loading">Loading...</p></div>' +
-            '<div class="adm-card" id="w-fonts"><h3>2. Fonts</h3><p class="adm-loading">Loading...</p></div>' +
-            '<div class="adm-card"><h3>3. Big pictures on the home page</h3><p class="adm-lead">Upload a new photo and it goes live straight away. "Use original" puts the first photo back.</p><div id="w-grid"><p class="adm-loading">Loading...</p></div></div>';
-        B.content().then(function (c) { CONTENT = c || {}; drawWebsite(); drawTexts(); drawFonts(); });
+            '<div class="adm-card"><h3>Big pictures on the home page</h3><p class="adm-lead">Upload a new photo and it goes live straight away. "Use original" puts the first photo back.</p><div id="w-grid"><p class="adm-loading">Loading...</p></div></div>';
+        B.content().then(function (c) { CONTENT = c || {}; drawWebsite(); drawTexts(); });
     }
 
     /* ---- your text changes (made with ?edit=1 on any page) ---- */
@@ -631,31 +629,6 @@
                 job.then(function () { try { localStorage.removeItem('gt-content-v1'); } catch (x) {} toast('Original restored'); drawTexts(); }).catch(fail);
             });
         });
-    }
-    /* ---- fonts ---- */
-    var HEAD_FONTS = ['Cormorant Garamond', 'Playfair Display', 'Lora', 'Cinzel', 'Libre Baskerville', 'DM Serif Display', 'Marcellus', 'Bodoni Moda', 'EB Garamond', 'Cormorant'];
-    var BODY_FONTS = ['Inter', 'Poppins', 'Montserrat', 'Lato', 'Nunito Sans', 'Open Sans', 'DM Sans', 'Raleway'];
-    function drawFonts() {
-        var box = $('#w-fonts'); if (!box) return;
-        var f = CONTENT.fonts || {}, h = f.heading || 'Cormorant Garamond', b = f.body || 'Inter';
-        function opts(list, cur) { return list.map(function (x) { return '<option' + (x === cur ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join(''); }
-        box.innerHTML = '<h3>2. Fonts</h3><p class="adm-lead">Pick the letter style for headings and for normal text. The preview below shows how it looks. Arabic, Chinese and Japanese keep their own fonts.</p>' +
-            '<div class="adm-grid2"><label>Headings (big titles)<select id="f-h">' + opts(HEAD_FONTS, h) + '</select></label><label>Normal text<select id="f-b">' + opts(BODY_FONTS, b) + '</select></label></div>' +
-            '<div class="adm-fontprev"><div id="fp-h">Japanese craftsmanship. UAE luxury.</div><div id="fp-b">Premium layered cakes, precisely cut into playful shapes made for gifting. Order online and track it with your order number.</div></div>' +
-            '<div class="adm-row"><button class="adm-btn ghost" id="f-reset" type="button">Use the original fonts</button><span class="grow"></span><button class="adm-btn" id="f-save" type="button">Save fonts</button></div>';
-        var link = document.getElementById('adm-font-prev');
-        function prev() {
-            var hv = $('#f-h').value, bv = $('#f-b').value;
-            if (!link) { link = document.createElement('link'); link.id = 'adm-font-prev'; link.rel = 'stylesheet'; document.head.appendChild(link); }
-            link.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(hv).replace(/%20/g, '+') + ':wght@400;600&family=' + encodeURIComponent(bv).replace(/%20/g, '+') + ':wght@400;600&display=swap';
-            $('#fp-h').style.fontFamily = '"' + hv + '",serif'; $('#fp-b').style.fontFamily = '"' + bv + '",sans-serif';
-        }
-        $('#f-h').addEventListener('change', prev); $('#f-b').addEventListener('change', prev); prev();
-        function put(v) {
-            B.saveContent('fonts', v).then(function () { CONTENT.fonts = v; try { localStorage.removeItem('gt-content-v1'); } catch (x) {} toast(v.heading ? 'Fonts saved. Refresh the website to see them.' : 'Original fonts restored'); drawFonts(); }).catch(fail);
-        }
-        $('#f-save').addEventListener('click', function () { put({ heading: $('#f-h').value, body: $('#f-b').value }); });
-        $('#f-reset').addEventListener('click', function () { put({}); });
     }
     function currentSrc(slot) {
         var el = doc.createElement('div');

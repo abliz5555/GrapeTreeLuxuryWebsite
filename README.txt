@@ -175,8 +175,12 @@ v11 - Staff passwords, delete orders
 - Text edits are saved per language (switch the language button to edit the Arabic, Turkish... version).
 - Mobile/tablet header: logo in the middle, menu + language on one side, account + basket on the other.
 - Hard-coded fonts in the CSS now follow the font chosen in admin.
-- New file textedit.js (loaded only in edit mode). Cache version is now ?v=13.
+- New file textedit.js (loaded only in edit mode). Cache version is now ?v=14.
 
 ==== v15 ====
 - Edit mode (?edit=1) now also: delete a text (hide it, "Show this text again" brings it back), choose a font and size for one text, and a "Fonts" button for the whole website. Works with touch on phone and iPad.
-- Cache version is now ?v=13.
+- Cache version is now ?v=14.
+
+==== v16 ====
+- Edit mode: the page changes live while you type / pick a font or size (Cancel puts it back). Panels sit at the bottom so the page stays visible. New "Pages" button to move to another page in edit mode.
+- Admin > Website: the font chooser is gone; one "Go to edit mode" button instead. Cache version ?v=14.

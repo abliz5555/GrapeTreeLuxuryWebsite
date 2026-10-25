@@ -36,7 +36,7 @@
     /* load the dictionary now (synchronously, before the page is built) */
     window.GT_I18N = window.GT_I18N || {};
     if (current !== 'en' && !window.GT_I18N[current]) {
-        doc.write('<script src="lang/' + current + '.js?v=13"><\/script>');
+        doc.write('<script src="lang/' + current + '.js?v=14"><\/script>');
     }
     if (current !== 'en') {
         var f = doc.createElement('link');
@@ -222,7 +222,7 @@
         if (!find(code) || code === current) return;
         var go = function () { current = code; store(code); apply(); };
         if (code !== 'en' && !window.GT_I18N[code]) {
-            var s = doc.createElement('script'); s.src = 'lang/' + code + '.js?v=13'; s.onload = go; doc.head.appendChild(s);
+            var s = doc.createElement('script'); s.src = 'lang/' + code + '.js?v=14'; s.onload = go; doc.head.appendChild(s);
         } else go();
     }
 
@@ -264,7 +264,7 @@
     });
     /* edit mode: ?edit=1 lets a signed-in admin click any text on the page and change it */
     if (/[?&]edit=1/.test(location.search)) {
-        var te = doc.createElement('script'); te.src = 'textedit.js?v=13'; te.defer = true; doc.head.appendChild(te);
+        var te = doc.createElement('script'); te.src = 'textedit.js?v=14'; te.defer = true; doc.head.appendChild(te);
     }
 
     window.GT = window.GT || {};
@@ -275,6 +275,15 @@
         original: function (node) { return node.__gtEn != null ? node.__gtEn : node.nodeValue; },
         reload: function (c) { c = c || cachedContent(); loadOv(c); applyFonts(c); apply(); },
         previewFonts: function (f) { applyFonts({ fonts: f || {} }); },
+        previewSty: function (n, s, text) {
+            if (s && FONT_CSS[s.font]) {
+                var lk = doc.getElementById('gt-fonts-prev');
+                if (!lk) { lk = doc.createElement('link'); lk.id = 'gt-fonts-prev'; lk.rel = 'stylesheet'; doc.head.appendChild(lk); }
+                lk.href = 'https://fonts.googleapis.com/css2?family=' + FONT_CSS[s.font] + '&display=swap';
+            }
+            if (typeof text === 'string') { n.nodeValue = text; n.__gtOut = text; }
+            applySty(n, s);
+        },
         fontNames: function () { return Object.keys(FONT_CSS); },
         HIDE: HIDE,
         sty: function (key) { return STY[key] || null; },

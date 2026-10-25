@@ -27,8 +27,9 @@
         '#gt-edit-bar .fin{background:#B8932F;color:#fff}' +
         '.gt-edit-hover{outline:2px dashed #B8932F !important;outline-offset:3px;cursor:pointer !important;background:rgba(184,147,47,.12)}' +
         'html.gt-edit-on [data-gt-hide]{opacity:.35;outline:2px dashed #a3261c;outline-offset:2px}' +
-        '#gt-edit-modal{position:fixed;inset:0;z-index:100001;background:rgba(20,10,5,.55);display:flex;align-items:center;justify-content:center;padding:14px}' +
-        '#gt-edit-modal .box{background:#FFFDF8;color:#2A1810;border-radius:18px;padding:20px;width:100%;max-width:580px;max-height:92vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);-webkit-overflow-scrolling:touch}' +
+        '#gt-edit-modal{position:fixed;left:0;right:0;bottom:0;z-index:100001;display:flex;justify-content:center;padding:0 8px 8px;pointer-events:none}' +
+        'html.gt-edit-sheet body{padding-bottom:64vh}' +
+        '#gt-edit-modal .box{pointer-events:auto;background:#FFFDF8;color:#2A1810;border-radius:20px;padding:16px 18px 18px;width:100%;max-width:600px;max-height:58vh;overflow:auto;box-shadow:0 -6px 40px rgba(0,0,0,.35),0 0 0 1px rgba(0,0,0,.08);-webkit-overflow-scrolling:touch}' +
         '#gt-edit-modal h3{margin:0 0 6px;font-size:19px;font-weight:700;color:#2A1810}#gt-edit-modal p{margin:6px 0;font-size:14px;color:#6b5a4e;line-height:1.5}' +
         '#gt-edit-modal .orig{background:#F3EBDD;border-radius:10px;padding:9px 12px;font-size:13px;color:#4A3A30;margin:6px 0 12px;word-break:break-word}' +
         '#gt-edit-modal label{display:block;font-size:13px;font-weight:600;color:#4A3A30;margin:12px 0 4px}' +
@@ -40,14 +41,14 @@
         '#gt-edit-modal .row button{border:0;border-radius:999px;padding:0 20px;min-height:48px;font-size:16px;font-weight:600;cursor:pointer;flex:1 1 auto}' +
         '#gt-edit-modal .go{background:#2A1810;color:#F7F2E7}#gt-edit-modal .no{background:#EDE4D3;color:#2A1810}#gt-edit-modal .rs{background:#fff;color:#a3261c;border:1px solid #a3261c !important}' +
         '#gt-edit-modal .err{color:#a3261c;font-size:13px;min-height:16px}#gt-edit-modal .warn{background:#FBEAE8;color:#7a1d15;border-radius:10px;padding:8px 12px;font-size:13px}' +
-        '@media (max-width:640px){#gt-edit-modal{align-items:flex-end;padding:0}#gt-edit-modal .box{border-radius:20px 20px 0 0;max-height:88vh;padding:18px 16px 22px}#gt-edit-modal .two{grid-template-columns:1fr}#gt-edit-bar{left:8px;right:8px;transform:none;width:auto;border-radius:20px;bottom:8px}#gt-edit-bar .msg{flex-basis:100%}#gt-edit-bar button,#gt-edit-bar a{flex:1 1 auto;justify-content:center}}';
+        '@media (max-width:640px){#gt-edit-modal{padding:0}#gt-edit-modal .box{border-radius:20px 20px 0 0;max-height:62vh;padding:14px 14px 18px}#gt-edit-modal .two{grid-template-columns:1fr 1fr}#gt-edit-bar{left:8px;right:8px;transform:none;width:auto;border-radius:20px;bottom:8px}#gt-edit-bar .msg{flex-basis:100%}#gt-edit-bar button,#gt-edit-bar a{flex:1 1 auto;justify-content:center}}';
     doc.head.appendChild(css);
 
     var bar = doc.createElement('div'); bar.id = 'gt-edit-bar'; bar.className = 'gt-edit-ui'; bar.setAttribute('data-no-i18n', '');
     bar.innerHTML = '<span class="msg">Checking your sign-in...</span>';
     doc.body.appendChild(bar);
     var barHome = '';
-    function setBar(html) { bar.innerHTML = html; var x = $('[data-exit]', bar); if (x) x.addEventListener('click', exit); var f = $('[data-fonts]', bar); if (f) f.addEventListener('click', openFonts); }
+    function setBar(html) { bar.innerHTML = html; var x = $('[data-exit]', bar); if (x) x.addEventListener('click', exit); var f = $('[data-fonts]', bar); if (f) f.addEventListener('click', openFonts); var pgb = $('[data-pages]', bar); if (pgb) pgb.addEventListener('click', openPages); }
     function say(html) { var s = $('.msg', bar); if (!s) return; s.innerHTML = html; setTimeout(function () { if (s) s.innerHTML = barHome; }, 2400); }
     function exit() { location.href = location.pathname + location.search.replace(/([?&])edit=1&?/, '$1').replace(/[?&]$/, '') + location.hash; }
 
@@ -75,7 +76,7 @@
     function start() {
         active = true; doc.documentElement.classList.add('gt-edit-on');
         barHome = '<b>Edit mode.</b> Tap or click any text.';
-        setBar('<span class="msg">' + barHome + '</span><button data-fonts>Fonts</button><button class="fin" data-exit>Finish</button>');
+        setBar('<span class="msg">' + barHome + '</span><button data-pages>Pages</button><button data-fonts>Fonts</button><button class="fin" data-exit>Finish</button>');
         G().reload();                       /* show hidden texts (faded) so they can be brought back */
         doc.addEventListener('mousemove', onMove, true);
         doc.addEventListener('click', onClick, true);
@@ -119,10 +120,16 @@
         var m = doc.createElement('div'); m.id = 'gt-edit-modal'; m.className = 'gt-edit-ui'; m.setAttribute('data-no-i18n', '');
         m.innerHTML = '<div class="box" role="dialog" aria-modal="true">' + inner + '</div>';
         doc.body.appendChild(m);
-        m.addEventListener('mousedown', function (e) { if (e.target === m) close(); });
+        doc.documentElement.classList.add('gt-edit-sheet');
         return m;
     }
-    function close() { var m = $('#gt-edit-modal'); if (m) m.remove(); }
+    function close() { var m = $('#gt-edit-modal'); if (m) m.remove(); doc.documentElement.classList.remove('gt-edit-sheet'); }
+    function cancelLive() { close(); G().reload(); }       /* put back what was on the page before the live preview */
+    function reveal(el) {
+        var box = $('#gt-edit-modal .box'); if (!el || !box) return;
+        var r = el.getBoundingClientRect(), limit = innerHeight - box.offsetHeight - 16;
+        if (r.bottom > limit || r.top < 70) window.scrollBy(0, r.top - 90);
+    }
     function opts(list, cur, first) { return (first ? '<option value="">' + first + '</option>' : '') + list.map(function (x) { return '<option' + (x === cur ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join(''); }
 
     /* ---- one stored change: read fresh data, change it, save, refresh the page ---- */
@@ -146,28 +153,26 @@
         var ov = G().ov(key) || {}, hidden = ov['*'] === G().HIDE, st = G().sty(key) || {};
         var edited = !!(ov[L] && ov[L] !== G().HIDE) || !!(st.font || (st.size && +st.size !== 100)) || hidden;
         var now = (hidden && ov[L] === undefined ? n.nodeValue : n.nodeValue).replace(/\s+/g, ' ').trim();
-        var m = sheet('<h3>Change this text</h3><p>Language: <b>' + esc(LANGNAME[L] || L) + '</b>. To change another language, close this and switch the language button on the page.</p>' +
+        var m = sheet('<h3>Change this text</h3><p>Language: <b>' + esc(LANGNAME[L] || L) + '</b>. You see the change on the page while you edit. Use the language button at the top to edit another language.</p>' +
             (hidden ? '<p class="warn">This text is hidden from visitors (shown faded here).</p>' : '') +
             (L !== 'en' ? '<p>English original:</p><div class="orig">' + esc(orig) + '</div>' : '') +
             '<label for="gt-edit-ta">Words</label><textarea id="gt-edit-ta" dir="auto"></textarea>' +
             '<div class="two"><div><label for="gt-edit-font">Font for this text</label><select id="gt-edit-font">' + opts(HEAD_FONTS.concat(BODY_FONTS), st.font, 'Same as the website') + '</select></div>' +
             '<div><label for="gt-edit-size">Size</label><select id="gt-edit-size">' + SIZES.map(function (z) { return '<option value="' + z[0] + '"' + ((+st.size || 100) === z[0] ? ' selected' : '') + '>' + z[1] + '</option>'; }).join('') + '</select></div></div>' +
-            '<div class="prev" id="gt-edit-prev"></div><p class="err" id="gt-edit-err"></p>' +
+            '<p class="err" id="gt-edit-err"></p>' +
             '<div class="row"><button class="go" id="gt-edit-save">Save</button><button class="no" id="gt-edit-cancel">Cancel</button></div>' +
             '<div class="row">' + (hidden ? '<button class="no" id="gt-edit-show">Show this text again</button>' : '<button class="rs" id="gt-edit-del">Delete this text</button>') + (edited ? '<button class="rs" id="gt-edit-reset">Back to original</button>' : '') + '</div>');
-        var ta = $('#gt-edit-ta'), ft = $('#gt-edit-font'), sz = $('#gt-edit-size'), pv = $('#gt-edit-prev');
+        var ta = $('#gt-edit-ta'), ft = $('#gt-edit-font'), sz = $('#gt-edit-size');
         ta.value = now;
-        function prev() {
-            if (ft.value) { var lk = doc.getElementById('gt-edit-prevfont') || doc.head.appendChild(Object.assign(doc.createElement('link'), { id: 'gt-edit-prevfont', rel: 'stylesheet' })); lk.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(ft.value).replace(/%20/g, '+') + ':wght@400;600&display=swap'; }
-            pv.style.fontFamily = ft.value ? '"' + ft.value + '",serif' : '';
-            pv.style.fontSize = Math.round(20 * (+sz.value / 100)) + 'px'; pv.textContent = ta.value || '...';
-        }
-        ta.addEventListener('input', prev); ft.addEventListener('change', prev); sz.addEventListener('change', prev); prev();
+        /* live: the page itself changes while you type or pick a font / size */
+        function live() { G().previewSty(n, { font: ft.value, size: +sz.value || 100 }, ta.value.replace(/\s+/g, ' ')); }
+        ta.addEventListener('input', live); ft.addEventListener('change', live); sz.addEventListener('change', live);
+        reveal(n.parentNode);
         if (innerWidth > 640) { ta.focus(); ta.select(); }
         function busy(on) { ['gt-edit-save', 'gt-edit-del', 'gt-edit-show', 'gt-edit-reset'].forEach(function (id) { var b = doc.getElementById(id); if (b) b.disabled = on; }); }
         function fin(msg) { return function () { close(); say('<b>' + msg + '</b> It is live for all visitors.'); }; }
         function bad(m2) { busy(false); $('#gt-edit-err').textContent = 'Could not save: ' + m2 + '.'; }
-        $('#gt-edit-cancel').addEventListener('click', close);
+        $('#gt-edit-cancel').addEventListener('click', cancelLive);
         $('#gt-edit-save').addEventListener('click', function () {
             var val = ta.value.replace(/\s+/g, ' ').trim();
             if (!val) { $('#gt-edit-err').textContent = 'The text is empty. Use "Delete this text" to remove it.'; return; }
@@ -199,6 +204,15 @@
             busy(true);
             commit(function (d) { delete d.texts[key]; delete d.styles[key]; }, fin('Back to original.'), bad);
         });
+    }
+
+    /* ---- go to another page (links are switched off in edit mode) ---- */
+    var PAGES = [['Home', 'index.html'], ['Katanukiya', 'katanukiya.html'], ['GildArt', 'gildart.html'], ['Shop', 'shop.html'], ['Contact', 'contact.html'], ['Cake designer', 'cake-studio.html'], ['Chocolate designer', 'chocolate-studio.html'], ['Track an order', 'order-track.html'], ['My account', 'account.html'], ['Checkout', 'checkout.html']];
+    function openPages() {
+        var here = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+        sheet('<h3>Open a page to edit</h3><div class="two">' + PAGES.map(function (p) { return '<button class="no" style="border:0;border-radius:12px;min-height:48px;font-size:16px;font-weight:' + (p[1] === here ? '700' : '500') + ';cursor:pointer;background:' + (p[1] === here ? '#E3C77A' : '#EDE4D3') + ';color:#2A1810" data-go="' + p[1] + '">' + p[0] + '</button>'; }).join('') + '</div><div class="row"><button class="no" id="gt-edit-cancel">Close</button></div>');
+        $('#gt-edit-cancel').addEventListener('click', close);
+        Array.prototype.forEach.call(doc.querySelectorAll('[data-go]'), function (b) { b.addEventListener('click', function () { location.href = b.getAttribute('data-go') + '?edit=1'; }); });
     }
 
     /* ---- whole-website fonts ---- */
