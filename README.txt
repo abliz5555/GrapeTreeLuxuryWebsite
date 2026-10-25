@@ -169,3 +169,10 @@ v11 - Staff passwords, delete orders
 - supabase/email-templates/*.html : Grape Tree styled emails for sign-up confirmation, password reset, magic link, change email, invite, reauthentication (subjects in SUBJECTS.txt).
 - Links in the emails open account.html with a button first (token_hash), so mail programs that pre-open links can no longer break the reset/confirm link.
 - Sender: set Supabase > Authentication > SMTP to Resend (smtp.resend.com, port 465, user "resend", password = Resend API key), sender no-reply@grapetree.ae, name "Grape Tree".
+
+==== v14 (edit texts + fonts without code, new mobile header) ====
+- Admin > Website: click-to-edit text on any page (opens the page with ?edit=1), a list of your text changes with "Back to original", and a font chooser (headings + normal text).
+- Text edits are saved per language (switch the language button to edit the Arabic, Turkish... version).
+- Mobile/tablet header: logo in the middle, menu + language on one side, account + basket on the other.
+- Hard-coded fonts in the CSS now follow the font chosen in admin.
+- New file textedit.js (loaded only in edit mode). Cache version is now ?v=12.

@@ -55,7 +55,7 @@ html.gt-intro-pending .gt-intro.gt-intro-leave{
 }
 
 .gt-intro-tag{
-    font-family:'Inter', sans-serif;
+    font-family:var(--sans);
     font-size:12px;
     letter-spacing:4px;
     text-transform:uppercase;

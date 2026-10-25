@@ -36,7 +36,7 @@
     /* load the dictionary now (synchronously, before the page is built) */
     window.GT_I18N = window.GT_I18N || {};
     if (current !== 'en' && !window.GT_I18N[current]) {
-        doc.write('<script src="lang/' + current + '.js?v=11"><\/script>');
+        doc.write('<script src="lang/' + current + '.js?v=12"><\/script>');
     }
     if (current !== 'en') {
         var f = doc.createElement('link');
@@ -60,6 +60,31 @@
 
     /* ------------------------------ engine ------------------------------ */
     var dict = null, lower = null, patterns = [];
+    /* texts and fonts the owner changed in the admin page (saved in the database, cached in the browser) */
+    var OV = {};
+    function cachedContent() { try { return JSON.parse(localStorage.getItem('gt-content-v1') || '{}') || {}; } catch (e) { return {}; } }
+    function loadOv(c) { OV = (c && c.texts && typeof c.texts === 'object') ? c.texts : {}; }
+    loadOv(cachedContent());
+    var FONT_CSS = {
+        'Cormorant Garamond': 'Cormorant+Garamond:wght@400;500;600', 'Playfair Display': 'Playfair+Display:wght@400;500;600', 'Lora': 'Lora:wght@400;500;600',
+        'Cinzel': 'Cinzel:wght@400;500;600', 'Libre Baskerville': 'Libre+Baskerville:wght@400;700', 'DM Serif Display': 'DM+Serif+Display', 'Marcellus': 'Marcellus',
+        'Bodoni Moda': 'Bodoni+Moda:wght@400;500;600', 'EB Garamond': 'EB+Garamond:wght@400;500;600', 'Cormorant': 'Cormorant:wght@400;500;600',
+        'Inter': 'Inter:wght@300;400;500;600;700', 'Poppins': 'Poppins:wght@300;400;500;600', 'Montserrat': 'Montserrat:wght@300;400;500;600', 'Lato': 'Lato:wght@300;400;700',
+        'Nunito Sans': 'Nunito+Sans:wght@300;400;600;700', 'Open Sans': 'Open+Sans:wght@300;400;600;700', 'DM Sans': 'DM+Sans:wght@300;400;500;700', 'Raleway': 'Raleway:wght@300;400;500;600'
+    };
+    function applyFonts(c) {
+        var f = c && c.fonts; if (!f || typeof f !== 'object') return;
+        var h = FONT_CSS[f.heading] ? f.heading : '', b = FONT_CSS[f.body] ? f.body : '';
+        if (!h && !b) return;
+        var fam = [h, b].filter(function (x, i, a) { return x && a.indexOf(x) === i; }).map(function (x) { return 'family=' + FONT_CSS[x]; }).join('&');
+        var lk = doc.getElementById('gt-fonts-link');
+        if (!lk) { lk = doc.createElement('link'); lk.id = 'gt-fonts-link'; lk.rel = 'stylesheet'; doc.head.appendChild(lk); }
+        lk.href = 'https://fonts.googleapis.com/css2?' + fam + '&display=swap';
+        var st = doc.getElementById('gt-fonts-css');
+        if (!st) { st = doc.createElement('style'); st.id = 'gt-fonts-css'; doc.head.appendChild(st); }
+        st.textContent = 'html:root:not([lang="ar"]):not([lang="zh"]):not([lang="ja"]){' + (h ? '--serif:"' + h + '",Georgia,serif;--serif-2:"' + h + '",Georgia,serif;' : '') + (b ? '--sans:"' + b + '",system-ui,sans-serif;' : '') + '}';
+    }
+    applyFonts(cachedContent());
     var ATTRS = ['alt', 'placeholder', 'aria-label', 'title'];
     var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEXTAREA: 1, CODE: 1 };
     var observer = null, busy = false;
@@ -76,10 +101,12 @@
     }
 
     function translate(en) {
-        if (!dict) return en;
         var lead = (en.match(/^\s*/) || [''])[0], trail = (en.match(/\s*$/) || [''])[0];
         var key = norm(en);
         if (!key) return en;
+        var ov = OV[key];
+        if (ov && typeof ov[current] === 'string' && ov[current] !== '') return lead + ov[current] + trail;
+        if (!dict) return en;
         var hit = dict[key];
         if (hit === undefined) hit = lower[key.toLowerCase()];
         if (hit === undefined) {
@@ -95,7 +122,7 @@
         if (n.__gtOut !== undefined && v === n.__gtOut) { var o = n.__gtEn; } /* untouched since we set it */
         else { n.__gtEn = v; o = v; }
         if (!/[A-Za-z]/.test(o)) { n.__gtOut = o; return; }
-        var t = current === 'en' ? o : translate(o);
+        var t = translate(o);
         n.__gtOut = t;
         if (n.nodeValue !== t) n.nodeValue = t;
     }
@@ -109,7 +136,7 @@
             var o;
             if (rec && rec.out === v) o = rec.en; else o = v;
             if (!/[A-Za-z]/.test(o)) continue;
-            var t = current === 'en' ? o : translate(o);
+            var t = translate(o);
             el.__gtA[a] = { en: o, out: t };
             if (v !== t) el.setAttribute(a, t);
         }
@@ -125,11 +152,11 @@
 
     function doHead() {
         var t = doc.querySelector('title');
-        if (t) { if (!t.__gtEn) t.__gtEn = t.textContent; t.textContent = current === 'en' ? t.__gtEn : translate(t.__gtEn); }
+        if (t) { if (!t.__gtEn) t.__gtEn = t.textContent; t.textContent = translate(t.__gtEn); }
         var m = doc.querySelectorAll('meta[name="description"],meta[property="og:title"],meta[property="og:description"]');
         for (var i = 0; i < m.length; i++) {
             var el = m[i]; if (!el.__gtEn) el.__gtEn = el.getAttribute('content');
-            el.setAttribute('content', current === 'en' ? el.__gtEn : translate(el.__gtEn));
+            el.setAttribute('content', translate(el.__gtEn));
         }
     }
 
@@ -141,7 +168,7 @@
     function watch() {
         if (observer || !window.MutationObserver) return;
         observer = new MutationObserver(function (list) {
-            if (busy || current === 'en') return;
+            if (busy) return;
             observer.disconnect();
             for (var i = 0; i < list.length; i++) {
                 var m = list[i];
@@ -166,7 +193,7 @@
         if (!find(code) || code === current) return;
         var go = function () { current = code; store(code); apply(); };
         if (code !== 'en' && !window.GT_I18N[code]) {
-            var s = doc.createElement('script'); s.src = 'lang/' + code + '.js?v=11'; s.onload = go; doc.head.appendChild(s);
+            var s = doc.createElement('script'); s.src = 'lang/' + code + '.js?v=12'; s.onload = go; doc.head.appendChild(s);
         } else go();
     }
 
@@ -199,6 +226,25 @@
     }
     if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', init); else init();
 
+    /* when the saved website content arrives (or changes), apply the owner's texts and fonts */
+    doc.addEventListener('gt:content', function (e) {
+        var c = e.detail || {};
+        if (!Object.keys(c).length) return;      /* nothing arrived (offline): keep what we already show */
+        applyFonts(c);
+        var before = JSON.stringify(OV); loadOv(c);
+        if (JSON.stringify(OV) !== before) apply();
+    });
+    /* edit mode: ?edit=1 lets a signed-in admin click any text on the page and change it */
+    if (/[?&]edit=1/.test(location.search)) {
+        var te = doc.createElement('script'); te.src = 'textedit.js?v=12'; te.defer = true; doc.head.appendChild(te);
+    }
+
     window.GT = window.GT || {};
-    window.GT.lang = { get: function () { return current; }, set: setLang, list: LANGS, t: function (s) { return current === 'en' ? s : translate(s); } };
+    window.GT.lang = {
+        get: function () { return current; }, set: setLang, list: LANGS,
+        t: function (s) { return translate(s); },
+        key: function (node) { return norm(node.__gtEn != null ? node.__gtEn : node.nodeValue); },
+        original: function (node) { return node.__gtEn != null ? node.__gtEn : node.nodeValue; },
+        reload: function (c) { applyFonts(c || cachedContent()); loadOv(c || cachedContent()); apply(); }
+    };
 })();

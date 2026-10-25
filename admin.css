@@ -206,3 +206,11 @@ body[data-admin]{ margin:0; }
 .adm-map-box{ height:340px; border-radius:14px; overflow:hidden; border:1px solid var(--adm-line,#e5ded0); background:#efe9dc; margin:10px 0 12px; z-index:0; position:relative; }
 .adm-hint{ font-size:13px; color:#7a6a5e; margin:4px 0; }
 @media (max-width:640px){ .adm-map-box{ height:300px; } .adm-map-tools .adm-btn{ flex:1 1 100%; } }
+
+/* website editor */
+.adm-pages{ display:flex; flex-wrap:wrap; gap:8px; margin:10px 0; }
+.adm-pages .adm-btn{ text-decoration:none; }
+.adm-fontprev{ border:1px solid #e5ded0; border-radius:14px; padding:16px 18px; margin:12px 0; background:#fffdf8; }
+.adm-fontprev #fp-h{ font-size:clamp(24px,4vw,34px); line-height:1.2; margin-bottom:8px; }
+.adm-fontprev #fp-b{ font-size:15px; line-height:1.6; color:#4a3a30; }
+.adm-tbl{ overflow-x:auto; } .adm-tbl table{ width:100%; border-collapse:collapse; font-size:14px; } .adm-tbl th,.adm-tbl td{ text-align:left; padding:8px 10px; border-bottom:1px solid #eee3d0; vertical-align:top; } .adm-tbl td:nth-child(2){ color:#7a6a5e; }

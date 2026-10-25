@@ -12,7 +12,7 @@ html{
 }
 
 body{
-    font-family:'Inter', sans-serif;
+    font-family:var(--sans);
     background:var(--cream);
     color:var(--ink);
     padding-top:90px;
@@ -35,14 +35,14 @@ section{
 h1{
     font-size:clamp(2.4rem, 6vw, 4.8rem);
     line-height:1.1;
-    font-family:'Playfair Display';
+    font-family:var(--serif-2);
     margin-bottom:20px;
 }
 
 h2{
     font-size:clamp(2rem, 5vw, 3.3rem);
     line-height:1.2;
-    font-family:'Playfair Display';
+    font-family:var(--serif-2);
 }
 
 p{
@@ -65,7 +65,7 @@ p{
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--sans);
 }
 
 body {
@@ -111,7 +111,7 @@ nav a {
     text-decoration: none;
     color: var(--ink);
 
-    font-family: 'Playfair Display', serif;
+    font-family: var(--serif-2);
     font-size: 20px;
 
     position: relative;
@@ -184,7 +184,7 @@ nav a:hover::after {
 
 /* HERO TEXT */
 .hero h1 {
-    font-family: 'Playfair Display', serif;
+    font-family: var(--serif-2);
     font-size: clamp(52px, 7vw, 90px);
     color: #fff;
     line-height: 1.1;
@@ -192,7 +192,7 @@ nav a:hover::after {
 }
 
 .hero p {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--sans);
     font-size: 20px;
     color: rgba(255,255,255,0.9);
     max-width: 600px;
@@ -258,7 +258,7 @@ nav a:hover::after {
 ========================= */
 
 .small-title{
-    font-family:'Cormorant Garamond', serif;
+    font-family:var(--serif);
     font-size:18px;
     font-weight:600;
     letter-spacing:4px;
@@ -335,7 +335,7 @@ nav a:hover::after {
     color:var(--gold);
     margin-bottom:18px;
 
-    font-family:'Playfair Display', serif;
+    font-family:var(--serif-2);
     font-weight:400;   /* softer = more luxury */
     letter-spacing:1.5px;
     line-height:1;
@@ -350,7 +350,7 @@ nav a:hover::after {
     font-size:17px;
     line-height:1.8;
     color:var(--ink-soft);
-    font-family:'Cormorant Garamond', serif;
+    font-family:var(--serif);
 }
 
 /* =========================
@@ -388,7 +388,7 @@ nav a:hover::after {
 
 /* TITLE */
 .story-text-card h3{
-    font-family:'Playfair Display', serif;
+    font-family:var(--serif-2);
     font-size:26px;
     color:var(--gold);
     margin-bottom:18px;
@@ -396,7 +396,7 @@ nav a:hover::after {
 
 /* TEXT */
 .story-text-card p{
-    font-family:'Cormorant Garamond', serif;
+    font-family:var(--serif);
     font-size:17px;
     line-height:1.9;
     color:var(--ink-soft);
@@ -468,7 +468,7 @@ nav a:hover::after {
 .brand-text h3{
     font-size:34px;
     margin-bottom:14px;
-    font-family:'Playfair Display', serif;
+    font-family:var(--serif-2);
     font-weight:600;
     letter-spacing:0.5px;
     line-height:1.2;
@@ -479,7 +479,7 @@ nav a:hover::after {
 .brand-text p{
     font-size:18px;
     margin-bottom:0;
-    font-family:'Cormorant Garamond', serif;
+    font-family:var(--serif);
     font-weight:500;
     line-height:1.7;
     letter-spacing:0.3px;
@@ -542,7 +542,7 @@ nav a:hover::after {
     font-size:clamp(56px, 6vw, 78px);
     color:var(--gold);
     margin-bottom:10px;
-    font-family:'Playfair Display', serif;
+    font-family:var(--serif-2);
     font-weight:600;
     line-height:1;
     letter-spacing:1px;
@@ -555,7 +555,7 @@ nav a:hover::after {
 .stat-box p{
     font-size:20px;
     margin-bottom:0;
-    font-family:'Cormorant Garamond', serif;
+    font-family:var(--serif);
     font-weight:500;
     letter-spacing:0.5px;
     color:rgba(255,255,255,0.92);
@@ -596,7 +596,7 @@ nav a:hover::after {
     font-size:28px;
     margin-bottom:20px;
     color:var(--gold);
-    font-family:'Playfair Display';
+    font-family:var(--serif-2);
 }
 
 /* =========================
@@ -715,7 +715,7 @@ nav a:hover::after {
 
 .qr-card h3{
     font-size:28px;
-    font-family:'Playfair Display';
+    font-family:var(--serif-2);
     color:var(--gold);
     margin-bottom:15px;
 }
@@ -1064,7 +1064,7 @@ footer{
 
 .showcase-card h3{
     font-size:28px;
-    font-family:'Playfair Display';
+    font-family:var(--serif-2);
     color:var(--gold);
     margin-bottom:15px;
 }
@@ -1105,7 +1105,7 @@ footer{
 
 .why-box h3{
     font-size:28px;
-    font-family:'Playfair Display';
+    font-family:var(--serif-2);
     color:var(--gold);
     margin-bottom:18px;
 }
@@ -1242,7 +1242,7 @@ footer{
 
 /* TITLE (PREMIUM FONT FIX) */
 .video-overlay h3{
-    font-family: 'Playfair Display', serif;
+    font-family: var(--serif-2);
     font-size: 24px;
     font-weight: 600;
     color: #ffffff;
@@ -1252,7 +1252,7 @@ footer{
 
 /* DESCRIPTION (SOFT LUXURY TEXT) */
 .video-overlay p{
-    font-family: 'Inter', sans-serif;
+    font-family: var(--sans);
     font-size: 15px;
     font-weight: 300;
     color: rgba(255,255,255,0.88);
@@ -1413,7 +1413,7 @@ footer{
 }
 
 .form-success h3{
-    font-family:'Playfair Display', serif;
+    font-family:var(--serif-2);
     font-size:30px;
     font-weight:600;
     color:var(--gold);
