@@ -221,9 +221,34 @@
         }).catch(function () { var box = $('#a-orders'); if (box) box.innerHTML = '<p class="acct-muted">We could not load your orders. Please refresh the page.</p>'; });
     }
 
+    /* ------------------------------ email links (confirm / reset) ------------------------------
+       The email contains a link to this page with ?token_hash=...&type=... The person must press a button,
+       so mail programs that "pre-open" links can no longer use up the one-time link. */
+    var QS = new URLSearchParams(location.search), TH = QS.get('token_hash'), TT = QS.get('type');
+    function viewEmailLink() {
+        var rec = TT === 'recovery';
+        title.textContent = rec ? 'Reset your password' : 'Confirm your email';
+        root.innerHTML = '<div class="acct-card acct-auth"><p class="acct-lead">' + (rec ? 'Press the button to choose a new password for your Grape Tree account.' : 'Press the button to confirm your email address and open your Grape Tree account.') + '</p>' +
+            '<p class="acct-msg" role="alert"></p><button class="gt-btn gt-btn-block" type="button" id="a-go">' + (rec ? 'Choose a new password' : 'Confirm my email') + '</button></div>';
+        $('#a-go').addEventListener('click', function () {
+            var btn = this; busy(btn, true, 'One moment...');
+            B.client.auth.verifyOtp({ token_hash: TH, type: TT }).then(function (r) {
+                if (r.error) throw r.error;
+                try { history.replaceState(null, '', location.pathname); } catch (x) {}
+                TH = null;
+                if (rec) { B.recovery = true; viewRecovery(); } else { route(); }
+            }).catch(function () {
+                busy(btn, false);
+                msg(root, 'This link has expired or was already used. Please request a new one' + (rec ? ' with "Forgot password".' : ' by signing in again.'));
+                var a = document.createElement('p'); a.innerHTML = '<a class="acct-link" href="account.html">Back to sign in</a>'; root.firstChild.appendChild(a);
+            });
+        });
+    }
+
     /* ------------------------------ route ------------------------------ */
     function route() {
         if (!B.enabled) return viewOff();
+        if (TH && /^(recovery|signup|email|email_change|invite|magiclink)$/.test(TT || '')) return viewEmailLink();
         if (B.recovery) return viewRecovery();
         if (B.session) return viewAccount();
         viewAuth();
@@ -233,6 +258,7 @@
     B.onAuth(function (session) {
         var now = session ? session.user.id : '';
         if (B.recovery) { viewRecovery(); last = now; return; }
+        if (TH) return;
         if (now !== last) { last = now; route(); }
     });
     /* after a confirmation or reset link, clean the address bar */

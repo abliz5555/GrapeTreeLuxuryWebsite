@@ -1,0 +1,7 @@
+Subject line to use for each template:
+confirm-signup.html  ->  Confirm your Grape Tree account
+reset-password.html  ->  Reset your Grape Tree password
+magic-link.html  ->  Your Grape Tree sign-in link
+change-email.html  ->  Confirm your new email address
+invite.html  ->  You are invited to Grape Tree
+reauthentication.html  ->  Your Grape Tree confirmation code

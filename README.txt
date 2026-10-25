@@ -164,3 +164,8 @@ v11 - Staff passwords, delete orders
 - Admin > Business info > "Our location on the map": click the map, drag the pin, search a place, paste a Google Maps link, or use your current location. Press Save. The footer map and "Get directions" then use the exact pin.
 - Pages checked at phone (360/390), iPad (768/820/1024) and PC (1280/1920) widths in every language.
 - Cache version is now ?v=11 on every script and style link.
+
+==== v13 (branded emails) ====
+- supabase/email-templates/*.html : Grape Tree styled emails for sign-up confirmation, password reset, magic link, change email, invite, reauthentication (subjects in SUBJECTS.txt).
+- Links in the emails open account.html with a button first (token_hash), so mail programs that pre-open links can no longer break the reset/confirm link.
+- Sender: set Supabase > Authentication > SMTP to Resend (smtp.resend.com, port 465, user "resend", password = Resend API key), sender no-reply@grapetree.ae, name "Grape Tree".
