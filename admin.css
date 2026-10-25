@@ -394,3 +394,12 @@ body[data-admin] header.adm-top .adm-tabs [hidden], body[data-admin] header.adm-
 .ac-chips span{ font-size:.72rem; padding:3px 8px; border-radius:999px; background:#f1ebe0; color:#4a3b2c; }
 .ac-chips em{ font-size:.78rem; color:#a33; }
 @media (max-width:640px){ .ac-grid{ grid-template-columns:1fr; } }
+
+/* v31: phone - View website / Sign out live inside the opened menu, nothing wraps under the logo */
+@media (max-width:999px){
+  body[data-admin] header.adm-top .adm-right{ display:none; }
+  body[data-admin] header.adm-top.open .adm-right{ display:flex; order:6; flex:1 1 100%; gap:8px; padding:6px 0 4px; }
+  body[data-admin] header.adm-top.open .adm-right .adm-view{ flex:1 1 0; text-align:center; display:inline-flex !important; justify-content:center; }
+  body[data-admin] header.adm-top.open .adm-right .adm-view[hidden]{ display:none !important; }
+  body[data-admin] header.adm-top{ position:sticky; top:0; }
+}

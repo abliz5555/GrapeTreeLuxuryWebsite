@@ -125,7 +125,7 @@
             return '<button type="button" class="adm-row-btn" data-open="' + esc(o.id) + '"><span class="o-no">#' + esc(o.order_no) + '</span><span class="grow"><strong>' + esc(o.name) + '</strong><small>' + esc(dt(o.created_at)) + (o.delivery_date ? ' &middot; deliver ' + esc(o.delivery_date) : '') + '</small></span>' + (extra || '') + '<span class="o-total">' + esc(money(otot(o))) + '</span></button>';
         }
         var quick = '<div class="adm-quick"><h3>Quick actions</h3><div class="adm-qgrid">' +
-            [['orders', 'See all orders'], ['products', 'Add or edit a product'], ['business', 'Delivery prices, TRN and VAT'], ['website', 'Edit website texts and photos'], ['settings', 'Announcement and bank details'], ['test', 'Test the studio']].map(function (q) { return '<button type="button" class="adm-qbtn" data-go="' + q[0] + '">' + esc(q[1]) + ' <span aria-hidden="true">&rarr;</span></button>'; }).join('') + '</div></div>';
+            [['orders', 'See all orders'], ['products', 'Add or edit a product'], ['business', 'Delivery prices, TRN and VAT'], ['website', 'Edit website texts and photos'], ['settings', 'Announcement and bank details'], ['test', 'Test the studio']].filter(function (q) { return tabOk(q[0]); }).map(function (q) { return '<button type="button" class="adm-qbtn" data-go="' + q[0] + '">' + esc(q[1]) + ' <span aria-hidden="true">&rarr;</span></button>'; }).join('') + '</div></div>';
         box.innerHTML = quick + '<div class="adm-stats">' +
             statLink('New orders', newO.length, 'waiting for you', 'status=new') +
             statLink('Designs to review', review.length, 'check copyright and content', 'review=pending') +
@@ -1161,7 +1161,7 @@
     }
     function viewCustomers() {
         root.innerHTML = '<div class="adm-bar"><h2>Customers</h2></div>' +
-            '<p class="adm-lead">Everyone who created an account. Open a customer to see their details and orders, send a password reset link, set a temporary password, stop their sign-in, or delete the account.</p>' +
+            '<p class="adm-lead">Everyone who created an account. Open a customer to see their details and orders, send a password reset link, set a temporary password, stop their sign-in' + (B.isAdmin() ? ', or delete the account.' : '.') + '</p>' +
             '<div class="adm-row"><input type="search" id="cu-q" placeholder="Search name, email or phone" aria-label="Search customers" class="grow"></div><div id="cu-list"><p class="adm-loading">Loading...</p></div>';
         var CU = [], OR = {}, ST = {}, q = '';
         function load() {
