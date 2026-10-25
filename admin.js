@@ -524,86 +524,178 @@
     function stDefaults(p) { return (window.GT_DATA && GT_DATA.studio && GT_DATA.studio[p]) || {}; }
     function stVal(p) { var d = stDefaults(p), o = SC[p] || {}, r = {}, k; for (k in d) r[k] = d[k]; for (k in o) if (o[k] != null && o[k] !== '') r[k] = o[k]; return r; }
     function viewStudio() {
-        root.innerHTML = '<div class="adm-card"><h3>Custom design prices and page text</h3><p>Change prices, minimum order, options and the words on the two design pages. Changes go live as soon as you save.</p>' +
+        root.innerHTML = '<div class="adm-card"><h3>Custom design: prices, minimum order and options</h3><p class="adm-lead">Choose a product, change what you need, and press <b>Save changes</b> at the bottom. Customers see the new prices and rules straight away.</p>' +
             '<div class="adm-seg" id="s-seg"><button type="button" data-p="cake">Katanukiya cake studio</button><button type="button" data-p="chocolate">GildArt chocolate studio</button></div><div id="s-form"><p class="adm-loading">Loading...</p></div></div>';
         $('#s-seg').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) { sp = b.dataset.p; drawStudio(); } });
         B.content().then(function (c) { SC = (c && c.studio) || {}; drawStudio(); });
     }
     function drawStudio() {
         $$('#s-seg button').forEach(function (b) { b.classList.toggle('on', b.dataset.p === sp); });
-        var v = stVal(sp), cake = sp === 'cake', h = '';
-        h += '<h4>Page text</h4><label class="adm-f">Headline<input id="s-title" value="' + esc(v.title || '') + '"></label>' +
-            '<label class="adm-f">Introduction<textarea id="s-lead" rows="3">' + esc(v.lead || '') + '</textarea></label>' +
-            '<label class="adm-f">Three short highlights (one per line)<textarea id="s-chips" rows="3">' + esc((v.chips || []).join('\n')) + '</textarea></label>';
-        if (cake) h += '<h4>Prices by quantity</h4><p class="adm-note">The smallest quantity (first row) is the <b>minimum order</b>. Price is the total for that quantity, in AED.</p><div id="s-tiers"></div><p><button type="button" class="adm-btn ghost" id="s-addtier">Add a row</button></p>';
-        else {
-            h += '<h4>Box prices</h4><p class="adm-note">Price of one box in AED. Every piece in a box can carry a different print.</p><div id="s-bsets">' + (v.boxSets || []).map(function (b, i) { return '<div class="adm-row"><input data-bsl="' + i + '" value="' + esc(b.label) + '" aria-label="Box name"> <span>' + esc(b.pieces) + ' piece' + (b.pieces > 1 ? 's' : '') + '</span> <label>Price per box <input type="number" min="0" step="0.5" data-bsp="' + i + '" value="' + esc(b.price) + '"></label></div>'; }).join('') + '</div>' +
-                '<label class="adm-f">Minimum number of boxes per order<input type="number" min="1" id="s-minbox" value="' + esc(v.minBoxes || 1) + '"></label>' +
-                '<h4>Quantity discounts</h4><p class="adm-note">Percent off the price per box, from this number of boxes. Leave the first row at 0%.</p><div id="s-disc"></div><p><button type="button" class="adm-btn ghost" id="s-adddisc">Add a row</button></p>';
+        var v = stVal(sp), cake = sp === 'cake', form = $('#s-form');
+        function cp(a) { return JSON.parse(JSON.stringify(a || [])); }
+        var ST = {
+            tiers: cp(v.tiers), boxes: cp(v.boxes), bsets: cp(v.boxSets), disc: cp(v.discounts), thick: cp(v.thickness)
+        };
+        function n(x) { x = Number(x); return isFinite(x) ? x : 0; }
+        function aed(x) { return 'AED ' + (Math.round(x * 100) / 100).toLocaleString('en-GB', { maximumFractionDigits: 2 }); }
+        function num(a, i, f, attrs) { return '<input type="number" inputmode="decimal" data-a="' + a + '" data-i="' + i + '" data-f="' + f + '" value="' + esc(ST[a][i][f]) + '" ' + (attrs || '') + '>'; }
+        function txt(a, i, f, label) { return '<input type="text" data-a="' + a + '" data-i="' + i + '" data-f="' + f + '" value="' + esc(ST[a][i][f] || '') + '" aria-label="' + esc(label) + '">'; }
+        function rm(a, i) { return '<button type="button" class="adm-btn ghost sm" data-rm="' + a + '" data-i="' + i + '" aria-label="Remove this row">Remove</button>'; }
+        function sec(no, title, help, body) { return '<section class="st-sec"><h4><span>' + no + '</span>' + title + '</h4>' + (help ? '<p class="st-help">' + help + '</p>' : '') + body + '</section>'; }
+        function field(label, hint, input) { return '<label class="st-fld"><span class="st-lb">' + label + '</span>' + input + (hint ? '<small>' + hint + '</small>' : '') + '</label>'; }
+
+        function summary() {
+            var s;
+            if (cake) {
+                var ts = ST.tiers.slice().sort(function (a, b) { return a.qty - b.qty; }), lo = ts[0];
+                s = lo ? 'Customers must order <b>at least ' + lo.qty + ' pieces</b>, from <b>' + aed(lo.price) + '</b>. They can choose ' + ts.length + ' quantit' + (ts.length === 1 ? 'y' : 'ies') + ' (up to ' + ts[ts.length - 1].qty + ' pieces).' : 'Add at least one quantity.';
+            } else {
+                var mb = Math.max(1, parseInt($('#s-minbox') ? $('#s-minbox').value : v.minBoxes, 10) || 1), mp = Math.max(0, parseInt($('#s-minpcs') ? $('#s-minpcs').value : v.minPieces, 10) || 0);
+                s = ST.bsets.map(function (b) { var need = Math.max(mb, Math.ceil(mp / Math.max(1, n(b.pieces)))); return '<b>' + esc(b.label || 'Box') + '</b>: at least ' + need + ' box' + (need === 1 ? '' : 'es') + ' (' + need * n(b.pieces) + ' piece' + (need * n(b.pieces) === 1 ? '' : 's') + ')'; }).join(' &middot; ');
+                s = 'Minimum order &mdash; ' + s;
+            }
+            return '<div class="st-live" id="s-live">' + s + '</div>';
         }
+        function tiersHtml() {
+            return '<div class="st-tbl st-t-tiers"><div class="st-th">Quantity (pieces)</div><div class="st-th">Total price (AED)</div><div class="st-th">Price per piece</div><div class="st-th">Best seller</div><div class="st-th"></div>' +
+                ST.tiers.map(function (t, i) {
+                    return '<div class="st-row"><div class="st-td" data-l="Quantity (pieces)">' + num('tiers', i, 'qty', 'min="1" step="1"') + '</div><div class="st-td" data-l="Total price (AED)">' + num('tiers', i, 'price', 'min="0" step="1"') + '</div>' +
+                        '<div class="st-td st-calc" data-l="Price per piece" data-pp="' + i + '">' + (n(t.qty) > 0 ? aed(n(t.price) / n(t.qty)) : '-') + '</div>' +
+                        '<div class="st-td" data-l="Best seller"><label class="check"><input type="radio" name="pop" data-pop="' + i + '"' + (t.popular ? ' checked' : '') + '> Mark</label></div><div class="st-td">' + (ST.tiers.length > 1 ? rm('tiers', i) : '') + '</div></div>';
+                }).join('') + '</div><p><button type="button" class="adm-btn ghost" data-add="tiers">+ Add a quantity</button></p>';
+        }
+        function boxesHtml() {
+            return '<div class="st-tbl st-t-col"><div class="st-th">Colour</div><div class="st-th">Name shown to customer</div><div class="st-th">Extra price (AED per piece)</div><div class="st-th"></div>' +
+                ST.boxes.map(function (b, i) {
+                    return '<div class="st-row"><div class="st-td" data-l="Colour"><input type="color" data-a="boxes" data-i="' + i + '" data-f="color" value="' + esc(/^#[0-9a-f]{6}$/i.test(b.color || '') ? b.color : '#cccccc') + '" aria-label="Colour"></div><div class="st-td" data-l="Name">' + txt('boxes', i, 'label', 'Colour name') + '</div>' +
+                        '<div class="st-td" data-l="Extra (AED per piece)">' + num('boxes', i, 'extra', 'min="0" step="0.5"') + '</div><div class="st-td">' + (ST.boxes.length > 1 ? rm('boxes', i) : '') + '</div></div>';
+                }).join('') + '</div><p><button type="button" class="adm-btn ghost" data-add="boxes">+ Add a colour</button></p>';
+        }
+        function bsetsHtml() {
+            return '<div class="st-tbl st-t-bs"><div class="st-th">Box name</div><div class="st-th">Pieces in the box</div><div class="st-th">Price per box (AED)</div><div class="st-th">Price per piece</div><div class="st-th"></div>' +
+                ST.bsets.map(function (b, i) {
+                    return '<div class="st-row"><div class="st-td" data-l="Box name">' + txt('bsets', i, 'label', 'Box name') + '</div><div class="st-td" data-l="Pieces">' + num('bsets', i, 'pieces', 'min="1" max="12" step="1"') + '</div>' +
+                        '<div class="st-td" data-l="Price per box (AED)">' + num('bsets', i, 'price', 'min="0" step="0.5"') + '</div><div class="st-td st-calc" data-l="Price per piece" data-bp="' + i + '">' + (n(b.pieces) > 0 ? aed(n(b.price) / n(b.pieces)) : '-') + '</div><div class="st-td">' + (ST.bsets.length > 1 ? rm('bsets', i) : '') + '</div></div>';
+                }).join('') + '</div><p><button type="button" class="adm-btn ghost" data-add="bsets">+ Add a box type</button></p>';
+        }
+        function discHtml() {
+            var b0 = ST.bsets[0] || { price: 0, label: 'box' };
+            return '<div class="st-tbl st-t-disc"><div class="st-th">When they order this many boxes or more</div><div class="st-th">Discount (%)</div><div class="st-th">Example: ' + esc(b0.label || 'first box') + ' becomes</div><div class="st-th"></div>' +
+                ST.disc.map(function (d, i) {
+                    return '<div class="st-row"><div class="st-td" data-l="From boxes">' + num('disc', i, 'min', 'min="1" step="1"') + '</div><div class="st-td" data-l="Discount %">' + num('disc', i, 'off', 'min="0" max="90" step="0.5"') + '</div>' +
+                        '<div class="st-td st-calc" data-l="Example" data-dp="' + i + '">' + aed(n(b0.price) * (1 - n(d.off) / 100)) + ' per box</div><div class="st-td">' + (ST.disc.length > 1 ? rm('disc', i) : '') + '</div></div>';
+                }).join('') + '</div><p><button type="button" class="adm-btn ghost" data-add="disc">+ Add a discount level</button></p>';
+        }
+        function thickHtml() {
+            return '<div class="st-tbl st-t-th"><div class="st-th">Name shown to customer</div><div class="st-th">Thickness (mm)</div><div class="st-th">Extra price (AED per piece)</div><div class="st-th"></div>' +
+                ST.thick.map(function (t, i) {
+                    return '<div class="st-row"><div class="st-td" data-l="Name">' + txt('thick', i, 'label', 'Thickness name') + '</div><div class="st-td" data-l="Thickness (mm)">' + num('thick', i, 'mm', 'min="1" max="40" step="1"') + '</div>' +
+                        '<div class="st-td" data-l="Extra (AED per piece)">' + num('thick', i, 'extra', 'min="0" step="0.5"') + '</div><div class="st-td">' + (ST.thick.length > 1 ? rm('thick', i) : '') + '</div></div>';
+                }).join('') + '</div><p><button type="button" class="adm-btn ghost" data-add="thick">+ Add a thickness</button></p>';
+        }
+        ST.thick.forEach(function (t) { if (t.mm == null) t.mm = parseInt(t.id, 10) || parseInt(t.label, 10) || 5; });
+
+        var h = '<p class="st-help st-top">' + (cake ? 'This is the page customers use to design a <b>Katanukiya cut-out cake</b>.' : 'This is the page customers use to design <b>GildArt printed chocolates</b>.') + ' Everything below can be changed. Press <b>Save changes</b> at the bottom when you finish. It goes live straight away.</p>';
         if (cake) {
-            h += '<h4>Box colours</h4><div id="s-boxes">' + (v.boxes || []).map(function (b, i) { return '<div class="adm-row"><input data-bl="' + i + '" value="' + esc(b.label) + '" aria-label="Colour name"> <label>extra AED per piece <input type="number" min="0" step="0.5" data-be="' + i + '" value="' + esc(b.extra) + '"></label></div>'; }).join('') + '</div>';
+            h += sec(1, 'Minimum order and prices', 'Each row is one choice the customer sees. The <b>smallest quantity is the minimum order</b>. The price is the <b>total</b> for that quantity (it includes the first die setup and delivery in the UAE).', summary() + '<div id="s-tiers">' + tiersHtml() + '</div>');
+            h += sec(2, 'Box colours', 'The boxes the customer can pick. If a colour costs more, type the extra price for each piece (use 0 for no extra charge).', '<div id="s-boxes">' + boxesHtml() + '</div>');
         } else {
-            h += '<h4>Thickness</h4><div id="s-thick">' + (v.thickness || []).map(function (t, i) { return '<div class="adm-row"><input data-tl="' + i + '" value="' + esc(t.label) + '" aria-label="Thickness"> <label>extra AED per piece <input type="number" min="0" step="0.5" data-te="' + i + '" value="' + esc(t.extra) + '"></label></div>'; }).join('') + '</div>';
-            h += '<label class="adm-f">Minimum quantity for custom flavour and custom box<input type="number" min="1" id="s-moq" value="' + esc(v.customMinQty || 300) + '"></label>' +
-                '<label class="adm-f">Flavours customers can choose (one per line)<textarea id="s-flav" rows="5">' + esc((v.flavours || []).join('\n')) + '</textarea></label>';
+            h += sec(1, 'Minimum order', 'The smallest order a customer can place. Use either one or both. The customer cannot go below it.',
+                '<div class="st-two">' + field('Minimum number of boxes', 'Example: 1 means a customer can order a single box.', '<input type="number" min="1" step="1" id="s-minbox" value="' + esc(v.minBoxes || 1) + '">') +
+                field('Minimum pieces in total (optional)', 'Counts all pieces in all boxes. Example: 100 means 34 boxes of 3 pieces. Use 0 for no minimum.', '<input type="number" min="0" step="1" id="s-minpcs" value="' + esc(v.minPieces || 0) + '">') + '</div>' + summary());
+            h += sec(2, 'Box types and prices', 'The boxes customers can choose. The price is for <b>one box</b>. Every piece in a box can carry a different print.', '<div id="s-bsets">' + bsetsHtml() + '</div>');
+            h += sec(3, 'Discounts for more boxes', 'The more boxes the customer orders, the lower the price per box. The first level should stay at <b>0%</b> (the normal price).', '<div id="s-disc">' + discHtml() + '</div>');
+            h += sec(4, 'Thickness', 'The chocolate thickness options. The extra price is added for <b>each piece</b>. Use 0 for the standard thickness.', '<div id="s-thick">' + thickHtml() + '</div>');
+            h += sec(5, 'Custom flavour and custom box', 'Small orders get the standard flavour and box. From the number of pieces below, the customer can ask for their own flavour and a custom box.',
+                field('Unlocks from this many pieces in total', 'Example: 300.', '<input type="number" min="1" step="1" id="s-moq" value="' + esc(v.customMinQty || 300) + '">') +
+                field('Flavours customers can choose (one per line)', 'The first line is the standard flavour. The others need the quantity above.', '<textarea id="s-flav" rows="5">' + esc((v.flavours || []).join('\n')) + '</textarea>'));
         }
-        h += '<h4>Other</h4><div class="adm-row"><label>Delivery time (business days) <input type="number" min="1" id="s-lead-d" value="' + esc(v.leadBusinessDays || 14) + '"></label> <label>Designer fee AED (0 = free) <input type="number" min="0" id="s-fee" value="' + esc(v.designerFee || 0) + '"></label></div>';
-        h += '<p class="adm-err" id="s-err" hidden></p><p><button type="button" class="adm-btn" id="s-save">Save changes</button> <button type="button" class="adm-btn ghost" id="s-reset">Back to website defaults</button></p>';
-        $('#s-form').innerHTML = h;
-        var disc = (v.discounts || []).map(function (d) { return { min: d.min, off: d.off }; });
-        function drawDisc() {
-            var el = $('#s-disc'); if (!el) return;
-            el.innerHTML = disc.map(function (d, i) { return '<div class="adm-row"><label>From boxes <input type="number" min="1" data-dm="' + i + '" value="' + esc(d.min) + '"></label> <label>Discount % <input type="number" min="0" max="90" step="0.5" data-do="' + i + '" value="' + esc(d.off) + '"></label> <button type="button" class="adm-btn ghost" data-dd="' + i + '">Remove</button></div>'; }).join('');
+        h += sec(cake ? 3 : 6, 'Words on the page', 'The headline, introduction and short highlights at the top of the design page.',
+            field('Headline', 'Big title at the top.', '<input id="s-title" value="' + esc(v.title || '') + '">') +
+            field('Introduction', 'Two or three sentences under the headline.', '<textarea id="s-lead" rows="3">' + esc(v.lead || '') + '</textarea>') +
+            field('Short highlights (one per line, up to 4)', 'Small tags, for example the size or the minimum order.', '<textarea id="s-chips" rows="3">' + esc((v.chips || []).join('\n')) + '</textarea>'));
+        h += sec(cake ? 4 : 7, 'Delivery time and designer help', '',
+            '<div class="st-two">' + field('Delivery time (business days)', 'Shown to customers as the estimated shipping date.', '<input type="number" min="1" id="s-lead-d" value="' + esc(v.leadBusinessDays || 14) + '">') +
+            field('Designer fee (AED)', 'Extra charge when the customer asks our designer to create the artwork. 0 = free.', '<input type="number" min="0" id="s-fee" value="' + esc(v.designerFee || 0) + '">') + '</div>');
+        var sf = v.surface || (cake ? { w: 63, h: 48 } : { w: 50, h: 50 });
+        h += '<details class="st-sec st-adv"><summary>Technical settings (only change if the size of your product changes)</summary>' +
+            '<div class="st-two">' + field(cake ? 'Cake surface width (mm)' : 'Chocolate surface width (mm)', 'Size of the printed area.', '<input type="number" min="10" step="0.5" id="s-sw" value="' + esc(sf.w) + '">') +
+            field(cake ? 'Cake surface height (mm)' : 'Chocolate surface height (mm)', 'Size of the printed area.', '<input type="number" min="10" step="0.5" id="s-sh" value="' + esc(sf.h) + '">') +
+            field('Print and cut tolerance (mm)', 'Shown to customers as the allowed difference.', '<input type="number" min="0" step="0.1" id="s-tol" value="' + esc(v.tolerance || 1.5) + '">') +
+            (cake ? field('Clear zone around the edge (mm)', 'Nothing may go past this edge.', '<input type="number" min="0" step="0.5" id="s-mar" value="' + esc(v.margin != null ? v.margin : 5) + '">') : '') + '</div></details>';
+        h += '<p class="adm-err" id="s-err" hidden></p><div class="st-savebar"><button type="button" class="adm-btn" id="s-save">Save changes</button> <button type="button" class="adm-btn ghost" id="s-reset">Back to website defaults</button></div>';
+        form.innerHTML = h;
+
+        function refresh() {   // update the calculated numbers without redrawing the rows
+            $$('[data-pp]', form).forEach(function (el) { var t = ST.tiers[+el.dataset.pp]; el.textContent = t && n(t.qty) > 0 ? aed(n(t.price) / n(t.qty)) : '-'; });
+            $$('[data-bp]', form).forEach(function (el) { var b = ST.bsets[+el.dataset.bp]; el.textContent = b && n(b.pieces) > 0 ? aed(n(b.price) / n(b.pieces)) : '-'; });
+            var b0 = ST.bsets[0] || { price: 0 };
+            $$('[data-dp]', form).forEach(function (el) { var d = ST.disc[+el.dataset.dp]; el.textContent = d ? aed(n(b0.price) * (1 - n(d.off) / 100)) + ' per box' : ''; });
+            var lv = $('#s-live'); if (lv) lv.outerHTML = summary();
         }
-        if (!cake) {
-            drawDisc();
-            $('#s-disc').addEventListener('input', function (e) { var d = e.target.dataset; if (d.dm != null) disc[+d.dm].min = +e.target.value; if (d.do != null) disc[+d.do].off = +e.target.value; });
-            $('#s-disc').addEventListener('click', function (e) { var b = e.target.closest('[data-dd]'); if (b && disc.length > 1) { disc.splice(+b.dataset.dd, 1); drawDisc(); } });
-            $('#s-adddisc').addEventListener('click', function () { var l = disc[disc.length - 1] || { min: 1, off: 0 }; disc.push({ min: l.min * 2, off: l.off + 5 }); drawDisc(); });
-        }
-        var tiers = (v.tiers || []).map(function (t) { return { qty: t.qty, price: t.price, popular: !!t.popular }; });
-        function drawTiers() {
-            $('#s-tiers').innerHTML = tiers.map(function (t, i) {
-                return '<div class="adm-row"><label>Quantity <input type="number" min="1" data-tq="' + i + '" value="' + esc(t.qty) + '"></label> <label>Total price <input type="number" min="0" data-tp="' + i + '" value="' + esc(t.price) + '"></label> <label class="check"><input type="radio" name="pop" data-pp="' + i + '"' + (t.popular ? ' checked' : '') + '> Popular</label> <button type="button" class="adm-btn ghost" data-td="' + i + '">Remove</button></div>';
-            }).join('');
-        }
-        if (cake) drawTiers();
-        if (cake) $('#s-tiers').addEventListener('input', function (e) { var d = e.target.dataset; if (d.tq != null) tiers[+d.tq].qty = +e.target.value; if (d.tp != null) tiers[+d.tp].price = +e.target.value; });
-        if (cake) $('#s-tiers').addEventListener('change', function (e) { if (e.target.dataset.pp != null) tiers.forEach(function (t, i) { t.popular = i === +e.target.dataset.pp; }); });
-        if (cake) $('#s-tiers').addEventListener('click', function (e) { var b = e.target.closest('[data-td]'); if (b && tiers.length > 1) { tiers.splice(+b.dataset.td, 1); drawTiers(); } });
-        if (cake) $('#s-addtier').addEventListener('click', function () { var l = tiers[tiers.length - 1] || { qty: 100, price: 1000 }; tiers.push({ qty: l.qty * 2, price: l.price * 2 }); drawTiers(); });
-        $('#s-save').addEventListener('click', function () {
+        function redraw(id, fn) { var el = $(id); if (el) el.innerHTML = fn(); refresh(); }
+        var REDRAW = { tiers: ['#s-tiers', tiersHtml], boxes: ['#s-boxes', boxesHtml], bsets: ['#s-bsets', bsetsHtml], disc: ['#s-disc', discHtml], thick: ['#s-thick', thickHtml] };
+        form.oninput = function (e) {
+            var d = e.target.dataset;
+            if (d.a) { var r = ST[d.a][+d.i], val = e.target.type === 'number' ? e.target.value : e.target.value; r[d.f] = (e.target.type === 'number') ? (val === '' ? '' : Number(val)) : val; refresh(); }
+            else if (e.target.id === 's-minbox' || e.target.id === 's-minpcs') refresh();
+        };
+        form.onchange = function (e) {
+            if (e.target.dataset.pop != null) ST.tiers.forEach(function (t, i) { t.popular = i === +e.target.dataset.pop; });
+        };
+        form.onclick = function (e) {
+            var a = e.target.closest('[data-add]'), r = e.target.closest('[data-rm]');
+            if (a) {
+                var k = a.dataset.add, L = ST[k][ST[k].length - 1] || {};
+                if (k === 'tiers') ST.tiers.push({ qty: n(L.qty || 100) * 2, price: n(L.price || 1000) * 2 });
+                if (k === 'boxes') ST.boxes.push({ id: 'colour-' + (ST.boxes.length + 1), label: 'New colour', extra: 3, color: '#cccccc' });
+                if (k === 'bsets') ST.bsets.push({ id: 'b' + (ST.bsets.length + 1) + '-' + Date.now().toString(36).slice(-3), pieces: 6, label: '6-piece gift box', price: 180 });
+                if (k === 'disc') ST.disc.push({ min: n(L.min || 1) * 2, off: n(L.off || 0) + 5 });
+                if (k === 'thick') ST.thick.push({ id: '8', mm: 8, label: '8 mm', extra: 0.5 });
+                redraw(REDRAW[k][0], REDRAW[k][1]);
+            } else if (r) { var kk = r.dataset.rm; ST[kk].splice(+r.dataset.i, 1); redraw(REDRAW[kk][0], REDRAW[kk][1]); }
+        };
+        $('#s-save').onclick = function () {
             var err = $('#s-err'); err.hidden = true;
-            function bad(m) { err.textContent = m; err.hidden = false; }
+            function bad(m) { err.textContent = m; err.hidden = false; err.scrollIntoView({ block: 'center' }); }
             var out = { title: $('#s-title').value.trim(), lead: $('#s-lead').value.trim(), chips: $('#s-chips').value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 4) };
             if (cake) {
-                tiers.sort(function (a, b) { return a.qty - b.qty; });
-                for (var i = 0; i < tiers.length; i++) { if (!(tiers[i].qty >= 1) || !(tiers[i].price >= 0)) return bad('Please check the quantities and prices.'); if (i && tiers[i].qty === tiers[i - 1].qty) return bad('Two rows have the same quantity.'); }
-                out.tiers = tiers.map(function (t) { var o = { qty: Math.round(t.qty), price: Number(t.price) }; if (t.popular) o.popular = true; return o; });
+                var ts = ST.tiers.slice().sort(function (a, b) { return n(a.qty) - n(b.qty); });
+                for (var i = 0; i < ts.length; i++) { if (!(n(ts[i].qty) >= 1) || !(n(ts[i].price) >= 0) || ts[i].price === '') return bad('Please check the quantities and prices in "Minimum order and prices".'); if (i && n(ts[i].qty) === n(ts[i - 1].qty)) return bad('Two rows have the same quantity.'); }
+                out.tiers = ts.map(function (t) { var o = { qty: Math.round(n(t.qty)), price: n(t.price) }; if (t.popular) o.popular = true; return o; });
+                var used = {};
+                out.boxes = ST.boxes.map(function (b, i) { var o = {}; for (var k in b) o[k] = b[k]; o.label = String(b.label || '').trim() || 'Colour ' + (i + 1); o.extra = Math.max(0, n(b.extra)); o.color = b.color || '#cccccc'; var id = String(b.id || '').trim() || slug(o.label); while (used[id]) id += '-x'; used[id] = 1; o.id = id; return o; });
+                if (!out.boxes.length) return bad('Please keep at least one box colour.');
+                if (!out.boxes.some(function (b) { return b.standard; })) out.boxes[0].standard = true;
+                out.margin = Math.max(0, n($('#s-mar').value));
             } else {
-                out.boxSets = (v.boxSets || []).map(function (b, i) { var o = {}; for (var k in b) o[k] = b[k]; o.label = $('[data-bsl="' + i + '"]').value.trim() || b.label; o.price = Math.max(0, Number($('[data-bsp="' + i + '"]').value) || 0); return o; });
                 out.minBoxes = Math.max(1, parseInt($('#s-minbox').value, 10) || 1);
-                disc.sort(function (a, b) { return a.min - b.min; });
-                for (var j = 0; j < disc.length; j++) { if (!(disc[j].min >= 1) || !(disc[j].off >= 0 && disc[j].off <= 90)) return bad('Please check the discount rows.'); if (j && disc[j].min === disc[j - 1].min) return bad('Two discount rows start at the same number of boxes.'); }
-                out.discounts = disc.map(function (d) { return { min: Math.round(d.min), off: Number(d.off) }; });
-            }
-            if (cake) out.boxes = (v.boxes || []).map(function (b, i) { var o = {}; for (var k in b) o[k] = b[k]; o.label = $('[data-bl="' + i + '"]').value.trim() || b.label; o.extra = Number($('[data-be="' + i + '"]').value) || 0; return o; });
-            else {
-                out.thickness = (v.thickness || []).map(function (t, i) { var o = {}; for (var k in t) o[k] = t[k]; o.label = $('[data-tl="' + i + '"]').value.trim() || t.label; o.extra = Number($('[data-te="' + i + '"]').value) || 0; return o; });
+                out.minPieces = Math.max(0, parseInt($('#s-minpcs').value, 10) || 0);
+                var ids = {};
+                out.boxSets = ST.bsets.map(function (b, i) { var o = {}; for (var k in b) o[k] = b[k]; o.label = String(b.label || '').trim() || 'Box ' + (i + 1); o.pieces = Math.min(12, Math.max(1, Math.round(n(b.pieces)))); o.price = Math.max(0, n(b.price)); var id = String(b.id || '') || String(o.pieces); while (ids[id]) id += 'x'; ids[id] = 1; o.id = id; return o; });
+                if (!out.boxSets.length) return bad('Please keep at least one box type.');
+                var ds = ST.disc.slice().sort(function (a, b) { return n(a.min) - n(b.min); });
+                for (var j = 0; j < ds.length; j++) { if (!(n(ds[j].min) >= 1) || !(n(ds[j].off) >= 0 && n(ds[j].off) <= 90)) return bad('Please check the discount levels.'); if (j && n(ds[j].min) === n(ds[j - 1].min)) return bad('Two discount levels start at the same number of boxes.'); }
+                out.discounts = ds.map(function (d) { return { min: Math.round(n(d.min)), off: n(d.off) }; });
+                var tids = {};
+                out.thickness = ST.thick.map(function (t, i) { var mm = Math.max(1, Math.round(n(t.mm) || 5)); var id = String(mm); while (tids[id]) id += '0'; tids[id] = 1; return { id: id, label: String(t.label || '').trim() || mm + ' mm', extra: Math.max(0, n(t.extra)) }; });
+                if (!out.thickness.length) return bad('Please keep at least one thickness.');
                 out.customMinQty = Math.max(1, parseInt($('#s-moq').value, 10) || 300);
                 out.flavours = $('#s-flav').value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
                 if (!out.flavours.length) return bad('Please add at least one flavour.');
             }
+            out.surface = { w: Math.max(10, n($('#s-sw').value) || sf.w), h: Math.max(10, n($('#s-sh').value) || sf.h) };
+            out.tolerance = Math.max(0, n($('#s-tol').value)) || 1.5;
             out.leadBusinessDays = Math.max(1, parseInt($('#s-lead-d').value, 10) || 14);
-            out.designerFee = Math.max(0, Number($('#s-fee').value) || 0);
+            out.designerFee = Math.max(0, n($('#s-fee').value));
             SC[sp] = out;
-            B.saveContent('studio', SC).then(function () { toast('Saved. The studio page is updated.'); }).catch(fail);
-        });
-        $('#s-reset').addEventListener('click', function () {
-            if (!confirm('Go back to the prices and texts in the website files?')) return;
-            delete SC[sp]; B.saveContent('studio', SC).then(function () { toast('Back to defaults'); drawStudio(); }).catch(fail);
-        });
+            B.saveContent('studio', SC).then(function () { toast('Saved. The ' + (cake ? 'cake' : 'chocolate') + ' design page is updated.'); }).catch(fail);
+        };
+        $('#s-reset').onclick = function () {
+            confirmBox('Go back to the prices and texts that are in the website files? Your changes on this page will be replaced.', 'Go back').then(function (yes) {
+                if (!yes) return; delete SC[sp]; B.saveContent('studio', SC).then(function () { toast('Back to defaults'); drawStudio(); }).catch(fail);
+            });
+        };
     }
 
     function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'item'; }

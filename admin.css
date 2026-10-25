@@ -301,3 +301,40 @@ body[data-admin] header.adm-top .adm-tabs button{ white-space:normal; text-align
 .cu-acts small{ color:#6b5d52; margin:-4px 0 6px; }
 .cu-orders{ list-style:none; margin:0; padding:0; display:grid; gap:8px; }
 .cu-orders li{ padding:8px 10px; background:rgba(0,0,0,.03); border-radius:10px; overflow-wrap:anywhere; }
+
+/* custom design prices page */
+.st-top{ margin:0 0 6px }
+.st-sec{ border:1px solid rgba(0,0,0,.1); border-radius:14px; padding:14px 16px; margin:14px 0; background:#fff }
+.st-sec h4{ margin:0 0 4px; display:flex; align-items:center; gap:10px; font-size:1.05rem }
+.st-sec h4 span{ display:inline-grid; place-items:center; width:26px; height:26px; border-radius:50%; background:#222; color:#fff; font-size:.85rem; flex:none }
+.st-help{ margin:2px 0 12px; color:#5d5148; font-size:.92rem; line-height:1.5 }
+.st-live{ background:#f4efe6; border-radius:10px; padding:10px 12px; margin:6px 0 12px; line-height:1.5 }
+.st-two{ display:grid; grid-template-columns:1fr 1fr; gap:12px }
+.st-fld{ display:grid; gap:4px; margin:8px 0; min-width:0 }
+.st-lb{ font-weight:600; font-size:.9rem }
+.st-fld small{ color:#6b5d52; font-size:.82rem; line-height:1.4 }
+.st-fld input,.st-fld textarea,.st-tbl input[type=number],.st-tbl input[type=text]{ font:inherit; padding:9px 11px; border:1.5px solid #d8cfc3; border-radius:10px; width:100%; box-sizing:border-box; min-width:0 }
+.st-tbl input[type=color]{ width:44px; height:38px; padding:2px; border:1.5px solid #d8cfc3; border-radius:10px; background:#fff }
+.st-tbl{ display:grid; gap:8px 10px; align-items:center }
+.st-t-tiers{ grid-template-columns:1fr 1.2fr 1fr .9fr auto }
+.st-t-col{ grid-template-columns:auto 1.6fr 1.2fr auto }
+.st-t-bs{ grid-template-columns:1.6fr .8fr 1fr 1fr auto }
+.st-t-disc{ grid-template-columns:1.4fr 1fr 1.3fr auto }
+.st-t-th{ grid-template-columns:1.6fr 1fr 1.2fr auto }
+.st-th{ font-size:.78rem; font-weight:700; color:#6b5d52; text-transform:uppercase; letter-spacing:.03em; align-self:end }
+.st-td{ min-width:0 } .st-calc{ color:#3a2f27; font-weight:600; font-size:.95rem }
+.adm-btn.sm{ padding:7px 12px; font-size:.85rem }
+.st-adv summary{ cursor:pointer; font-weight:600; padding:4px 0 }
+.st-savebar{ position:sticky; bottom:0; background:linear-gradient(transparent,#f6f1e8 30%); padding:14px 0 8px; display:flex; gap:10px; flex-wrap:wrap }
+@media (min-width:761px){ .st-row{ display:contents } }
+@media (max-width:760px){
+  .st-row{ display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px; border:1px solid rgba(0,0,0,.1); border-radius:12px; background:#fbf8f3 }
+  .st-two{ grid-template-columns:1fr }
+  .st-tbl{ grid-template-columns:1fr!important }
+  .st-th{ display:none }
+  .st-td::before{ content:attr(data-l); display:block; font-size:.74rem; font-weight:700; color:#6b5d52; margin-bottom:3px; text-transform:uppercase }
+  .st-td:not([data-l]){ grid-column:1 / -1 }
+  .st-td[data-l]:nth-child(5n+1){ }
+}
+.st-td .check{ display:flex; align-items:center; gap:6px; margin:0; font-size:.9rem }
+.st-td .check input{ width:auto; margin:0 }

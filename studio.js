@@ -28,7 +28,7 @@
     function backend() { return window.GT && window.GT.backend; }
 
     /* ------------------------------ 1. settings ------------------------------ */
-    var SURF, MARGIN, BORDER, SAFE, TOL, LEAD, DESIGNER_FEE, TIERS, BOXES, THICK, FLAVOURS, MOQ, BOXSETS, DISCOUNTS, MINBOX;
+    var SURF, MARGIN, BORDER, SAFE, TOL, LEAD, DESIGNER_FEE, TIERS, BOXES, THICK, FLAVOURS, MOQ, BOXSETS, DISCOUNTS, MINBOX, MINPCS;
     function mergeCfg(base, over) { var o = {}, k; for (k in base) o[k] = base[k]; for (k in (over || {})) if (over[k] != null && over[k] !== '') o[k] = over[k]; return o; }
     function applyCfg(over) {
         ST = mergeCfg(ALL[PRODUCT] || {}, over && over[PRODUCT]);
@@ -48,6 +48,7 @@
         BOXSETS = (ST.boxSets && ST.boxSets.length ? ST.boxSets : [{ id: '1', pieces: 1, label: 'Single chocolate', price: 35 }, { id: '3', pieces: 3, label: '3-piece gift set', price: 95 }, { id: '9', pieces: 9, label: '9-piece gift box', price: 260 }]);
         DISCOUNTS = (ST.discounts && ST.discounts.length ? ST.discounts : [{ min: 1, off: 0 }, { min: 10, off: 5 }, { min: 25, off: 10 }, { min: 50, off: 15 }, { min: 100, off: 20 }]).slice().sort(function (a, b) { return a.min - b.min; });
         MINBOX = Math.max(1, ST.minBoxes || 1);
+        MINPCS = Math.max(0, ST.minPieces || 0);   // chocolate: minimum pieces in total (all boxes together)
         MOQ = ST.customMinQty || 300;           // chocolate: from this quantity flavour and box can be customised
     }
     var CFG0 = {}; try { var BK = window.GT && window.GT.backend; CFG0 = (BK && BK.contentCached ? BK.contentCached().studio : null) || {}; } catch (e) { }
@@ -201,6 +202,7 @@
     /* ------------------------------ box sets: one print per piece (chocolate) ------------------------------ */
     var SLOT_KEYS = ['file', 'designId', 'origW', 'origH', 'W', 'H', 'src', 'mask', 'art', 'cb', 'versions', 'ver', 'designer', 'designerNote', 'p', 'sh', 'finish', 'finishChosen', 'off', 'smooth', 'fitted', 'original', 'lastKind', 'limited', 'orient', 'move', 'shape'];
     function boxSet() { return BOXSETS[S.boxSet] || BOXSETS[0]; }
+    function minBoxNow() { return Math.max(MINBOX, Math.ceil(MINPCS / Math.max(1, pieces()))); }
     function pieces() { return ISCAKE ? 1 : boxSet().pieces; }
     function snap() { var o = {}; SLOT_KEYS.forEach(function (k) { o[k] = S[k]; }); return o; }
     function putSlot(o) { SLOT_KEYS.forEach(function (k) { S[k] = o[k]; }); }
@@ -256,7 +258,7 @@
         }).join('');
         $$('input[name=bset]', el).forEach(function (r) {
             r.addEventListener('change', function () {
-                saveSlot(); S.boxSet = +r.value; renderBoxSet();
+                saveSlot(); S.boxSet = +r.value; if (S.nbox < minBoxNow()) S.nbox = minBoxNow(); renderBoxSet();
                 if (S.slot >= pieces()) { S.slot = 0; putSlot(S.slots[0] || blankSlot()); refreshDesignUI(); } else renderSlots();
                 updateSummary();
             });
@@ -1414,20 +1416,21 @@
         updateAddBtn();
     }
     function boxQtyHtml() {
-        var mins = [MINBOX]; DISCOUNTS.forEach(function (d) { if (d.min > MINBOX && mins.indexOf(d.min) < 0) mins.push(d.min); });
+        var mins = [minBoxNow()]; DISCOUNTS.forEach(function (d) { if (d.min > minBoxNow() && mins.indexOf(d.min) < 0) mins.push(d.min); });
         var off = discountFor(S.nbox), bs = boxSet();
         return '<div class="st-nb"><button type="button" class="st-step" id="nb-dec" aria-label="' + esc(T('Fewer boxes')) + '">−</button>' +
-            '<label><input type="number" id="nb-in" inputmode="numeric" min="' + MINBOX + '" max="5000" value="' + S.nbox + '" aria-label="' + esc(T('Number of boxes')) + '"><span>' + esc(T(S.nbox === 1 ? 'box' : 'boxes')) + '</span></label>' +
+            '<label><input type="number" id="nb-in" inputmode="numeric" min="' + minBoxNow() + '" max="5000" value="' + Math.max(S.nbox, minBoxNow()) + '" aria-label="' + esc(T('Number of boxes')) + '"><span>' + esc(T(S.nbox === 1 ? 'box' : 'boxes')) + '</span></label>' +
             '<button type="button" class="st-step" id="nb-inc" aria-label="' + esc(T('More boxes')) + '">+</button></div>' +
             '<div class="st-nb-chips">' + mins.map(function (m) { var o = discountFor(m); return '<button type="button" class="st-chipbtn' + (S.qtyPicked && m === S.nbox ? ' on' : '') + '" data-n="' + m + '"><b>' + m + '</b><small>' + (o ? '−' + o + '%' : esc(T('standard'))) + '</small></button>'; }).join('') + '</div>' +
             '<div class="st-nb-sum"><div><span>' + esc(T(bs.label)) + '</span><b>' + esc(money(bs.price)) + ' ' + esc(T('per box')) + '</b></div>' +
             (off ? '<div><span>' + esc(T('Quantity discount')) + '</span><b>−' + off + '%</b></div>' : '') +
             '<div><span>' + esc(T('Pieces in total')) + '</span><b>' + totalPieces() + '</b></div>' +
             '<div class="st-nb-t"><span>' + esc(T('Your price per box')) + '</span><b>' + esc(money(boxUnit())) + '</b></div></div>' +
+            (minBoxNow() > 1 ? '<p class="st-fine"><b>' + esc(T('Minimum order')) + ':</b> ' + minBoxNow() + ' ' + esc(T('boxes')) + ' (' + (minBoxNow() * pieces()) + ' ' + esc(T('pieces')) + ')</p>' : '') +
             '<p class="st-fine">' + esc(T('Every box is printed with the same set of designs. The price is lower per box when you order more boxes.')) + '</p>';
     }
     function wireBoxQty() {
-        function set(n) { S.qtyPicked = true; S.nbox = clamp(Math.round(n) || MINBOX, MINBOX, 5000); if (!customUnlocked()) { S.flavour = 0; S.customBox = false; } renderPricing(); updateSummary(); }
+        function set(n) { S.qtyPicked = true; S.nbox = clamp(Math.round(n) || minBoxNow(), minBoxNow(), 5000); if (!customUnlocked()) { S.flavour = 0; S.customBox = false; } renderPricing(); updateSummary(); }
         $('#nb-dec').addEventListener('click', function () { set(S.nbox - (S.nbox > 25 ? 5 : 1)); });
         $('#nb-inc').addEventListener('click', function () { set(S.nbox + (S.nbox >= 25 ? 5 : 1)); });
         $('#nb-in').addEventListener('change', function () { set(+this.value); });
@@ -2159,7 +2162,7 @@
             applyCfg(c.studio); applyText();
             if (S.qty > TIERS.length - 1) S.qty = TIERS.length - 1;
             if (S.boxSet > BOXSETS.length - 1) S.boxSet = 0;
-            if (S.nbox < MINBOX) S.nbox = MINBOX;
+            if (S.nbox < minBoxNow()) S.nbox = minBoxNow();
             if (!ISCAKE) renderBoxSet();
             if (!BOXES.some(function (b) { return b.id === S.box; })) S.box = BOXES[0].id;
             if (!THICK.some(function (t) { return t.id === S.thick; })) S.thick = THICK[0].id;
