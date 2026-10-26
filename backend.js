@@ -240,7 +240,7 @@
 
     /* put the admin-chosen images/text onto the page */
     function applyContent(c) {
-        if (c && c.settings) { lastContent = c; try { shopGate(); } catch (e) {} }
+        if (c && c.settings) { lastContent = c; try { shopGate(); brandGate(); } catch (e) {} }
         try { doc.dispatchEvent(new CustomEvent('gt:content', { detail: c || {} })); } catch (e) {}
         var imgs = (c && c.images) || {};
         $$('[data-slot]').forEach(function (el) {
@@ -262,11 +262,28 @@
     /* ------------------------------ shop open / closed (Admin > Top bar) ------------------------------
        While the shop is closed, customers see a "opening soon" page instead of the shop, the design studios and checkout.
        Signed-in staff still see everything (with a bar on top) so they can test. */
-    var GATED = /(^|\/)(shop|cake-studio|chocolate-studio|checkout|customize|katanukiya|gildart)\.html$|\/p\/[^\/]+\.html$/;
+    var GATED = /(^|\/)(shop|cake-studio|chocolate-studio|checkout|customize)\.html$|\/p\/[^\/]+\.html$/;
+    var BRAND = /(^|\/)(katanukiya|gildart)\.html$/;      /* brand pages stay open to read; only their order buttons are switched off */
     var lastContent = null;
     function isStaffNow() { return !!(B.profile && (B.profile.role === 'admin' || B.profile.role === 'staff')); }
     function shopIsClosed() { var st = ((lastContent || cached()).settings) || {}; return st.shop_open !== true; }       // closed unless the admin has switched the shop ON
     B.shopClosedForMe = function () { return shopIsClosed() && !isStaffNow(); };
+    function brandGate() {
+        if (!BRAND.test(location.pathname) || !doc.body) return;
+        var closed = !!B.shopClosedForMe();
+        var wa = String((((lastContent || cached()).business) || {}).whatsapp || (CFG && CFG.whatsapp) || '971555577478').replace(/\D/g, '');
+        $$('a[href]').forEach(function (a) {
+            var h = a.getAttribute('data-gt-href') || a.getAttribute('href');
+            if (!/(^|\/)(shop|cake-studio|chocolate-studio|checkout|customize)\.html/.test(h) || a.closest('header,nav,footer,.gt-hdr,.gt-ftr')) return;
+            if (closed) {
+                if (!a.hasAttribute('data-gt-href')) { a.setAttribute('data-gt-href', h); a.setAttribute('data-gt-txt', a.textContent); }
+                a.setAttribute('href', 'https://wa.me/' + wa); a.textContent = 'Ordering paused \u2013 ask us on WhatsApp';
+            } else if (a.hasAttribute('data-gt-href')) {
+                a.setAttribute('href', a.getAttribute('data-gt-href')); a.textContent = a.getAttribute('data-gt-txt');
+                a.removeAttribute('data-gt-href'); a.removeAttribute('data-gt-txt');
+            }
+        });
+    }
     function shopGate() {
         if (!GATED.test(location.pathname) || !doc.body) return;
         var st = ((lastContent || cached()).settings) || {}, closed = st.shop_open !== true, staff = isStaffNow();
@@ -297,10 +314,10 @@
             } else if ((!closed || !staff) && bar) bar.remove();
         }
     }
-    B.onAuth(function () { shopGate(); });
+    B.onAuth(function () { shopGate(); brandGate(); });
 
     function runContent() {
-        applyContent(cached()); shopGate();
+        applyContent(cached()); shopGate(); brandGate();
         if (B.enabled) B.content().then(applyContent);
     }
     if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', runContent); else runContent();
