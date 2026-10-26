@@ -33,7 +33,7 @@ function itemsRows(o) {
     const meta = (l.meta || []).map((m) => `<div style="font-size:13px;color:${MUTED};padding-top:2px">${esc(m[0])}: ${esc(m[1])}</div>`).join('');
     const note = l.note ? `<div style="font-size:13px;color:${MUTED};font-style:italic;padding-top:2px">${esc(l.note)}</div>` : '';
     const artNote = l.art ? `<div style="font-size:13px;color:${INK};padding-top:6px"><strong>Design files:</strong> ${l.art.folder ? 'attached to the shop email and saved in admin' : 'NOT uploaded: ask the customer'}${l.art.designer ? ' &middot; <strong style="color:#B0483A">designer: create a cartoon character and send a proof</strong>' : ''}</div>` : '';
-    const price = l.quote ? `<span style="color:${GOLD}">Quote</span>` : esc(money(l.total));
+    const price = l.quote && !(Number(l.total) > 0) ? `<span style="color:${GOLD}">Quote</span>` : esc(money(l.total)) + (l.quote ? ` <span style="font-size:12px;color:${MUTED}">est.</span>` : '');
     return `<tr><td style="padding:14px 0;border-bottom:1px solid ${LINE};vertical-align:top"><div style="font-weight:600;color:${INK}">${esc(l.name)} <span style="font-weight:400;color:${MUTED}">× ${esc(l.qty)}</span></div>${meta}${note}${artNote}</td><td align="right" style="padding:14px 0 14px 12px;border-bottom:1px solid ${LINE};vertical-align:top;white-space:nowrap;font-weight:600;color:${INK}">${price}</td></tr>`;
   }).join('');
 }
@@ -51,10 +51,11 @@ function shell(site, title, intro, bodyHtml) {
 </table></td></tr></table></body></html>`;
 }
 
+const openQuote = (o: any) => (o.items || []).some((l: any) => l && l.quote && !(Number(l.total) > 0));
 const hasTax = (o) => o.total != null && o.total !== '';
 const grand = (o) => (hasTax(o) ? Number(o.total) : Number(o.subtotal));
 function totalsRows(o) {
-  const q = o.has_quote ? ' <span style="font-weight:400;color:' + MUTED + ';font-size:13px">+ quoted items</span>' : '';
+  const q = (o.has_quote && openQuote(o)) ? ' <span style="font-weight:400;color:' + MUTED + ';font-size:13px">+ quoted items</span>' : '';
   if (!hasTax(o)) return `<tr><td style="padding:16px 0 4px;font-size:15px;color:${MUTED}">Estimated total</td><td align="right" style="padding:16px 0 4px;font-family:Helvetica,Arial,sans-serif;font-size:24px;font-weight:700;color:${INK}">${esc(money(o.subtotal))}${q}</td></tr>`;
   const row = (l, v) => `<tr><td style="padding:6px 0;font-size:14px;color:${MUTED}">${l}</td><td align="right" style="padding:6px 0;font-size:14px;color:${INK}">${v}</td></tr>`;
   const rate = Number(o.vat_rate) % 1 ? Number(o.vat_rate) : Math.round(Number(o.vat_rate));
@@ -76,7 +77,7 @@ function orderBlock(o, forShop) {
 ${totalsRows(o)}</table>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:22px;border-top:1px solid ${LINE};padding-top:18px"><tr>
 ${cell('Delivery to', `<strong>${esc(o.name)}</strong><br>${esc(o.emirate)}<br>${addr}`)}
-${cell('Delivery date', esc(dateNice(o.delivery_date)))}</tr><tr>
+${cell('Estimated delivery', o.delivery_date ? esc(dateNice(o.delivery_date)) : '3-5 days after we confirm your order')}</tr><tr>
 ${cell('Contact', `${esc(o.phone)}${o.email ? '<br>' + esc(o.email) : ''}`)}
 ${o.notes ? cell('Notes', esc(o.notes)) : (forShop && o.source ? cell('Came from', esc(o.source)) : '<td></td>')}</tr>
 ${forShop && o.notes && o.source ? `<tr>${cell('Came from', esc(o.source))}<td></td></tr>` : ''}</table>`;
@@ -116,7 +117,7 @@ function reviewNote(o, site) {
 
 export function shopEmail(o, site, wa) {
   const phone = String(o.phone || '').replace(/\D/g, '');
-  const html = shell(site, 'New order #' + o.order_no, `<strong style="color:${INK}">${esc(o.name)}</strong> just ordered ${esc(money(grand(o)))}${o.has_quote ? ' + quoted items' : ''}.`,
+  const html = shell(site, 'New order #' + o.order_no, `<strong style="color:${INK}">${esc(o.name)}</strong> just ordered ${esc(money(grand(o)))}${o.has_quote && openQuote(o) ? ' + quoted items' : ''}.`,
     reviewNote(o, site) + orderBlock(o, true) + btn('https://wa.me/' + phone + '?text=' + encodeURIComponent('Hello ' + o.name + ', this is Grape Tree about your order #' + o.order_no + '.'), 'WhatsApp the customer', false) + btn(site + '/admin.html', 'Open admin', true));
   return { subject: `${o.source === 'admin-test' ? '[TEST] ' : ''}New order #${o.order_no} - ${o.name} - ${money(grand(o))}`, html };
 }

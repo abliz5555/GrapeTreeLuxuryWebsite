@@ -20,7 +20,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
 
-    <script src="shop-data.js?v=21"></script>
+    <script src="shop-data.js?v=23"></script>
     <script src="layout.js?v=20"></script>
     <script src="legal.js?v=20"></script>
     <script src="i18n.js?v=20"></script>
@@ -29,7 +29,7 @@
     <link rel="stylesheet" href="shop.css?v=21">
     <link rel="stylesheet" href="animations.css?v=20">
     <link rel="stylesheet" href="theme.css?v=20">
-    <link rel="stylesheet" href="layout.css?v=21">
+    <link rel="stylesheet" href="layout.css?v=23">
     <link rel="stylesheet" href="app.css?v=20">
 </head>
 
@@ -76,10 +76,10 @@
                         <textarea id="f-address" name="address" rows="3" autocomplete="street-address" placeholder="Building, street, area, landmark" required></textarea>
                         <p class="err">Please enter the delivery address.</p>
                     </div>
-                    <div class="field">
-                        <label for="f-date">Preferred delivery date</label>
-                        <input type="date" id="f-date" name="delivery_date" required>
-                        <p class="err">Please choose a delivery date.</p>
+                    <div class="field full co-eta">
+                        <input type="hidden" id="f-date" name="delivery_date" value="">
+                        <p><strong>Estimated delivery: <span id="co-eta">3-5 days</span></strong> after we confirm your order. We will contact you to arrange the time.</p>
+                        <p class="co-how"><strong>How your order works:</strong> 1) You send this request. 2) We confirm the final price and details with you on WhatsApp or email. 3) We send a payment link. 4) We produce your order. 5) We deliver in about 3-5 days. Nothing is charged until you receive our confirmation.</p>
                     </div>
                     <div class="field full">
                         <label for="f-notes">Notes <span class="opt">(optional)</span></label>
@@ -129,13 +129,13 @@
 <script>GTLayout.footer()</script>
 
 
-<script src="cart.js?v=20"></script>
-<script src="backend.js?v=26"></script>
+<script src="cart.js?v=21"></script>
+<script src="backend.js?v=27"></script>
 <script src="script.js?v=20"></script>
 <script src="animations.js?v=20"></script>
 <script src="studio-store.js?v=20"></script>
-<script src="pricing.js?v=20"></script>
-<script src="checkout.js?v=21"></script>
+<script src="pricing.js?v=22"></script>
+<script src="checkout.js?v=23"></script>
 
 </body>
 

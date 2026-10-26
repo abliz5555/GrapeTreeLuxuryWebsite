@@ -43,47 +43,51 @@
             '<label>' + esc(T('Phone or email on the order')) + '<input id="trk-contact" autocomplete="off" placeholder="05x xxx xxxx / name@email.com" value="' + esc(contact || '') + '"></label>' +
             '<p class="trk-err" id="trk-err" role="alert">' + esc(msg || '') + '</p>' +
             '<button class="gt-btn trk-go" type="submit">' + esc(T('Track order')) + '</button></form>' +
-            '<p class="trk-hint">' + esc(T('Your order number is on the confirmation page and in the message we send you. Signed-in customers can also open any order from My account.')) + ' <a class="acct-link" href="account.html">' + esc(T('My account')) + '</a></p></section>';
+            '<p class="trk-hint">' + esc(T('Your order number is in your confirmation email and on the page you saw after ordering.')) + '</p></section>';
         $('#trk-form').addEventListener('submit', function (e) {
             e.preventDefault();
             var n = $('#trk-no').value.replace(/\D/g, ''), c = $('#trk-contact').value.trim(), err = $('#trk-err');
-            if (!n) { err.textContent = T('Please enter your order number.'); return; }
-            if (!c && !(B.session)) { err.textContent = T('Please enter the phone number or email you used on the order.'); return; }
+            if (!n) { err.textContent = T('Please type your order number.'); return; }
+            if (!c && !(B.session && B.session.user)) { err.textContent = T('Please type the phone number or email you used on the order.'); return; }
             go(n, c);
         });
     }
 
     function go(no, contact) {
         root.innerHTML = '<section class="trk-card"><p class="trk-lead">' + esc(T('Looking for your order...')) + '</p></section>';
-        (B.trackOrder ? B.trackOrder(no, contact) : Promise.reject(new Error('offline'))).then(function (o) {
-            if (!o) { formView(T('We could not find an order with those details. Please check the number and the phone or email you used on the order.'), no, contact); return; }
+        B.trackOrder(no, contact).then(function (o) {
+            if (!o) { formView(T('We could not find an order with those details. Please check the number and the phone or email.'), no, contact); return; }
             resultView(o, no, contact);
-        }).catch(function () {
-            formView(T('We could not check your order right now. Please try again in a moment, or message us on WhatsApp.'), no, contact);
-        });
+        }).catch(function () { formView(T('We could not check your order right now. Please try again in a moment.'), no, contact); });
+    }
+
+    function totalsBlock(o) {
+        var G = window.GT || {}, P = G.pricing ? G.pricing.ofOrder(o) : { legacy: true, total: o.subtotal }, open = G.pricing ? G.pricing.openQuote(o) : false, est = !!o.has_quote;
+        var label = est ? T('Estimated total') : T('Total');
+        if (P.legacy) return '<p class="trk-hint">' + esc(label) + ': <strong>' + esc(money(P.total)) + (open ? ' + ' + esc(T('quoted items')) : '') + '</strong></p>';
+        var vr = P.vatRate % 1 ? P.vatRate : Math.round(P.vatRate);
+        return '<dl class="trk-sum"><div><dt>' + esc(T('Items')) + (P.incl ? ' (' + esc(T('incl. VAT')) + ')' : '') + '</dt><dd>' + esc(money(P.subtotal)) + '</dd></div>' +
+            '<div><dt>' + esc(T('Delivery')) + '</dt><dd>' + (P.freeDelivery ? esc(T('FREE')) : esc(money(P.deliveryFee))) + '</dd></div>' +
+            '<div><dt>VAT ' + esc(vr) + '%' + (P.incl ? ' (' + esc(T('included')) + ')' : '') + '</dt><dd>' + esc(money(P.vat)) + '</dd></div>' +
+            '<div class="tot"><dt>' + esc(label) + '</dt><dd>' + esc(money(P.total)) + (open ? ' + ' + esc(T('quoted items')) : '') + '</dd></div></dl>' +
+            (est ? '<p class="trk-fine">' + esc(T(open ? 'Quoted items are added once we confirm them.' : 'Estimate: the final price is confirmed after we review your design.')) + '</p>' : '');
     }
 
     function resultView(o, no, contact) {
-        var st = o.status, cancelled = st === 'cancelled', idx = 0;
-        STEPS.forEach(function (s, i) { if (s[0] === st) idx = i; });
-        var steps = cancelled ? '' : '<ol class="trk-steps">' + STEPS.map(function (s, i) {
-            return '<li class="' + (i < idx || st === 'delivered' ? 'done' : (i === idx ? 'now' : '')) + '"><i></i>' + esc(T(s[1])) + '</li>';
-        }).join('') + '</ol>';
-        var tl = [{ t: o.created_at, title: 'Order placed', msg: 'We received your order.' }].concat((o.timeline || []).map(function (x) {
-            return { t: x.t, title: x.status ? NAME[x.status] || x.status : 'Update from Grape Tree', msg: x.msg || (x.status ? SAYS[x.status] : '') };
-        })).sort(function (a, b) { return new Date(b.t) - new Date(a.t); });
-        var review = (o.art_review === 'changes' || o.art_review === 'rejected')
-            ? '<div class="trk-note"><strong>' + esc(T(o.art_review === 'changes' ? 'We need a small change to your design' : 'We cannot produce your design')) + '</strong>' + esc(o.art_review_note || '') +
-              ' <a href="' + esc(waLink(o.order_no)) + '" target="_blank" rel="noopener">' + esc(T('Message us on WhatsApp')) + '</a></div>' : '';
-        root.innerHTML =
-            '<section class="trk-card"><div class="trk-head"><div><h2>' + esc(T('Order')) + ' #' + esc(o.order_no) + '</h2><small>' + esc(T('Placed on')) + ' ' + esc(when(o.created_at)) + '</small></div>' +
-            '<span><span class="chip st-' + esc(st) + '">' + esc(T(NAME[st] || st)) + '</span><span class="chip trk-pay ' + (o.payment_status === 'paid' ? 'st-delivered' : 'st-new') + '">' + esc(T(o.payment_status === 'paid' ? 'Paid' : 'Payment pending')) + '</span></span></div>' +
-            (o.first_name ? '<p class="trk-now">' + esc(T('Hello')) + ' ' + esc(o.first_name) + '. <strong>' + esc(T(SAYS[st] || '')) + '</strong></p>' : '<p class="trk-now"><strong>' + esc(T(SAYS[st] || '')) + '</strong></p>') +
-            (o.delivery_date && !cancelled && st !== 'delivered' ? '<p class="trk-eta">' + esc(T('Requested delivery date')) + ': <strong>' + esc(day(o.delivery_date)) + '</strong>' + (o.emirate ? ' &middot; ' + esc(o.emirate) : '') + '</p>' : '') +
-            (cancelled ? '<div class="trk-cancel">' + esc(T(SAYS.cancelled)) + ' ' + esc(T('If you did not expect this, please message us.')) + '</div>' : steps) + review + '</section>' +
-            '<div class="trk-two"><section class="trk-card"><h3>' + esc(T('Your items')) + '</h3><ul class="trk-items">' +
-            (o.items || []).map(function (i) { return '<li><span>' + esc(i.name) + '</span><em>x ' + esc(i.qty) + '</em></li>'; }).join('') + '</ul>' +
-            '<p class="trk-hint">' + esc(T('Estimated total')) + ': <strong>' + esc(money(o.subtotal)) + (o.has_quote ? ' + ' + esc(T('quoted items')) : '') + '</strong></p></section>' +
+        var cancelled = o.status === 'cancelled', order = STEPS.map(function (s) { return s[0]; }), cur = order.indexOf(o.status);
+        var tl = (o.timeline || []).slice().reverse().map(function (x) { return { t: x.t, title: NAME[x.status] || x.status, msg: x.msg }; });
+        var paid = o.payment_status === 'paid';
+        var payTxt = cancelled ? 'Cancelled' : (paid ? 'Paid' : 'Payment pending');
+        var steps = cancelled ? '' : '<ol class="trk-steps">' + STEPS.map(function (s, i) { return '<li class="' + (i < cur ? 'done' : (i === cur ? 'now' : '')) + '"><i></i>' + esc(T(s[1])) + '</li>'; }).join('') + '</ol>';
+        var review = (o.art_review === 'changes' || o.art_review === 'rejected') ? '<div class="trk-note"><strong>' + esc(T('We need a change to your design')) + '</strong>' + esc(o.art_review_note || '') + '</div>' : '';
+        root.innerHTML = '<div><section class="trk-card"><div class="trk-head"><div><h2>' + esc(T('Order')) + ' #' + esc(o.order_no) + '</h2><small>' + esc(T('Placed')) + ' ' + esc(when(o.created_at, true)) + '</small></div>' +
+            '<span class="chip ' + (cancelled ? 'st-cancelled' : (paid ? 'st-delivered' : 'st-new')) + ' trk-pay">' + esc(T(payTxt)) + '</span></div>' +
+            '<p class="trk-now">' + (cancelled ? '' : esc(T('Status')) + ': ') + '<strong>' + esc(T(NAME[o.status] || o.status)) + '</strong></p>' +
+            '<p class="trk-eta">' + esc(T(SAYS[o.status] || '')) + '</p>' + steps +
+            (cancelled ? '<div class="trk-cancel">' + esc(T(SAYS.cancelled)) + '</div>' : '') + review +
+            '<div class="trk-two"><div><h3>' + esc(T('Items')) + '</h3><ul class="trk-items">' + (o.items || []).map(function (i) { return '<li><span>' + esc(i.name) + '</span><em>&times; ' + esc(i.qty) + '</em></li>'; }).join('') + '</ul></div>' +
+            '<div><h3>' + esc(T('Delivery')) + '</h3><p>' + esc(o.emirate || '') + '</p><p class="trk-eta">' + esc(T('Estimated delivery')) + ': ' + esc(T('3-5 days after we confirm your order')) + '</p></div></div>' +
+            totalsBlock(o) + '</section>' +
             '<section class="trk-card"><h3>' + esc(T('Updates')) + '</h3><ul class="trk-tl">' +
             tl.map(function (x) { return '<li><b>' + esc(T(x.title)) + '</b>' + (x.msg ? '<span>' + esc(T(x.msg)) + '</span>' : '') + '<small>' + esc(when(x.t, true)) + '</small></li>'; }).join('') + '</ul></section></div>' +
             '<div class="trk-actions"><a class="gt-btn" href="' + esc(waLink(o.order_no)) + '" target="_blank" rel="noopener">' + esc(T('Ask us about this order')) + '</a>' +

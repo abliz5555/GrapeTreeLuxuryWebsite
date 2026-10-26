@@ -57,11 +57,11 @@
     function lineTotal(l) { return (l.unit || 0) * l.qty + (l.fee || 0); }
 
     function totals() {
-        var t = { subtotal: 0, count: 0, hasQuote: false };
+        var t = { subtotal: 0, count: 0, hasQuote: false, hasEstimate: false };
         cart.forEach(function (l) {
             t.subtotal += lineTotal(l);
             t.count += l.qty;
-            if (l.quote) t.hasQuote = true;
+            if (l.quote && !l.unit && !l.fee) t.hasQuote = true; else if (l.quote) t.hasEstimate = true;
         });
         return t;
     }
@@ -178,7 +178,7 @@
         var t = totals();
         foot.style.display = '';
         foot.innerHTML =
-            '<div class="gt-sum"><span>Subtotal' + (t.hasQuote ? ' <em>(quoted items extra)</em>' : '') + '</span>' +
+            '<div class="gt-sum"><span>Subtotal' + (t.hasQuote ? ' <em>(quoted items extra)</em>' : (t.hasEstimate ? ' <em>(estimate)</em>' : '')) + '</span>' +
             '<strong>' + money(t.subtotal) + '</strong></div>' +
             '<p class="gt-fine">Final price and delivery are confirmed with you before payment.</p>' +
             '<a class="gt-btn gt-btn-block" href="checkout.html">Checkout</a>' +

@@ -202,8 +202,8 @@
         productsPromise = B.ready.then(function (on) {
             if (!on) return DATA.products || [];
             return withTimeout(B.client.from('products').select('*').eq('active', true).order('sort_order', { ascending: true }).then(ok), 4500)
-                .then(function (rows) { return rows && rows.length ? rows.map(fromRow) : (DATA.products || []); });
-        }).catch(function () { return DATA.products || []; });
+                .then(function (rows) { return (rows || []).map(fromRow); });      // never show old sample prices when the live list cannot be read
+        }).catch(function () { return []; });
         return productsPromise;
     };
     B.allProductsAdmin = function () { return B.client.from('products').select('*').order('sort_order', { ascending: true }).then(ok).then(function (rows) { return rows.map(fromRow); }); };
@@ -332,7 +332,7 @@
             });
             return chain.then(function () {
                 if (!files.print) throw new Error('upload incomplete (no print file)');
-                return { id: art.id, folder: art.id, files: files, finish: art.finish, designer: !!art.designer, look: art.look };
+                return { id: art.id, folder: art.id, files: files, finish: art.finish, designer: !!art.designer, look: art.look, legal: art.legal || null };
             });
         });
     };

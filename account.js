@@ -252,6 +252,10 @@
                 if (rbox) rbox.innerHTML = '<p class="acct-muted">Your receipts will appear here after your first order.</p>';
                 return;
             }
+            function totalText(o) {
+                var G = window.GT || {}, P = G.pricing ? G.pricing.ofOrder(o) : { total: o.subtotal }, open = G.pricing ? G.pricing.openQuote(o) : false;
+                return esc(money(P.total)) + (open ? ' + ' + esc(T('quoted items')) : '') + (o.has_quote && !open ? ' <small>(' + esc(T('estimate')) + ')</small>' : '');
+            }
             box.innerHTML = rows.map(function (o) {
                 var items = (o.items || []).map(function (l) {
                     return '<li><span>' + esc(l.name) + '</span><em>x ' + esc(l.qty) + '</em></li>';
@@ -260,7 +264,7 @@
                 return '<article class="ord"><header><div><strong>Order #' + esc(o.order_no) + '</strong><span>' + esc(dateText(o.created_at)) + '</span></div>' +
                     '<span class="chip st-' + esc(o.status) + '">' + esc(T(STATUS[o.status] || o.status)) + '</span></header>' + progress(o) +
                     '<ul>' + items + '</ul>' +
-                    '<footer><span>' + (o.has_quote ? esc(money(o.subtotal)) + ' + ' + esc(T('quoted items')) : esc(money(o.subtotal))) + '</span>' +
+                    '<footer><span>' + totalText(o) + '</span>' +
                     '<span class="ord-links"><a class="gt-btn gt-btn-sm" href="order-track.html?no=' + esc(o.order_no) + '">' + esc(T('Track order')) + '</a>' +
                     '<a class="acct-link" href="invoice.html?no=' + esc(o.order_no) + '&print=1" target="_blank" rel="noopener">' + esc(T('Download PDF')) + '</a>' +
                     (canRe ? '<button type="button" class="acct-link" data-re="' + esc(o.id) + '">' + esc(T('Order again')) + '</button>' : '') + '</span></footer></article>';
@@ -268,8 +272,8 @@
             if (rbox) rbox.innerHTML = '<div class="rec-list">' + rows.map(function (o) {
                 var paid = o.payment_status === 'paid';
                 return '<div class="rec"><div class="rec-n"><strong>#' + esc(o.order_no) + '</strong><span>' + esc(dateText(o.created_at)) + '</span></div>' +
-                    '<div class="rec-t">' + esc(money(o.subtotal)) + (o.has_quote ? '<small> + ' + esc(T('quoted items')) + '</small>' : '') + '</div>' +
-                    '<span class="chip ' + (paid ? 'st-delivered' : 'st-new') + '">' + esc(T(paid ? 'Paid' : 'Payment pending')) + '</span>' +
+                    '<div class="rec-t">' + totalText(o) + '</div>' +
+                    '<span class="chip ' + (o.status === 'cancelled' ? 'st-cancelled' : (paid ? 'st-delivered' : 'st-new')) + '">' + esc(T(o.status === 'cancelled' ? 'Cancelled' : (paid ? 'Paid' : 'Payment pending'))) + '</span>' +
                     '<div class="rec-a"><a class="gt-btn gt-btn-sm" href="invoice.html?no=' + esc(o.order_no) + '&print=1" target="_blank" rel="noopener">' + esc(T(paid ? 'Download receipt' : 'Download confirmation')) + '</a>' +
                     '<a class="acct-link" href="invoice.html?no=' + esc(o.order_no) + '" target="_blank" rel="noopener">' + esc(T('View')) + '</a></div></div>';
             }).join('') + '</div>';
@@ -280,7 +284,9 @@
                         var p = !l.custom && prods.filter(function (q) { return q.id === l.id; })[0];
                         if (p) { window.GT.cart.add({ id: p.id, name: p.name, img: p.img, unit: p.price, qty: l.qty, meta: [] }); n++; }
                     });
+                    var skipped = (o.items || []).filter(function (l) { return l.custom || l.art || !prods.some(function (q) { return q.id === l.id; }); }).length;
                     if (n) window.GT.cart.open();
+                    if (skipped) alert(T(n ? 'Your custom designs were not added again. Please make them again in the design studio, or message us and we will help.' : 'Custom designs cannot be re-ordered automatically. Please make it again in the design studio, or message us and we will help.'));
                 });
             });
         }).catch(function () { var box = $('#a-orders'); if (box) box.innerHTML = '<p class="acct-muted">We could not load your orders. Please refresh the page.</p>'; var rb = $('#a-receipts'); if (rb) rb.innerHTML = ''; });

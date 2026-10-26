@@ -28,7 +28,7 @@
     function backend() { return window.GT && window.GT.backend; }
 
     /* ------------------------------ 1. settings ------------------------------ */
-    var SURF, MARGIN, BORDER, SAFE, TOL, LEAD, DESIGNER_FEE, TIERS, BOXES, THICK, FLAVOURS, MOQ, BOXSETS, DISCOUNTS, MINBOX, MINPCS;
+    var NOBOX_OFF = 0, SURF, MARGIN, BORDER, SAFE, TOL, LEAD, DESIGNER_FEE, TIERS, BOXES, THICK, FLAVOURS, MOQ, BOXSETS, DISCOUNTS, MINBOX, MINPCS;
     function mergeCfg(base, over) { var o = {}, k; for (k in base) o[k] = base[k]; for (k in (over || {})) if (over[k] != null && over[k] !== '') o[k] = over[k]; return o; }
     function applyCfg(over) {
         ST = mergeCfg(ALL[PRODUCT] || {}, over && over[PRODUCT]);
@@ -38,13 +38,18 @@
         SAFE = ST.safe || 2;                     // safe margin inside the cut line
         TOL = ST.tolerance || 1.5;
         LEAD = ST.leadBusinessDays || 14;
+        NOBOX_OFF = Math.max(0, +ST.noBoxOff || 0);
         DESIGNER_FEE = ST.designerFee || 0;
         TIERS = ST.tiers || (ISCAKE
         ? [{ qty: 120, price: 2400 }, { qty: 180, price: 3050 }, { qty: 240, price: 3750 }, { qty: 300, price: 4400, popular: true }, { qty: 600, price: 7800 }, { qty: 900, price: 11200 }]
         : [{ qty: 100, price: 1500 }, { qty: 200, price: 2700 }, { qty: 300, price: 3600, popular: true }, { qty: 500, price: 5500 }, { qty: 1000, price: 10000 }]);
-        BOXES = ST.boxes || [{ id: 'white', label: 'White', extra: 0, color: '#F4F1EA', standard: true }, { id: 'black', label: 'Black', extra: 3, color: '#222222' }, { id: 'yellow', label: 'Yellow', extra: 3, color: '#F2C93B' }, { id: 'lightblue', label: 'Light blue', extra: 3, color: '#A6D8DC' }];
-        THICK = ST.thickness || [{ id: '5', label: '5 mm thin', extra: 0 }, { id: '12', label: '12 mm thick', extra: 1.5 }];   // chocolate only
-        FLAVOURS = ST.flavours || ['Milk chocolate', 'Dark chocolate', 'White chocolate', 'Ruby chocolate', 'Hazelnut', 'Matcha'];
+        BOXES = ST.boxes || [{ id: 'white', label: 'White', extra: 0, color: '#F4F1EA', standard: true }, { id: 'black', label: 'Black', extra: 3, color: '#222222', on: false }, { id: 'yellow', label: 'Yellow', extra: 3, color: '#F2C93B', on: false }, { id: 'lightblue', label: 'Light blue', extra: 3, color: '#A6D8DC', on: false }];
+        (function () { var av = BOXES.filter(function (b) { return b.on !== false; }); if (av.length) BOXES = av; }());
+        THICK = ST.thickness || [{ id: '5', label: '5 mm', extra: 0 }, { id: '12', label: '12 mm', extra: 0 }];   // chocolate only
+        FLAVOURS = (ST.flavours && ST.flavours.length ? ST.flavours : (ISCAKE ? ['Plain', 'Pistachio'] : [{ name: 'Camel milk chocolate 45%', thick: '5' }, { name: 'Pistachio kunafa chocolate', thick: '12' }])).map(function (f) {
+            return typeof f === 'string' ? { name: f, on: true, extra: 0, thick: '' } : { name: String(f.name || ''), on: f.on !== false, extra: Math.max(0, +f.extra || 0), thick: f.thick == null ? '' : String(f.thick) };
+        }).filter(function (f) { return f.name; });
+        if (!FLAVOURS.some(function (f) { return f.on; })) FLAVOURS[0].on = true;       // never leave the customer with no flavour
         BOXSETS = (ST.boxSets && ST.boxSets.length ? ST.boxSets : [{ id: '1', pieces: 1, label: 'Single chocolate', price: 35 }, { id: '3', pieces: 3, label: '3-piece gift set', price: 95 }, { id: '9', pieces: 9, label: '9-piece gift box', price: 260 }]);
         DISCOUNTS = (ST.discounts && ST.discounts.length ? ST.discounts : [{ min: 1, off: 0 }, { min: 10, off: 5 }, { min: 25, off: 10 }, { min: 50, off: 15 }, { min: 100, off: 20 }]).slice().sort(function (a, b) { return a.min - b.min; });
         MINBOX = Math.max(1, ST.minBoxes || 1);
@@ -108,7 +113,7 @@
         sh: { x: 0, y: 0, w: 38, prop: 1 },
         off: 2, smooth: 1.5, move: 'art', limited: false, fitted: false,
         boxSet: 1, nbox: 1, slots: [], slot: 0,
-        qty: ISCAKE ? 3 : 2, qtyPicked: false, box: 'white', thick: '5', flavour: 0, customBox: false, boxNote: '',
+        qty: ISCAKE ? 3 : 2, qtyPicked: false, packBox: true, box: 'white', thick: '5', flavour: 0, customBox: false, boxNote: '',
         test: false
     };
     function surfW() { return S.orient === 'portrait' ? SURF.h : SURF.w; }
@@ -389,6 +394,8 @@
     }
 
     /* --- AI (server) with the quick built-in tools as a fallback --- */
+    function applyAiFlag() { try { document.documentElement.classList.toggle('gt-noai', (ALL.ai || {}).enabled === false); } catch (e) {} }
+    applyAiFlag();
     function aiConnected() { var B = backend(); return !!(B && B.enabled && B.studioAI && (ALL.ai || {}).enabled !== false); }
     function needLogin() { var B = backend(); return aiConnected() && !(B.session && B.session.user); }       // AI is only for signed-in customers (it costs us money)
     function aiOn() { return aiConnected() && !needLogin(); }
@@ -1371,16 +1378,24 @@
     function tier() { var t = curTiers(); return t[S.qty] || t[0]; }
     function nbox() { return ISCAKE ? 1 : tier().qty; }
     function box() { return BOXES.filter(function (b) { return b.id === S.box; })[0] || BOXES[0]; }
+    function packLabel() { return S.packBox ? T('Gift box') + ' - ' + T(box().label) : T('Plastic pack only (no box)'); }
+    function firstFlav() { for (var i = 0; i < FLAVOURS.length; i++) if (FLAVOURS[i].on) return i; return 0; }
+    function flav() { var f = FLAVOURS[S.flavour]; return f && f.on ? f : FLAVOURS[firstFlav()]; }
+    function linkedThick() { var f = flav(), id = f && f.thick; return id && THICK.some(function (x) { return x.id === id; }) ? id : ''; }
+    function syncThick() { var id = linkedThick(); if (id) S.thick = id; else if (!THICK.some(function (x) { return x.id === S.thick; })) S.thick = THICK[0].id; }
+    function flavName() { return flav().name; }
     function thick() { return THICK.filter(function (t) { return t.id === S.thick; })[0] || THICK[0]; }
     function discountFor(n) { var off = 0; DISCOUNTS.forEach(function (d) { if (n >= d.min) off = d.off; }); return off; }
     function boxUnit() { return totalPrice() / Math.max(1, nbox()); }       // price of one box (with the chosen thickness)
     function totalPieces() { return pieces() * nbox(); }
     function orderQty() { return ISCAKE ? tier().qty : totalPieces(); }
+    function tierTotal(tt) {      // price of one quantity option with everything the customer picked (box, flavour, thickness), before the designer fee
+        if (!ISCAKE) return Math.round(tt.price + (thick().extra + flav().extra) * pieces() * tt.qty);
+        return Math.max(0, tt.price + ((S.packBox ? box().extra : -NOBOX_OFF) + flav().extra) * tt.qty);
+    }
     function totalPrice() {
         var fee = S.designer || anyDesignerSafe() ? DESIGNER_FEE : 0;
-        if (!ISCAKE) return Math.round(tier().price + thick().extra * pieces() * tier().qty) + fee;
-        var t = tier(), extra = box().extra * t.qty;
-        return t.price + extra + fee;
+        return tierTotal(tier()) + fee;
     }
     function anyDesignerSafe() { if (ISCAKE) return false; for (var i = 0; i < pieces(); i++) { var d = i === S.slot ? S.designer : !!(S.slots[i] && S.slots[i].designer); if (d) return true; } return false; }
     function customUnlocked() { return !ISCAKE && S.qtyPicked && totalPieces() >= MOQ; }
@@ -1390,35 +1405,49 @@
         $('#st-tiers').innerHTML = TT.map(function (t, i) {
             return '<label class="st-tier' + (S.qtyPicked && i === S.qty ? ' on' : '') + '"><input type="radio" name="tier" value="' + i + '"' + (S.qtyPicked && i === S.qty ? ' checked' : '') + '>' +
                 (t.popular ? '<em>' + esc(T('Popular')) + '</em>' : '') +
-                '<b>' + t.qty + ' <small>' + esc(T(unitWord)) + '</small></b><strong>' + esc(money(t.price + (ISCAKE ? 0 : thick().extra * pieces() * t.qty))) + '</strong><span>' + esc(money((t.price + (ISCAKE ? 0 : thick().extra * pieces() * t.qty)) / t.qty)) + ' ' + esc(T('each')) + '</span></label>';
+                '<b>' + t.qty + ' <small>' + esc(T(unitWord)) + '</small></b><strong>' + esc(money(tierTotal(t))) + '</strong><span>' + esc(money(tierTotal(t) / t.qty)) + ' ' + esc(T(ISCAKE || pieces() === 1 ? 'each' : 'per box')) + '</span></label>';
         }).join('');
         var h = '';
         if (ISCAKE) {
-            h = '<h3 class="st-h3">' + esc(T('Box colour')) + '</h3><div class="st-boxes">' + BOXES.map(function (b) {
+            h = '<h3 class="st-h3">' + esc(T('Flavour')) + '</h3><div class="st-flav" role="radiogroup" aria-label="Flavour">' + FLAVOURS.map(function (f, i) {
+                var cur = flav() === f;
+                return '<label class="st-chip-toggle' + (f.on ? '' : ' off') + '"><input type="radio" name="flav" value="' + i + '"' + (cur ? ' checked' : '') + (f.on ? '' : ' disabled') + '><span>' + esc(T(f.name)) + (f.on ? (f.extra ? ' +' + esc(money(f.extra)) : '') : ' &middot; ' + esc(T('Sold out'))) + '</span></label>';
+            }).join('') + '</div>' +
+                '<h3 class="st-h3">' + esc(T('Packaging')) + '</h3><div class="st-boxes st-two-col st-pack">' +
+                '<label class="st-box' + (S.packBox ? ' on' : '') + '"><input type="radio" name="pack" value="box"' + (S.packBox ? ' checked' : '') + '><b>' + esc(T('With a gift box')) + '</b><small>' + esc(T('Each piece in a sealed plastic bag, inside a box')) + '</small></label>' +
+                '<label class="st-box' + (!S.packBox ? ' on' : '') + '"><input type="radio" name="pack" value="none"' + (!S.packBox ? ' checked' : '') + '><b>' + esc(T('No box')) + '</b><small>' + esc(T('Plastic pack only')) + (NOBOX_OFF ? ' &middot; -' + esc(money(NOBOX_OFF)) + ' / ' + esc(T('piece')) : '') + '</small></label></div>';
+            if (S.packBox) h += '<h3 class="st-h3">' + esc(T('Box colour')) + '</h3><div class="st-boxes">' + BOXES.map(function (b) {
                 return '<label class="st-box' + (b.id === S.box ? ' on' : '') + '"><input type="radio" name="boxc" value="' + b.id + '"' + (b.id === S.box ? ' checked' : '') + '>' +
                     '<i style="background:' + b.color + '"></i><b>' + esc(T(b.label)) + '</b><small>' + (b.extra ? '+' + esc(money(b.extra)) + ' / ' + esc(T('piece')) : esc(T('No extra charge'))) + '</small></label>';
             }).join('') + '</div>';
         } else {
-            h = '<h3 class="st-h3">' + esc(T('Thickness')) + '</h3><div class="st-boxes st-two-col">' + THICK.map(function (t) {
-                return '<label class="st-box' + (t.id === S.thick ? ' on' : '') + '"><input type="radio" name="thk" value="' + t.id + '"' + (t.id === S.thick ? ' checked' : '') + '>' +
-                    '<i class="st-thk" style="height:' + (14 + (+t.id) * 2.6) + 'px"></i><b>' + esc(T(t.label)) + '</b><small>' + (t.extra ? '+' + esc(money(t.extra)) + ' / ' + esc(T('piece')) : esc(T('No extra charge'))) + '</small></label>';
+            syncThick();
+            h = '<h3 class="st-h3">' + esc(T('Flavour')) + '</h3><div class="st-flav" role="radiogroup" aria-label="Flavour">' + FLAVOURS.map(function (f, i) {
+                var th = f.thick && THICK.filter(function (x) { return x.id === f.thick; })[0];
+                return '<label class="st-chip-toggle' + (f.on ? '' : ' off') + '"><input type="radio" name="flav" value="' + i + '"' + (flav() === f ? ' checked' : '') + (f.on ? '' : ' disabled') + '><span>' + esc(T(f.name)) + (th ? ' &middot; ' + esc(T(th.label)) : '') + (f.on ? (f.extra ? ' +' + esc(money(f.extra)) : '') : ' &middot; ' + esc(T('Sold out'))) + '</span></label>';
             }).join('') + '</div>';
+            if (linkedThick()) {
+                h += '<p class="st-fine st-thk-note">' + esc(T('Thickness')) + ': <b>' + esc(T(thick().label)) + '</b> ' + esc(T('(set by the flavour you chose)')) + '</p>';
+            } else {
+                h += '<h3 class="st-h3">' + esc(T('Thickness')) + '</h3><div class="st-boxes st-two-col">' + THICK.map(function (t) {
+                    return '<label class="st-box' + (t.id === S.thick ? ' on' : '') + '"><input type="radio" name="thk" value="' + t.id + '"' + (t.id === S.thick ? ' checked' : '') + '>' +
+                        '<i class="st-thk" style="height:' + (14 + (+t.id || parseInt(t.id, 10) || 5) * 2.6) + 'px"></i><b>' + esc(T(t.label)) + '</b><small>' + (t.extra ? '+' + esc(money(t.extra)) + ' / ' + esc(T('piece')) : esc(T('No extra charge'))) + '</small></label>';
+                }).join('') + '</div>';
+            }
             var open = customUnlocked();
-            h += '<h3 class="st-h3">' + esc(T('Flavour & box')) + '</h3>';
+            h += '<h3 class="st-h3">' + esc(T('Box')) + '</h3>';
             h += '<div class="st-custom' + (open ? '' : ' locked') + '">' +
-                '<p class="st-fine">' + (open ? esc(T('Your quantity unlocks a custom flavour and box. Choose below and we will confirm details and any extra cost with you.'))
-                    : esc(T('From')) + ' ' + MOQ + ' ' + esc(T('pieces you can choose your own flavour and a custom box. Select a higher quantity to unlock this.')) + '</p>') +
-                '<div class="st-flav" role="radiogroup" aria-label="Flavour">' + FLAVOURS.map(function (f, i) {
-                    return '<label class="st-chip-toggle"><input type="radio" name="flav" value="' + i + '"' + (i === S.flavour ? ' checked' : '') + (open || i === 0 ? '' : ' disabled') + '><span>' + esc(T(f)) + '</span></label>';
-                }).join('') + '</div>' +
+                '<p class="st-fine">' + (open ? esc(T('Your quantity unlocks a custom box. Choose below and we will confirm details and any extra cost with you.'))
+                    : esc(T('From')) + ' ' + MOQ + ' ' + esc(T('pieces you can ask for a custom box. Select a higher quantity to unlock this.')) + '</p>') +
                 '<label class="st-check"><input type="checkbox" id="cb-custom"' + (S.customBox ? ' checked' : '') + (open ? '' : ' disabled') + '><span><b>' + esc(T('I would like a custom box')) + '</b><small>' + esc(T('Tell us your idea (colours, logo, size). We will send a proof.')) + '</small></span></label>' +
                 '<textarea id="cb-note" rows="3" placeholder="' + esc(T('Describe your custom box')) + '"' + (S.customBox && open ? '' : ' hidden') + '>' + esc(S.boxNote) + '</textarea></div>';
         }
         $('#st-extras').innerHTML = h;
-        $$('input[name=tier]').forEach(function (r) { r.addEventListener('change', function () { S.qty = +r.value; S.qtyPicked = true; if (!customUnlocked()) { S.flavour = 0; S.customBox = false; } renderPricing(); updateSummary(); }); });
+        $$('input[name=tier]').forEach(function (r) { r.addEventListener('change', function () { S.qty = +r.value; S.qtyPicked = true; if (!customUnlocked()) { S.customBox = false; } renderPricing(); updateSummary(); }); });
+        $$('input[name=pack]').forEach(function (r) { r.addEventListener('change', function () { S.packBox = r.value === 'box'; renderPricing(); updateSummary(); }); });
         $$('input[name=boxc]').forEach(function (r) { r.addEventListener('change', function () { S.box = r.value; renderPricing(); updateSummary(); }); });
         $$('input[name=thk]').forEach(function (r) { r.addEventListener('change', function () { S.thick = r.value; renderPricing(); updateSummary(); }); });
-        $$('input[name=flav]').forEach(function (r) { r.addEventListener('change', function () { S.flavour = +r.value; updateSummary(); }); });
+        $$('input[name=flav]').forEach(function (r) { r.addEventListener('change', function () { S.flavour = +r.value; if (!ISCAKE) syncThick(); renderPricing(); updateSummary(); }); });
         var cb = $('#cb-custom');
         if (cb) { cb.addEventListener('change', function () { S.customBox = cb.checked; $('#cb-note').hidden = !cb.checked; }); $('#cb-note').addEventListener('input', function () { S.boxNote = this.value; }); }
         updateAddBtn();
@@ -1431,21 +1460,21 @@
         return x;
     }
     function updateSummary() {
+        if (!ISCAKE) syncThick();
         var started = ISCAKE ? S.versions.length > 0 : (function () { for (var z = 0; z < pieces(); z++) if (slotFilled(z)) return true; return false; })();
         var shown = started && S.qtyPicked ? totalPrice() : 0;                                  // nothing to price until the customer has a design
         $('#sum-total').textContent = money(shown);
         $('#bar-total').textContent = money(shown);
         $('#bar-step').textContent = T('Step') + ' ' + S.step + '/4';
         var rows;
-        if (ISCAKE) { var t = tier(); rows = [[T('Finish'), finishLabel()], [T('Quantity'), S.qtyPicked ? t.qty + ' ' + T('pcs') : T('Not chosen yet')], [T('Box'), T(box().label)], [T('Per piece'), started && S.qtyPicked ? money(totalPrice() / t.qty) : '\u2014']]; }
+        if (ISCAKE) { var t = tier(); rows = [[T('Finish'), finishLabel()], [T('Quantity'), S.qtyPicked ? t.qty + ' ' + T('pcs') : T('Not chosen yet')], [T('Flavour'), T(flavName())], [T('Packing'), packLabel()], [T('Per piece'), started && S.qtyPicked ? money(totalPrice() / t.qty) : '\u2014']]; }
         else {
             var done = 0; for (var q = 0; q < pieces(); q++) if (slotFilled(q)) done++;
             rows = [[T('Box'), T(boxSet().label)], [T('Designs ready'), done + ' / ' + pieces()], [T('Boxes'), S.qtyPicked ? nbox() : T('Not chosen yet')], [T('Pieces in total'), S.qtyPicked ? totalPieces() : '\u2014'], [T('Thickness'), thick().label], [T('Per box'), started && S.qtyPicked ? money(boxUnit()) : '\u2014']];
         }
         $('#sum-list').innerHTML = rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('');
-        var ship = addBusinessDays(new Date(), LEAD);
-        $('#sum-ship').textContent = ship.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-        $('#sum-ship-n').textContent = LEAD + ' ' + T('business days from the next business day after confirmation');
+        $('#sum-ship').textContent = ((window.GT_DATA && window.GT_DATA.config && window.GT_DATA.config.deliveryEstimate)) || '3-5 days';
+        $('#sum-ship-n').textContent = T('after we confirm your order');
     }
     function updateAddBtn() { var b = $('#st-add'); b.disabled = !S.qtyPicked || !$$('.st-ap').every(function (c) { return c.checked; }); var n = $('#st-qty-note'); if (n) n.hidden = S.qtyPicked; }
 
@@ -1479,7 +1508,7 @@
             artwork: { x_mm: num(S.p.x, 2), y_mm: num(S.p.y, 2), width_mm: num(S.p.w, 2), height_mm: num(artH(), 2), rotation_deg: num(S.p.rot, 1), version: v.label, version_kind: v.kind, ai: !!v.ai },
             cut_offset_mm: ISCAKE && S.finish === 'around' ? S.off : null, cut_smooth_mm: ISCAKE && S.finish === 'around' ? S.smooth : null,
             designer_requested: S.designer, designer_note: S.designerNote, legal: legalStudio(),
-            quantity: orderQty(), box: ISCAKE ? box().id : (S.customBox ? 'custom' : 'standard'),
+            quantity: orderQty(), flavour: flavName(), box: ISCAKE ? (S.packBox ? box().id : 'none') : (S.customBox ? 'custom' : 'standard'),
             box_set: ISCAKE ? null : { id: boxSet().id, label: boxSet().label, pieces: pieces(), boxes: nbox(), piece_index: (buildIdx != null ? buildIdx : S.slot) + 1, piece_of: pieces() }, thickness_mm: ISCAKE ? null : +thick().id, flavour: ISCAKE ? null : FLAVOURS[S.flavour], custom_box_note: S.customBox ? S.boxNote : '',
             total: totalPrice(), currency: CFG.currency || 'AED',
             original: { name: theFile.name, type: theFile.type, bytes: theFile.size, width_px: S.origW, height_px: S.origH },
@@ -1518,7 +1547,7 @@
             var B = backend(), gid = 'bx' + Date.now().toString(36), bs = boxSet(), isTest = !!(B && B.isAdmin && B.isAdmin());
             infos.forEach(function (inf, i) {
                 var meta = [[T('Box'), T(bs.label) + ' × ' + nbox()], [T('Piece'), (i + 1) + ' / ' + np], [T('Chocolate size'), num(SURF.w, 1) + ' × ' + num(SURF.h, 1) + ' mm'], [T('Artwork'), inf.label], [T('Thickness'), thick().label]];
-                if (i === 0) { meta.push([T('Flavour'), T(FLAVOURS[S.flavour])]); meta.push([T('Box'), S.customBox ? T('Custom box (we will contact you)') : T('Standard box')]); meta.push([T('Pieces in total'), totalPieces()]); }
+                if (i === 0) { meta.push([T('Flavour'), T(flavName())]); meta.push([T('Box'), S.customBox ? T('Custom box (we will contact you)') : T('Standard box')]); meta.push([T('Pieces in total'), totalPieces()]); }
                 var note = '';
                 if (inf.designer) note += 'DESIGNER REQUEST: create print artwork from the uploaded image and send a proof for approval.' + (inf.dnote ? ' Customer note: ' + inf.dnote : '');
                 if (i === 0 && S.customBox) note += (note ? ' ' : '') + 'CUSTOM BOX: ' + (S.boxNote || 'customer will describe it');
@@ -1548,8 +1577,8 @@
         }).then(function (f) {
             var t = tier();
             var meta = [[T('Finish'), finishLabel()], [T('Quantity'), t.qty + ' ' + T('pcs')], [ISCAKE ? T('Cake surface') : T('Chocolate size'), num(surfW(), 1) + ' × ' + num(surfH(), 1) + ' mm'], [T('Artwork'), versionLabel()]];
-            if (ISCAKE) meta.push([T('Box'), T(box().label)]);
-            else { meta.push([T('Thickness'), thick().label]); meta.push([T('Flavour'), T(FLAVOURS[S.flavour])]); meta.push([T('Box'), S.customBox ? T('Custom box (we will contact you)') : T('Standard box')]); }
+            if (ISCAKE) { meta.push([T('Flavour'), T(flavName())]); meta.push([T('Packing'), packLabel()]); }
+            else { meta.push([T('Thickness'), thick().label]); meta.push([T('Flavour'), T(flavName())]); meta.push([T('Box'), S.customBox ? T('Custom box (we will contact you)') : T('Standard box')]); }
             if (S.designer) meta.push([T('Designer'), T('Please create the artwork and send a proof')]);
             var note = '';
             if (S.designer) note += 'DESIGNER REQUEST: create print artwork from the uploaded image and send a proof for approval.' + (S.designerNote ? ' Customer note: ' + S.designerNote : '');
@@ -2146,12 +2175,14 @@
         applyText();
         if (B && B.ready && B.content) B.ready.then(function () { return B.content(); }).then(function (c) {
             if (!c || !c.studio) return;
+            if (c.studio.ai) ALL.ai = c.studio.ai; applyAiFlag();
             applyCfg(c.studio); applyText();
             if (S.qty > curTiers().length - 1) S.qty = 0;
             if (S.boxSet > BOXSETS.length - 1) S.boxSet = 0;
             if (!ISCAKE) renderBoxSet();
             if (!BOXES.some(function (b) { return b.id === S.box; })) S.box = BOXES[0].id;
-            if (!THICK.some(function (t) { return t.id === S.thick; })) S.thick = THICK[0].id;
+            if (!FLAVOURS[S.flavour] || !FLAVOURS[S.flavour].on) S.flavour = firstFlav();
+            if (!ISCAKE) syncThick(); else if (!THICK.some(function (t) { return t.id === S.thick; })) S.thick = THICK[0].id;
             if (S.step === 4) renderPricing(); updateSummary();
         }).catch(function () { });
         goStep(1);

@@ -52,7 +52,7 @@
 
     function render(animate) {
         var list = PRODUCTS.filter(function (p) { return filter === 'all' || p.brand === filter; });
-        grid.innerHTML = list.map(cardHTML).join('');
+        grid.innerHTML = list.length ? list.map(cardHTML).join('') : '<p class="pc-empty" style="grid-column:1/-1;text-align:center;padding:40px 12px">' + (PRODUCTS.length ? 'No products in this group yet.' : 'Our shop is temporarily unavailable. Please refresh in a minute, or message us on WhatsApp to order.') + '</p>';
         countEl.textContent = list.length + (list.length === 1 ? ' product' : ' products');
         chips.forEach(function (c) {
             var on = c.getAttribute('data-filter') === filter;
@@ -191,7 +191,8 @@
 
         grid.setAttribute('aria-busy', 'true');
         var loaded = (window.GT.data && window.GT.data.products) ? window.GT.data.products() : Promise.resolve(PRODUCTS);
-        loaded.then(function (list) { if (list && list.length) PRODUCTS = list; }, function () {}).then(function () {
+        var isLive = function () { return !!(window.GT.backend && window.GT.backend.enabled); };
+        loaded.then(function (list) { if (list && (list.length || isLive())) PRODUCTS = list; }, function () { if (isLive()) PRODUCTS = []; }).then(function () {
             grid.removeAttribute('aria-busy');
             render();
             var pq = /[?&]product=([\w-]+)/.exec(location.search);

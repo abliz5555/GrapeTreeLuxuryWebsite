@@ -41,5 +41,7 @@
         return { subtotal: s, deliveryFee: 0, freeDelivery: false, vatRate: 0, vat: 0, total: s, incl: false, trn: '', legacy: true };
     }
     if (!G.money) G.money = function (n) { n = Number(n) || 0; return 'AED ' + n.toLocaleString('en-US', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }); };
-    G.pricing = { slug: slug, cfg: cfg, calc: calc, ofOrder: ofOrder };
+    /* a quote line with no price is "open" (price on request); a quote line WITH a price is only an estimate that is already inside the total */
+    function openQuote(o) { if (o && o.quote_open != null) return !!o.quote_open; return !!(o && o.items || []).some(function (l) { return l && l.quote && !(Number(l.total) > 0); }); }
+    G.pricing = { slug: slug, cfg: cfg, calc: calc, ofOrder: ofOrder, openQuote: openQuote };
 })();

@@ -122,7 +122,7 @@
         var src = {}; live.forEach(function (o) { var k = (o.source || 'direct').split(' / ')[0] || 'direct'; src[k] = (src[k] || 0) + 1; });
         var top = Object.keys(src).sort(function (a, b) { return src[b] - src[a]; }).slice(0, 5).map(function (k) { return esc(k) + ' <b>' + src[k] + '</b>'; }).join(' &nbsp;&middot;&nbsp; ');
         function row(o, extra) {
-            return '<button type="button" class="adm-row-btn" data-open="' + esc(o.id) + '"><span class="o-no">#' + esc(o.order_no) + '</span><span class="grow"><strong>' + esc(o.name) + '</strong><small>' + esc(dt(o.created_at)) + (o.delivery_date ? ' &middot; deliver ' + esc(o.delivery_date) : '') + '</small></span>' + (extra || '') + '<span class="o-total">' + esc(money(otot(o))) + '</span></button>';
+            return '<button type="button" class="adm-row-btn" data-open="' + esc(o.id) + '"><span class="o-no">#' + esc(o.order_no) + '</span><span class="grow"><strong>' + esc(o.name) + '</strong><small>' + esc(dt(o.created_at)) + (o.delivery_date ? ' &middot; ' + (o._est ? 'est. by ' : 'deliver ') + esc(o.delivery_date) : '') + '</small></span>' + (extra || '') + '<span class="o-total">' + esc(money(otot(o))) + '</span></button>';
         }
         var quick = '<div class="adm-quick"><h3>Quick actions</h3><div class="adm-qgrid">' +
             [['orders', 'See all orders'], ['products', 'Add or edit a product'], ['business', 'Delivery prices, TRN and VAT'], ['website', 'Edit website texts and photos'], ['settings', 'Announcement and bank details'], ['test', 'Test the studio']].filter(function (q) { return tabOk(q[0]); }).map(function (q) { return '<button type="button" class="adm-qbtn" data-go="' + q[0] + '">' + esc(q[1]) + ' <span aria-hidden="true">&rarr;</span></button>'; }).join('') + '</div></div>';
@@ -135,7 +135,7 @@
             (late.length ? statLink('Late deliveries', late.length, 'delivery date has passed', 'late=1') : '') + '</div>' +
             '<div class="adm-two">' +
             '<section class="adm-card"><h3>Needs your attention</h3>' + (attn.length ? attn.map(function (o) { return row(o, (o.status === 'new' ? '<span class="chip st-new">New</span>' : '') + (reviewOf(o) === 'pending' ? '<span class="chip rv-pending">Review design</span>' : '')); }).join('') : '<p class="adm-empty">Nothing waiting. Nice work.</p>') + '</section>' +
-            '<section class="adm-card"><h3>Deliveries in the next 7 days</h3>' + (up.length ? up.map(function (o) { var d = daysFromNow(o.delivery_date); return row(o, '<span class="chip">' + (d === 0 ? 'Today' : d === 1 ? 'Tomorrow' : 'In ' + d + ' days') + '</span>'); }).join('') : '<p class="adm-empty">No deliveries planned this week.</p>') + '</section></div>' +
+            '<section class="adm-card"><h3>Expected deliveries in the next 7 days</h3>' + (up.length ? up.map(function (o) { var d = daysFromNow(o.delivery_date); return row(o, '<span class="chip">' + (d === 0 ? 'Today' : d === 1 ? 'Tomorrow' : 'In ' + d + ' days') + '</span>'); }).join('') : '<p class="adm-empty">No deliveries planned this week.</p>') + '</section></div>' +
             '<section class="adm-card"><h3>All orders by status</h3><div class="adm-chips">' + byStatus + '</div><p class="adm-fine">Where orders come from: ' + (top || 'no orders yet') + '</p></section>';
     }
     function statLink(l, v, s, f) { return '<button type="button" class="adm-stat link" data-filter="' + esc(f) + '"><span>' + esc(l) + '</span><strong>' + esc(v) + '</strong><small>' + esc(s) + '</small></button>'; }
@@ -167,6 +167,7 @@
         return B.client.from('orders').select('*').order('created_at', { ascending: false }).limit(1000).then(function (r) {
             if (r.error) throw r.error;
             ORDERS = r.data || [];
+            ORDERS.forEach(function (o) { if (!o.delivery_date && o.created_at) { var d5 = new Date(o.created_at); d5.setDate(d5.getDate() + 5); o.delivery_date = ymd(d5); o._est = true; } });   // no date is chosen any more: estimate = order day + 5
             var n = ORDERS.filter(function (o) { return o.status === 'new'; }).length, b = $('#adm-new');
             b.hidden = !n; b.textContent = n;
             if (tab === 'orders') drawOrders(); else if (tab === 'dashboard') drawDashboard();
@@ -201,7 +202,7 @@
         box.innerHTML = list.map(function (o) {
             return '<article class="adm-order" data-id="' + esc(o.id) + '">' +
                 '<button type="button" class="o-head" aria-expanded="false"><span class="o-no">#' + esc(o.order_no) + (o.source === 'admin-test' ? ' <em class="testtag">TEST</em>' : '') + '</span>' +
-                '<span class="o-who"><strong>' + esc(o.name) + '</strong><small>' + esc(dt(o.created_at)) + ' &middot; ' + esc(o.emirate) + (o.delivery_date ? ' &middot; deliver ' + esc(o.delivery_date) : '') + '</small></span>' +
+                '<span class="o-who"><strong>' + esc(o.name) + '</strong><small>' + esc(dt(o.created_at)) + ' &middot; ' + esc(o.emirate) + (o.delivery_date ? ' &middot; ' + (o._est ? 'est. by ' : 'deliver ') + esc(o.delivery_date) : '') + '</small></span>' +
                 '<span class="o-total">' + esc(money(otot(o))) + (o.has_quote ? ' +' : '') + '</span><span class="o-chips">' + chipsFor(o) + '</span></button>' +
                 '<div class="o-body" hidden></div></article>';
         }).join('');
@@ -237,8 +238,8 @@
             if (a.files && a.files[k]) out += '<button type="button" class="o-artbtn" data-art="' + esc(a.folder + '/' + a.files[k]) + '">' + esc(ART_LABELS[k]) + '</button> ';
         });
         out += '</div>';
-        if (a.legal && a.legal.accepted_at) out += '<p class="adm-fine ok">&#10003; Customer confirmed the rights and content statements for this design (' + esc(dt(a.legal.accepted_at)) + ')</p>';
-        else out += '<p class="adm-fine warn">No rights confirmation was saved with this design (placed before the update).</p>';
+        if (a.legal && a.legal.accepted_at) out += '<p class="adm-fine ok">&#10003; Customer confirmed the rights and content statements for this design (' + esc(dt(a.legal.accepted_at)) + (a.legal.version ? ', texts version ' + esc(a.legal.version) : '') + (a.id ? ', design ' + esc(String(a.id).slice(0, 8)) : '') + ')</p>';
+        else out += '<p class="adm-fine warn">The design-level rights record is missing for this item. Check the order-level agreement below, and ask the customer to confirm before production.</p>';
         return out + '</div>';
     }
     function loadThumbs(scope) {
@@ -291,9 +292,9 @@
         var art = hasArt(o);
         return '<div class="o-grid"><div><h4>Items</h4><ul class="o-items">' + items + '</ul>' +
             (o.total != null && o.total !== '' ? '<p class="adm-fine">Items ' + esc(money(o.subtotal)) + ' &middot; Delivery ' + (Number(o.delivery_fee) > 0 ? esc(money(o.delivery_fee)) : 'FREE') + ' &middot; VAT ' + esc(o.vat_rate) + '% ' + esc(money(o.vat_amount)) + (o.prices_include_vat ? ' (included)' : '') + (o.trn ? ' &middot; TRN ' + esc(o.trn) : '') + '</p>' : '') +
-            '<p class="o-sum"><span>' + (o.total != null && o.total !== '' ? 'Order total' : 'Estimated total') + '</span><strong>' + esc(money(otot(o))) + (o.has_quote ? ' + quoted items' : '') + '</strong></p></div>' +
+            '<p class="o-sum"><span>' + (o.total != null && o.total !== '' ? 'Order total' : 'Estimated total') + '</span><strong>' + esc(money(otot(o))) + (o.has_quote ? (window.GT.pricing.openQuote(o) ? ' + quoted items' : ' (estimate)') : '') + '</strong></p></div>' +
             '<div><h4>Customer</h4><p><strong>' + esc(o.name) + '</strong><br><a href="tel:' + esc(o.phone) + '">' + esc(o.phone) + '</a>' + (o.email ? '<br><a href="mailto:' + esc(o.email) + '">' + esc(o.email) + '</a>' : '') + '</p>' +
-            '<h4>Delivery</h4><p>' + esc(o.emirate) + '<br>' + esc(o.address).replace(/\n/g, '<br>') + '<br><strong>' + (o.delivery_date ? esc(o.delivery_date) : 'No date') + '</strong></p>' +
+            '<h4>Delivery</h4><p>' + esc(o.emirate) + '<br>' + esc(o.address).replace(/\n/g, '<br>') + '<br><strong>' + (o.delivery_date ? (o._est ? 'Estimated by ' : '') + esc(o.delivery_date) : 'No date') + '</strong><br><small>Customer was told: 3-5 days after confirmation</small></p>' +
             (o.notes ? '<h4>Customer notes</h4><p>' + esc(o.notes) + '</p>' : '') +
             '<h4>Payment</h4><p>' + esc(PAY_NAME[o.payment_method] || o.payment_method) + (o.source ? '<br><small>Came from: ' + esc(o.source) + '</small>' : '') + '</p></div></div>' +
             legalBlock(o) +
@@ -542,7 +543,8 @@
         var v = stVal(sp), cake = sp === 'cake', form = $('#s-form');
         function cp(a) { return JSON.parse(JSON.stringify(a || [])); }
         var ST = {
-            tiers: cp(v.tiers), boxes: cp(v.boxes), bsets: cp(v.boxSets), thick: cp(v.thickness)
+            tiers: cp(v.tiers), boxes: cp(v.boxes), bsets: cp(v.boxSets), thick: cp(v.thickness),
+            flav: (v.flavours && v.flavours.length ? v.flavours : (cake ? ['Plain', 'Pistachio'] : [])).map(function (f) { return typeof f === 'string' ? { name: f, on: true, extra: 0, thick: '' } : { name: String(f.name || ''), on: f.on !== false, extra: Number(f.extra) || 0, thick: f.thick == null ? '' : String(f.thick) }; })
         };
         var OLDD = (v.discounts && v.discounts.length ? v.discounts : [{ min: 1, off: 0 }, { min: 10, off: 5 }, { min: 25, off: 10 }, { min: 50, off: 15 }, { min: 100, off: 20 }]);
         ST.bsets.forEach(function (b) {            // older settings: price per box + percent discounts -> quantity options
@@ -581,7 +583,7 @@
         function totalText(t) { return 'Total: <b>' + aed(n(t.qty) * n(t.unit)) + '</b>'; }
         function tiersHtml() { return cardsHtml('tiers', 0, ST.tiers, 'pcs'); }
         function boxesHtml() {
-            return '<div class="st-tbl st-t-col"><div class="st-th">Colour</div><div class="st-th">Name shown to customer</div><div class="st-th">Extra price (AED per piece)</div><div class="st-th"></div>' +
+            return '<div class="st-tbl st-t-col"><div class="st-th">Colour</div><div class="st-th">Name shown to customer</div><div class="st-th">Extra price (AED per piece)</div><div class="st-th">Available</div><div class="st-th"></div>' +
                 ST.boxes.map(function (b, i) {
                     return '<div class="st-row"><div class="st-td" data-l="Colour"><input type="color" data-a="boxes" data-i="' + i + '" data-f="color" value="' + esc(/^#[0-9a-f]{6}$/i.test(b.color || '') ? b.color : '#cccccc') + '" aria-label="Colour"></div><div class="st-td" data-l="Name">' + txt('boxes', i, 'label', 'Colour name') + '</div>' +
                         '<div class="st-td" data-l="Extra (AED per piece)">' + num('boxes', i, 'extra', 'min="0" step="0.5"') + '</div><div class="st-td">' + (ST.boxes.length > 1 ? rm('boxes', i) : '') + '</div></div>';
@@ -605,38 +607,50 @@
             return lo ? 'Minimum order: <b>' + n(lo.qty) + ' ' + (n(b.pieces) === 1 ? 'pcs' : 'boxes') + '</b>' + (n(b.pieces) > 1 ? ' (' + n(lo.qty) * n(b.pieces) + ' pieces)' : '') + ' &middot; from <b>' + aed(n(lo.qty) * n(lo.unit)) + '</b> in total &middot; ' + ts.length + ' option' + (ts.length === 1 ? '' : 's') : 'Add at least one quantity option.';
         }
         function thickHtml() {
-            return '<div class="st-tbl st-t-th"><div class="st-th">Name shown to customer</div><div class="st-th">Thickness (mm)</div><div class="st-th">Extra price (AED per piece)</div><div class="st-th"></div>' +
+            return '<div class="st-tbl st-t-th"><div class="st-th">Name shown to customer</div><div class="st-th">Thickness (mm)</div><div class="st-th">Extra price (AED per piece)</div><div class="st-th">Available</div><div class="st-th"></div>' +
                 ST.thick.map(function (t, i) {
                     return '<div class="st-row"><div class="st-td" data-l="Name">' + txt('thick', i, 'label', 'Thickness name') + '</div><div class="st-td" data-l="Thickness (mm)">' + num('thick', i, 'mm', 'min="1" max="40" step="1"') + '</div>' +
                         '<div class="st-td" data-l="Extra (AED per piece)">' + num('thick', i, 'extra', 'min="0" step="0.5"') + '</div><div class="st-td">' + (ST.thick.length > 1 ? rm('thick', i) : '') + '</div></div>';
                 }).join('') + '</div><p><button type="button" class="adm-btn ghost" data-add="thick">+ Add a thickness</button></p>';
         }
+        function flavHtml() {
+            return '<div class="st-flavs">' + ST.flav.map(function (f, i) {
+                return '<div class="st-fl' + (f.on ? '' : ' off') + '"><div class="st-fl-n"><label class="st-qc-l">Flavour name</label><input type="text" maxlength="60" data-a="flav" data-i="' + i + '" data-f="name" value="' + esc(f.name) + '" aria-label="Flavour name"></div>' +
+                    (cake ? '' : '<div class="st-fl-t"><label class="st-qc-l">Thickness</label><select data-a="flav" data-i="' + i + '" data-f="thick" aria-label="Thickness for this flavour"><option value="">Customer chooses</option>' + ST.thick.map(function (t) { var mm = String(Math.round(n(t.mm) || 0)); return '<option value="' + mm + '"' + (String(f.thick) === mm ? ' selected' : '') + '>' + esc((t.label || mm + ' mm')) + ' (' + mm + ' mm)</option>'; }).join('') + '</select></div>') +
+                    '<div class="st-fl-x"><label class="st-qc-l">Extra price per piece</label><div class="st-qc-p"><span>AED</span><input type="number" inputmode="decimal" min="0" step="0.01" data-a="flav" data-i="' + i + '" data-f="extra" value="' + esc(f.extra) + '" aria-label="Extra price per piece"></div></div>' +
+                    '<label class="check st-fl-on"><input type="checkbox" data-a="flav" data-i="' + i + '" data-f="on"' + (f.on ? ' checked' : '') + '> <b>' + (f.on ? 'Available' : 'Sold out') + '</b></label>' +
+                    (ST.flav.length > 1 ? '<button type="button" class="st-x" data-rm="flav" data-i="' + i + '" aria-label="Remove this flavour">&times;</button>' : '') + '</div>';
+            }).join('') + '<button type="button" class="adm-btn ghost" data-add="flav">+ Add a flavour</button></div>';
+        }
         ST.thick.forEach(function (t) { if (t.mm == null) t.mm = parseInt(t.id, 10) || parseInt(t.label, 10) || 5; });
 
         var h = '<p class="st-help st-top">' + (cake ? 'This is the page customers use to design a <b>Katanukiya cut-out cake</b>.' : 'This is the page customers use to design <b>GildArt printed chocolates</b>.') + ' Everything below can be changed. Press <b>Save changes</b> at the bottom when you finish. It goes live straight away.</p>';
+        h += sec('&#10024;', 'AI drawing tools', 'Turn this off while the AI service is not working or not paid for. Customers then will not see "Describe it" or the AI improvement buttons, and can still upload their own picture or use the ready designs.', '<label class="check"><input type="checkbox" id="s-ai-on"' + (((SC.ai || {}).enabled !== false) ? ' checked' : '') + '> AI drawing and AI improvement tools are available to customers</label>');
         if (cake) {
             h += sec(1, 'Minimum order and prices', 'Each card below is one choice the customer sees on the order page. Type the <b>quantity</b> and the <b>price for 1 piece</b>; the <b>total is calculated for you</b>. The <b>smallest quantity is the minimum order</b>. Prices include the first die setup and delivery in the UAE.', summary() + '<div id="s-tiers">' + tiersHtml() + '</div>');
             h += sec(2, 'Box colours', 'The boxes the customer can pick. If a colour costs more, type the extra price for each piece (use 0 for no extra charge).', '<div id="s-boxes">' + boxesHtml() + '</div>');
+            h += sec(3, 'Flavours', 'The flavours the customer can choose (for example Plain and Pistachio). Untick <b>Available</b> when a flavour is finished: customers will see it as <b>Sold out</b> and cannot pick it. Add new flavours any time. If a flavour costs more, type the extra price for each piece.', '<div id="s-flav">' + flavHtml() + '</div>');
         } else {
             h += sec(1, 'Box types, minimum order and quantity options', 'Customers pick a box, then one of the quantity options below it (like the cake page). <b>The smallest quantity is the minimum order</b> for that box. For example: single chocolate from 50 pieces, 3-piece set from 20 boxes. Prices include delivery in the UAE.', '<div id="s-bsets">' + bsetsHtml() + '</div>');
-            h += sec(2, 'Thickness', 'The chocolate thickness options. The extra price is added for <b>each piece</b>. Use 0 for the standard thickness.', '<div id="s-thick">' + thickHtml() + '</div>');
-            h += sec(3, 'Custom flavour and custom box', 'Small orders get the standard flavour and box. From the number of pieces below, the customer can ask for their own flavour and a custom box.',
-                field('Unlocks from this many pieces in total', 'Example: 300.', '<input type="number" min="1" step="1" id="s-moq" value="' + esc(v.customMinQty || 300) + '">') +
-                field('Flavours customers can choose (one per line)', 'The first line is the standard flavour. The others need the quantity above.', '<textarea id="s-flav" rows="5">' + esc((v.flavours || []).join('\n')) + '</textarea>'));
+            h += sec(2, 'Thickness', 'Add every thickness you can make (for example 5 mm and 12 mm). The extra price is added for <b>each piece</b>; use 0 if the price is already in the box price. In the <b>Flavours</b> section below you can tie a thickness to a flavour (for example Pistachio kunafa = 12 mm).', '<div id="s-thick">' + thickHtml() + '</div>');
+            h += sec(3, 'Flavours and custom box', 'Flavours and custom box are managed here. Every available flavour can be chosen at any quantity. The <b>custom box</b> unlocks from the number of pieces below.',
+                field('Custom box unlocks from this many pieces in total', 'Example: 300.', '<input type="number" min="1" step="1" id="s-moq" value="' + esc(v.customMinQty || 300) + '">') +
+                '<h5 class="st-h5">Flavours</h5><p class="st-help">The first available flavour is the standard one. The others need the quantity above. Untick <b>Available</b> when a flavour is finished: customers will see it as <b>Sold out</b>. Add new flavours any time.</p><div id="s-flav">' + flavHtml() + '</div>');
         }
-        h += sec(cake ? 3 : 4, 'Words on the page', 'The headline, introduction and short highlights at the top of the design page.',
+        h += sec(4, 'Words on the page', 'The headline, introduction and short highlights at the top of the design page.',
             field('Headline', 'Big title at the top.', '<input id="s-title" value="' + esc(v.title || '') + '">') +
             field('Introduction', 'Two or three sentences under the headline.', '<textarea id="s-lead" rows="3">' + esc(v.lead || '') + '</textarea>') +
             field('Short highlights (one per line, up to 4)', 'Small tags, for example the size or the minimum order.', '<textarea id="s-chips" rows="3">' + esc((v.chips || []).join('\n')) + '</textarea>'));
-        h += sec(cake ? 4 : 5, 'Delivery time and designer help', '',
-            '<div class="st-two">' + field('Delivery time (business days)', 'Shown to customers as the estimated shipping date.', '<input type="number" min="1" id="s-lead-d" value="' + esc(v.leadBusinessDays || 14) + '">') +
+        h += sec(5, 'Designer help', '',
+            '<div class="st-two">' + field('Estimated delivery', 'Customers see "3-5 days after we confirm your order". They no longer choose a date.', '<input type="text" value="3-5 days" disabled>') +
             field('Designer fee (AED)', 'Extra charge when the customer asks our designer to create the artwork. 0 = free.', '<input type="number" min="0" id="s-fee" value="' + esc(v.designerFee || 0) + '">') + '</div>');
         var sf = v.surface || (cake ? { w: 63, h: 48 } : { w: 50, h: 50 });
         h += '<details class="st-sec st-adv"><summary>Technical settings (only change if the size of your product changes)</summary>' +
             '<div class="st-two">' + field(cake ? 'Cake surface width (mm)' : 'Chocolate surface width (mm)', 'Size of the printed area.', '<input type="number" min="10" step="0.5" id="s-sw" value="' + esc(sf.w) + '">') +
             field(cake ? 'Cake surface height (mm)' : 'Chocolate surface height (mm)', 'Size of the printed area.', '<input type="number" min="10" step="0.5" id="s-sh" value="' + esc(sf.h) + '">') +
             field('Print and cut tolerance (mm)', 'Shown to customers as the allowed difference.', '<input type="number" min="0" step="0.1" id="s-tol" value="' + esc(v.tolerance || 1.5) + '">') +
-            (cake ? field('Clear zone around the edge (mm)', 'Nothing may go past this edge.', '<input type="number" min="0" step="0.5" id="s-mar" value="' + esc(v.margin != null ? v.margin : 5) + '">') : '') + '</div></details>';
+            (cake ? field('Clear zone around the edge (mm)', 'Nothing may go past this edge.', '<input type="number" min="0" step="0.5" id="s-mar" value="' + esc(v.margin != null ? v.margin : 5) + '">') : '') +
+            (cake ? field('Price reduction when the customer chooses NO box (AED per piece)', 'Customers can choose a gift box or plastic pack only. Type 0 for no difference in price.', '<input type="number" min="0" step="0.01" id="s-nobox" value="' + esc(v.noBoxOff != null ? v.noBoxOff : 0) + '">') : '') + '</div></details>';
         h += '<p class="adm-err" id="s-err" hidden></p><div class="st-savebar"><button type="button" class="adm-btn" id="s-save">Save changes</button> <button type="button" class="adm-btn ghost" id="s-reset">Back to website defaults</button></div>';
         form.innerHTML = h;
 
@@ -647,11 +661,12 @@
             var lv = $('#s-live'); if (lv) lv.outerHTML = summary();
         }
         function redraw(id, fn) { var el = $(id); if (el) el.innerHTML = fn(); refresh(); }
-        var REDRAW = { tiers: ['#s-tiers', tiersHtml], boxes: ['#s-boxes', boxesHtml], bsets: ['#s-bsets', bsetsHtml], btiers: ['#s-bsets', bsetsHtml], thick: ['#s-thick', thickHtml] };
+        var REDRAW = { tiers: ['#s-tiers', tiersHtml], boxes: ['#s-boxes', boxesHtml], bsets: ['#s-bsets', bsetsHtml], btiers: ['#s-bsets', bsetsHtml], thick: ['#s-thick', thickHtml], flav: ['#s-flav', flavHtml] };
         refresh();
         form.oninput = function (e) {
             var d = e.target.dataset;
-            if (d.a) { var arr = d.b != null ? arrOf(d.a, +d.b) : ST[d.a], r = arr[+d.i], val = e.target.value; r[d.f] = (e.target.type === 'number') ? (val === '' ? '' : Number(val)) : val; if (d.f === 'qty' || d.f === 'unit') r.price = Math.round(n(r.qty) * n(r.unit) * 100) / 100; if (d.a === 'bsets' && d.f === 'pieces') redraw('#s-bsets', bsetsHtml); else refresh(); }
+            if (d.a) { var arr = d.b != null ? arrOf(d.a, +d.b) : ST[d.a], r = arr[+d.i], val = e.target.value; if (d.a === 'thick' && d.f === 'mm') { var oldMm = String(Math.round(n(r.mm))), newMm = String(Math.round(Number(val) || 0)); ST.flav.forEach(function (f2) { if (String(f2.thick) === oldMm) f2.thick = newMm; }); }
+            if (e.target.type === 'checkbox') { r[d.f] = e.target.checked; if (d.a === 'flav') { var fl = e.target.closest('.st-fl'); if (fl) { fl.classList.toggle('off', !r.on); fl.querySelector('.st-fl-on b').textContent = r.on ? 'Available' : 'Sold out'; } } return; } r[d.f] = (e.target.type === 'number') ? (val === '' ? '' : Number(val)) : val; if (d.f === 'qty' || d.f === 'unit') r.price = Math.round(n(r.qty) * n(r.unit) * 100) / 100; if (d.a === 'bsets' && d.f === 'pieces') redraw('#s-bsets', bsetsHtml); else if (d.a === 'thick' && (d.f === 'mm' || d.f === 'label')) { var fb = $('#s-flav'); if (fb && !cake) fb.innerHTML = flavHtml(); refresh(); } else refresh(); }
         };
         form.onchange = function (e) {
             var d = e.target.dataset;
@@ -662,11 +677,13 @@
             if (a) {
                 var k = a.dataset.add, arr = k === 'btiers' ? arrOf(k, +a.dataset.b) : ST[k], L = arr[arr.length - 1] || {};
                 if (k === 'tiers' || k === 'btiers') { var q2 = Math.round(n(L.qty || 50) * 2), u2 = Math.round(n(L.unit || 20) * 0.9 * 100) / 100; arr.push({ qty: q2, unit: u2, price: Math.round(q2 * u2 * 100) / 100 }); }
-                if (k === 'boxes') ST.boxes.push({ id: 'colour-' + (ST.boxes.length + 1), label: 'New colour', extra: 3, color: '#cccccc' });
+                if (k === 'boxes') ST.boxes.push({ id: 'colour-' + (ST.boxes.length + 1), label: 'New colour', extra: 3, color: '#cccccc', on: false });
                 if (k === 'bsets') ST.bsets.push({ id: 'b' + (ST.bsets.length + 1) + '-' + Date.now().toString(36).slice(-3), pieces: 6, label: '6-piece gift box', price: 180, tiers: [{ qty: 20, unit: 160, price: 3200 }, { qty: 50, unit: 150, price: 7500, popular: true }, { qty: 100, unit: 140, price: 14000 }] });
-                if (k === 'thick') ST.thick.push({ id: '8', mm: 8, label: '8 mm', extra: 0.5 });
+                if (k === 'flav') ST.flav.push({ name: 'New flavour', on: true, extra: 0 });
+                if (k === 'thick') ST.thick.push({ id: '8', mm: 8, label: '8 mm', extra: 0 });
                 redraw(REDRAW[k][0], REDRAW[k][1]);
-            } else if (r) { var kk = r.dataset.rm, ar = kk === 'btiers' ? arrOf(kk, +r.dataset.b) : ST[kk]; ar.splice(+r.dataset.i, 1); redraw(REDRAW[kk][0], REDRAW[kk][1]); }
+                if (k === 'thick') { var fb3 = $('#s-flav'); if (fb3) fb3.innerHTML = flavHtml(); }
+            } else if (r) { var kk = r.dataset.rm, ar = kk === 'btiers' ? arrOf(kk, +r.dataset.b) : ST[kk]; ar.splice(+r.dataset.i, 1); if (kk === 'thick') { var fb2 = $('#s-flav'); if (fb2) fb2.innerHTML = flavHtml(); } redraw(REDRAW[kk][0], REDRAW[kk][1]); }
         };
         $('#s-save').onclick = function () {
             var err = $('#s-err'); err.hidden = true;
@@ -677,10 +694,12 @@
                 for (var i = 0; i < ts.length; i++) { if (!(n(ts[i].qty) >= 1) || !(n(ts[i].unit) >= 0) || ts[i].unit === '') return bad('Please check the quantities and prices in "Minimum order and prices".'); if (i && n(ts[i].qty) === n(ts[i - 1].qty)) return bad('Two rows have the same quantity.'); }
                 out.tiers = ts.map(function (t) { var o = { qty: Math.round(n(t.qty)), unit: n(t.unit), price: Math.round(Math.round(n(t.qty)) * n(t.unit) * 100) / 100 }; if (t.popular) o.popular = true; return o; });
                 var used = {};
-                out.boxes = ST.boxes.map(function (b, i) { var o = {}; for (var k in b) o[k] = b[k]; o.label = String(b.label || '').trim() || 'Colour ' + (i + 1); o.extra = Math.max(0, n(b.extra)); o.color = b.color || '#cccccc'; var id = String(b.id || '').trim() || slug(o.label); while (used[id]) id += '-x'; used[id] = 1; o.id = id; return o; });
+                out.boxes = ST.boxes.map(function (b, i) { var o = {}; for (var k in b) o[k] = b[k]; o.label = String(b.label || '').trim() || 'Colour ' + (i + 1); o.on = b.on !== false; o.extra = Math.max(0, n(b.extra)); o.color = b.color || '#cccccc'; var id = String(b.id || '').trim() || slug(o.label); while (used[id]) id += '-x'; used[id] = 1; o.id = id; return o; });
                 if (!out.boxes.length) return bad('Please keep at least one box colour.');
+                if (!out.boxes.some(function (b) { return b.on; })) return bad('Please keep at least one box colour available.');
                 if (!out.boxes.some(function (b) { return b.standard; })) out.boxes[0].standard = true;
                 out.margin = Math.max(0, n($('#s-mar').value));
+                out.noBoxOff = Math.max(0, n($('#s-nobox').value));
             } else {
                 var ids = {};
                 out.boxSets = ST.bsets.map(function (b, i) {
@@ -702,13 +721,14 @@
                 out.thickness = ST.thick.map(function (t, i) { var mm = Math.max(1, Math.round(n(t.mm) || 5)); var id = String(mm); while (tids[id]) id += '0'; tids[id] = 1; return { id: id, label: String(t.label || '').trim() || mm + ' mm', extra: Math.max(0, n(t.extra)) }; });
                 if (!out.thickness.length) return bad('Please keep at least one thickness.');
                 out.customMinQty = Math.max(1, parseInt($('#s-moq').value, 10) || 300);
-                out.flavours = $('#s-flav').value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
-                if (!out.flavours.length) return bad('Please add at least one flavour.');
             }
             out.surface = { w: Math.max(10, n($('#s-sw').value) || sf.w), h: Math.max(10, n($('#s-sh').value) || sf.h) };
             out.tolerance = Math.max(0, n($('#s-tol').value)) || 1.5;
-            out.leadBusinessDays = Math.max(1, parseInt($('#s-lead-d').value, 10) || 14);
+            out.flavours = ST.flav.map(function (f) { var o = { name: String(f.name || '').trim(), on: !!f.on, extra: Math.max(0, n(f.extra)) }; if (!cake) o.thick = f.thick == null ? '' : String(f.thick); return o; }).filter(function (f) { return f.name; });
+            if (!out.flavours.length) return bad('Please add at least one flavour.');
+            if (!out.flavours.some(function (f) { return f.on; })) return bad('At least one flavour must be available.');
             out.designerFee = Math.max(0, n($('#s-fee').value));
+            SC.ai = { enabled: !!($('#s-ai-on') && $('#s-ai-on').checked) };
             SC[sp] = out;
             B.saveContent('studio', SC).then(function () { toast('Saved. The ' + (cake ? 'cake' : 'chocolate') + ' design page is updated.'); }).catch(fail);
         };

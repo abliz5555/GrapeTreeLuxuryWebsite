@@ -580,3 +580,6 @@ body[data-product=cake] #st-scene, body[data-product=cake] #st-preview{ backgrou
   .st-finish-seg b{font-size:13px;margin-top:4px}
   .st-finish-seg svg{width:28px;height:28px;margin:0 auto;display:block}
 }
+
+.st-chip-toggle.off{ opacity:.55; } 
+.gt-noai .st-tile[data-pane=ai],.gt-noai .st-pane[data-pane=ai],.gt-noai .st-ai-head,.gt-noai #ai-btns,.gt-noai #ai-note,.gt-noai #ai-status{display:none!important}

@@ -35,6 +35,7 @@
         return g;
     }
 
+    var ETA = (CFG.deliveryEstimate || '3-5 days');
     /* ------------------------------ dates ------------------------------ */
     function pad(n) { return (n < 10 ? '0' : '') + n; }
     function iso(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
@@ -98,14 +99,12 @@
                 '<div class="gt-sum co-row"><span>' + esc(T('Items')) + '</span><strong>' + esc(money(P.subtotal)) + '</strong></div>' +
                 '<div class="gt-sum co-row"><span>' + esc(T('Delivery')) + '</span><strong>' + (P.freeDelivery ? '<em class="co-free">' + esc(T('FREE')) + '</em>' + (P.standardFee > 0 ? ' <s>' + esc(money(P.standardFee)) + '</s>' : '') : esc(money(P.deliveryFee))) + '</strong></div>' +
                 '<div class="gt-sum co-row"><span>' + esc(vl) + '</span><strong>' + esc(money(P.vat)) + '</strong></div>' +
-                '<div class="gt-sum co-total"><span>' + esc(t.hasQuote ? T('Estimated total') : T('Total')) + (t.hasQuote ? ' <em>(' + esc(T('quoted items extra')) + ')</em>' : '') + '</span><strong>' + esc(money(P.total)) + '</strong></div>' +
+                '<div class="gt-sum co-total"><span>' + esc(t.hasQuote || t.hasEstimate ? T('Estimated total') : T('Total')) + (t.hasQuote ? ' <em>(' + esc(T('quoted items extra')) + ')</em>' : '') + (!t.hasQuote && t.hasEstimate ? ' <em>(' + esc(T('final price confirmed after we review your design')) + ')</em>' : '') + '</span><strong>' + esc(money(P.total)) + '</strong></div>' +
                 '<p class="gt-fine">' + esc(CFG.deliveryNote || '') + '</p>';
         }
 
         /* default the date to the latest custom-order date, if there is one */
-        var dateInput = $('#f-date');
-        var wanted = items.reduce(function (m, l) { return l.date && l.date > m ? l.date : m; }, '');
-        if (!dateInput.value && wanted) dateInput.value = wanted;
+
     }
 
     /* ------------------------------ form ------------------------------ */
@@ -129,13 +128,11 @@
         var ag = $('#co-agree'); if (ag) { var miss = !ag.checked; $('#co-agree-err').hidden = !miss; $('#co-legal').classList.toggle('bad', miss); if (miss) bad.push('co-agree'); }
         if (setInvalid('f-name', !$('#f-name').value.trim())) bad.push('f-name');
         var digits = $('#f-phone').value.replace(/\D/g, '');
-        if (setInvalid('f-phone', digits.length < 7)) bad.push('f-phone');
+        if (setInvalid('f-phone', digits.length < 7 || /^(\d)\1+$/.test(digits.replace(/^0+/, '') || '0') || !/[1-9]/.test(digits))) bad.push('f-phone');
         var email = $('#f-email').value.trim();
         if (setInvalid('f-email', !email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))) bad.push('f-email');
         if (setInvalid('f-emirate', !$('#f-emirate').value)) bad.push('f-emirate');
         if (setInvalid('f-address', $('#f-address').value.trim().length < 6)) bad.push('f-address');
-        var d = $('#f-date').value;
-        if (setInvalid('f-date', !d || d < minDate())) bad.push('f-date');
         if (bad.length) { var fe = $('#' + bad[0]); if (fe) { fe.focus(); if (bad[0] === 'co-agree' && fe.scrollIntoView) fe.scrollIntoView({ block: 'center' }); } }
         return !bad.length;
     }
@@ -146,7 +143,7 @@
             'Name: ' + c.name,
             'Phone: ' + c.phone];
         if (c.email) out.push('Email: ' + c.email);
-        out.push('Emirate: ' + c.emirate, 'Address: ' + c.address, 'Delivery date: ' + niceDate(c.date), '', '*Items*');
+        out.push('Emirate: ' + c.emirate, 'Address: ' + c.address, 'Estimated delivery: ' + ETA, '', '*Items*');
         items.forEach(function (l, i) {
             var price = CFG.showPrices === false ? '' : ' - ' + (l.included ? 'included' : l.quote && !l.unit && !l.fee ? 'quoted' : money(cartApi().lineTotal(l)));
             out.push((i + 1) + '. ' + l.name + ' x ' + l.qty + price);
@@ -265,14 +262,14 @@
             if (!useDb) return null;
             return B.placeOrder({ name: c.name, phone: c.phone, email: c.email, emirate: c.emirate, address: c.address,
                 delivery_date: c.date, notes: c.notes, payment_method: c.pay, items: lines, legal: legalRecord(),
-                source: lines.some(function (x) { return x.test; }) ? 'admin-test' : (window.GT.source ? window.GT.source() : '') }).catch(function () { return null; });
+                source: lines.some(function (x) { return x.test; }) ? 'admin-test' : (window.GT.source ? window.GT.source() : '') }).then(function (r) { return r || { __abort: true, __db: true }; }, function () { return { __abort: true, __db: true }; });
         });
         saved.then(function (res) {
             if (res && res.__abort) {
                 var up = $('#co-up-err');
                 if (!up) { up = doc.createElement('p'); up.id = 'co-up-err'; up.className = 'co-legal-err'; up.setAttribute('role', 'alert'); btn.parentNode.insertBefore(up, btn); }
                 var adm = B && B.isAdmin && B.isAdmin();
-                up.textContent = T('We could not send your design files, so your order was not placed yet. Please check your internet connection and tap "Send order request" again. Your design is saved.') + (adm && window.GT.uploadErr ? ' [Admin only - technical reason: ' + window.GT.uploadErr + ']' : '');
+                up.textContent = (res.__db ? T('We could not save your order, so it was NOT placed. Your basket is kept. Please check your connection and tap "Send order request" again, or message us on WhatsApp.') : T('We could not send your design files, so your order was not placed yet. Please check your internet connection and tap "Send order request" again. Your design is saved.')) + (adm && window.GT.uploadErr ? ' [Admin only - technical reason: ' + window.GT.uploadErr + ']' : '');
                 up.hidden = false; up.style.display = 'block';
                 if (up.scrollIntoView) up.scrollIntoView({ block: 'center', behavior: 'smooth' });
                 return;
@@ -288,7 +285,7 @@
                 try {
                     localStorage.setItem('gt-last-order', JSON.stringify({ order_no: no || '', created_at: new Date().toISOString(), name: c.name, phone: c.phone, email: c.email,
                         emirate: c.emirate, address: c.address, delivery_date: c.date, notes: c.notes, payment_method: c.pay, items: lines,
-                        subtotal: tot.subtotal, has_quote: !!tot.hasQuote, status: 'new', payment_status: 'unpaid',
+                        subtotal: tot.subtotal, has_quote: !!(tot.hasQuote || tot.hasEstimate), status: 'new', payment_status: 'unpaid',
                         delivery_fee: res && res.delivery_fee != null ? res.delivery_fee : window.GT.pricing.calc(tot.subtotal, c.emirate).deliveryFee, vat_rate: res && res.vat_rate != null ? res.vat_rate : window.GT.pricing.calc(tot.subtotal, c.emirate).vatRate,
                         vat_amount: res && res.vat_amount != null ? res.vat_amount : window.GT.pricing.calc(tot.subtotal, c.emirate).vat, total: res && res.total != null ? res.total : window.GT.pricing.calc(tot.subtotal, c.emirate).total,
                         trn: res && res.trn != null ? res.trn : window.GT.pricing.calc(tot.subtotal, c.emirate).trn, prices_include_vat: res && res.prices_include_vat != null ? res.prices_include_vat : window.GT.pricing.calc(tot.subtotal, c.emirate).incl }));
@@ -310,7 +307,7 @@
             (CFG.emirates || []).map(function (e) { return '<option>' + esc(e) + '</option>'; }).join('');
 
         sel.addEventListener('change', function () { renderSummary(); });
-        $('#f-date').min = minDate();
+        if ($('#co-eta')) $('#co-eta').textContent = ETA;
         $('#co-note').textContent = (CFG.paymentNote || '');
         $('#co-note').hidden = !CFG.paymentNote;
 

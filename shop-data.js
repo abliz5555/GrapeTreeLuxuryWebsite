@@ -41,6 +41,7 @@ window.GT_DATA = {
                 { qty: 600, price: 7800 },
                 { qty: 900, price: 11200 }
             ],
+            flavours: [{ name: 'Plain', on: true, extra: 0 }, { name: 'Pistachio', on: true, extra: 0 }],   // on = available; extra = AED per piece
             boxes: [
                 { id: 'white', label: 'White', extra: 0, color: '#F4F1EA', standard: true },
                 { id: 'black', label: 'Black', extra: 3, color: '#222222' },       // extra = AED per piece
@@ -51,7 +52,7 @@ window.GT_DATA = {
         chocolate: {
             title: 'Your logo, printed on gold',
             lead: 'A premium gifting option for companies and special occasions. Print your company logo, a monogram, a message or a photograph in black ink on real gold chocolate. Choose a single chocolate, a 3-piece gift set or a 9-piece box. Every piece can carry its own print.',
-            chips: ['Gold surface 50 \u00d7 50 mm, full-area print', '1, 3 or 9 pieces per box', 'Custom flavour & box from 300 pieces'],
+            chips: ['Gold surface 50 \u00d7 50 mm, full-area print', '1, 3 or 9 pieces per box', 'Custom box from 300 pieces'],
             surface: { w: 50, h: 50 },              // gold chocolate surface in mm (SAMPLE: please confirm)
             margin: 0,                              // chocolate is printed over the full area: no clear zone
             unprinted: 0,
@@ -71,10 +72,10 @@ window.GT_DATA = {
                     { qty: 10, price: 2600 }, { qty: 25, price: 6000, popular: true }, { qty: 50, price: 11100 }, { qty: 100, price: 20500 }, { qty: 200, price: 38000 } ] }
             ],
             thickness: [
-                { id: '5', label: '5 mm thin', extra: 0 },
-                { id: '12', label: '12 mm thick', extra: 1.5 }       // extra = AED per piece
+                { id: '5', label: '5 mm', extra: 0 },
+                { id: '12', label: '12 mm', extra: 0 }       // extra = AED per piece
             ],
-            flavours: ['Milk chocolate', 'Dark chocolate', 'White chocolate', 'Ruby chocolate', 'Hazelnut', 'Matcha']
+            flavours: [{ name: 'Camel milk chocolate 45%', on: true, extra: 0, thick: '5' }, { name: 'Pistachio kunafa chocolate', on: true, extra: 0, thick: '12' }]   // on = available; extra = AED per piece; thick = fixed thickness in mm ('' = customer chooses)
         }
     },
 
@@ -102,6 +103,7 @@ window.GT_DATA = {
             hours: '',                       // optional, e.g. 'Sat-Thu 9:00 - 18:00'
             map: true                        // false = hide the map
         },
+        deliveryEstimate: '3-5 days',          // shown instead of a delivery-date picker
         leadDays: 2,                         // earliest delivery date = today + this many days
         emirates: ['Abu Dhabi', 'Ajman', 'Dubai', 'Fujairah', 'Ras Al Khaimah', 'Sharjah', 'Umm Al Quwain'],
         deliveryNote: 'Delivery fee and VAT are included in the total. We confirm timing with you.',
@@ -118,7 +120,7 @@ window.GT_DATA = {
             name: 'Burj Khalifa Cut-Out Layered Cake',
             short: 'Precision-cut layer cake revealing the Burj Khalifa.',
             desc: 'A premium layer cake cut into the shape of the Burj Khalifa with water-jet precision, presented in a gift-ready box.',
-            details: ['Premium layer cake, cut to shape with water-jet precision', 'Printed with the Burj Khalifa name in English and Arabic', 'Presented in a gift-ready box'],
+            details: ['Premium layer cake, cut to shape with water-jet precision', 'Printed with the Burj Khalifa name in English and Arabic', 'Presented in a gift-ready box', 'Imported frozen from Japan and thawed when your order arrives; sealed with an oxygen absorber for a 6 months shelf life'],
             price: 45,
             img: 'images/katanukiya-product1.jpg',
             customize: { builder: 'katanukiya', design: 'burj-khalifa' }
@@ -129,7 +131,7 @@ window.GT_DATA = {
             name: 'Burj Al Arab Cut-Out Layered Cake',
             short: 'The Burj Al Arab sail, cut from layered cake.',
             desc: 'Layered cake precision-cut into the Burj Al Arab sail, a creative gift for visitors and residents alike.',
-            details: ['Premium layer cake, cut to shape with water-jet precision', 'Printed with the Burj Al Arab name in English and Arabic', 'Presented in a gift-ready box'],
+            details: ['Premium layer cake, cut to shape with water-jet precision', 'Printed with the Burj Al Arab name in English and Arabic', 'Presented in a gift-ready box', 'Imported frozen from Japan and thawed when your order arrives; sealed with an oxygen absorber for a 6 months shelf life'],
             price: 45,
             img: 'images/katanukiya-product2.jpg',
             customize: { builder: 'katanukiya', design: 'burj-al-arab' }
@@ -140,7 +142,7 @@ window.GT_DATA = {
             name: 'Dubai Camel Cut-Out Layered Cake',
             short: 'A camel cut-out in a classic Dubai-design box.',
             desc: 'Premium layer cake cut into a camel, presented in a Dubai-design box. A playful gift with real Japanese precision.',
-            details: ['Premium layer cake, cut to shape with water-jet precision', 'Dubai-design gift box', 'Edible printing in fine detail'],
+            details: ['Premium layer cake, cut to shape with water-jet precision', 'Dubai-design gift box', 'Edible printing in fine detail', 'Imported frozen from Japan and thawed when your order arrives; sealed with an oxygen absorber for a 6 months shelf life'],
             price: 45,
             img: 'images/katanukiya-product3.jpg',
             customize: { builder: 'katanukiya', design: 'camel-dubai' }
@@ -151,7 +153,7 @@ window.GT_DATA = {
             name: 'Playful Camel Cut-Out Layered Cake',
             short: 'A cheerful camel design, made to surprise.',
             desc: 'A friendly, colourful camel cut from premium layer cake. Made to bring a smile to anyone who opens the box.',
-            details: ['Premium layer cake, cut to shape with water-jet precision', 'Colourful edible character printing', 'Presented in a gift-ready box'],
+            details: ['Premium layer cake, cut to shape with water-jet precision', 'Colourful edible character printing', 'Presented in a gift-ready box', 'Imported frozen from Japan and thawed when your order arrives; sealed with an oxygen absorber for a 6 months shelf life'],
             price: 45,
             img: 'images/katanukiya-product4.jpg',
             customize: { builder: 'katanukiya', design: 'camel-playful' }
