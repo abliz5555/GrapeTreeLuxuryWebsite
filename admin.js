@@ -204,6 +204,7 @@
                 '<button type="button" class="o-head" aria-expanded="false"><span class="o-no">#' + esc(o.order_no) + (o.source === 'admin-test' ? ' <em class="testtag">TEST</em>' : '') + '</span>' +
                 '<span class="o-who"><strong>' + esc(o.name) + '</strong><small>' + esc(dt(o.created_at)) + ' &middot; ' + esc(o.emirate) + (o.delivery_date ? ' &middot; ' + (o._est ? 'est. by ' : 'deliver ') + esc(o.delivery_date) : '') + '</small></span>' +
                 '<span class="o-total">' + esc(money(otot(o))) + (o.has_quote ? ' +' : '') + '</span><span class="o-chips">' + chipsFor(o) + '</span></button>' +
+                '<div class="o-quick"><label>Status <select data-f="status" aria-label="Change status of order ' + esc(o.order_no) + '">' + opts(STATUSES, o.status) + '</select></label></div>' +
                 '<div class="o-body" hidden></div></article>';
         }).join('');
         if (focusId) { var el = $('.adm-order[data-id="' + focusId + '"] .o-head'); focusId = null; if (el) { el.click(); el.scrollIntoView({ block: 'start' }); } }
@@ -284,9 +285,10 @@
         return '<div class="o-hist"><h4>History</h4><ul>' + h.map(function (x) { return '<li><span>' + esc(dt(x.t)) + '</span> ' + esc(x.what) + (x.by ? ' <em>' + esc(x.by) + '</em>' : '') + '</li>'; }).join('') + '</ul></div>';
     }
     function orderBody(o) {
-        var items = (o.items || []).map(function (l) {
-            var meta = (l.meta || []).map(function (m) { return '<li>' + esc(m[0]) + ': ' + esc(m[1]) + '</li>'; }).join('');
-            return '<li><div><strong>' + esc(l.name) + '</strong> <em>x ' + esc(l.qty) + '</em>' + (l.quote ? ' <span class="chip">quote needed</span>' : '') + (meta ? '<ul class="o-meta">' + meta + '</ul>' : '') + (l.note ? '<p class="o-note">' + esc(l.note) + '</p>' : '') + artBlock(l) + '</div><span>' + esc(money(l.total)) + '</span></li>';
+        var items = window.GT.pricing.groupItems(o.items, function (l) { return Number(l.total) || 0; }).map(function (r) {
+            var meta = (r.meta || []).map(function (m) { return '<li>' + esc(m[0]) + ': ' + esc(m[1]) + '</li>'; }).join('');
+            var arts = r.grouped ? '<details class="o-prints"><summary>Show the ' + r.parts.length + ' print files</summary>' + r.parts.map(function (l) { return '<div class="o-print"><b>' + esc(l.name.replace(/^.*\u00b7\s*/, '')) + '</b>' + artBlock(l) + '</div>'; }).join('') + '</details>' : artBlock(r.line);
+            return '<li><div><strong>' + esc(r.name) + '</strong> <em>x ' + esc(r.qty) + ((r.grouped || r.boxes) ? ' boxes' : '') + '</em>' + (r.quote && !(Number(r.total) > 0) ? ' <span class="chip">quote needed</span>' : (r.quote ? ' <span class="chip">estimate</span>' : '')) + (meta ? '<ul class="o-meta">' + meta + '</ul>' : '') + (r.note ? '<p class="o-note">' + esc(r.note) + '</p>' : '') + arts + '</div><span>' + esc(money(r.total)) + '</span></li>';
         }).join('');
         var wa = 'https://wa.me/' + digits(o.phone) + '?text=' + encodeURIComponent(tplText(o, 'confirm'));
         var art = hasArt(o);
@@ -333,7 +335,7 @@
             }).catch(function () { toast('Order cancelled, but the email could not be sent. Please tell the customer on WhatsApp.', true); });
         });
     }
-    function renderBody(artEl, o) { var body = $('.o-body', artEl); body.innerHTML = orderBody(o); loadThumbs(body); var h = $('.o-head', artEl); $('.o-chips', h).innerHTML = chipsFor(o); }
+    function renderBody(artEl, o) { var body = $('.o-body', artEl); body.innerHTML = orderBody(o); loadThumbs(body); var h = $('.o-head', artEl); $('.o-chips', h).innerHTML = chipsFor(o); var qs = $('.o-quick select', artEl); if (qs) qs.value = o.status; }
     doc.addEventListener('click', function (e) {
         var cb = e.target.closest('[data-cancel-open],[data-cancel-close],[data-cancel-go],[data-reopen]');
         if (cb) {
@@ -416,7 +418,7 @@
         var art = f.closest('.adm-order'); if (!art) return;
         var o = ORDERS.filter(function (x) { return x.id === art.getAttribute('data-id'); })[0], patch = {}, key = f.getAttribute('data-f');
         if (key === 'status' && f.value === 'cancelled' && o.status !== 'cancelled') {          // a cancellation always needs a reason
-            f.value = o.status; var cf = $('.o-cancel-form', art), co2 = $('[data-cancel-open]', art);
+            f.value = o.status; var oh = $('.o-head', art), ob = $('.o-body', art); if (ob && ob.hidden && oh) oh.click(); var cf = $('.o-cancel-form', art), co2 = $('[data-cancel-open]', art);
             if (cf) { cf.hidden = false; if (co2) co2.hidden = true; cf.scrollIntoView({ block: 'center' }); }
             toast('Please choose the reason to cancel this order.', true); return;
         }
@@ -595,6 +597,7 @@
                 return '<div class="st-box-panel"><div class="st-bp-head">' +
                     '<label class="st-fld"><span class="st-lb">Box name</span>' + txt('bsets', i, 'label', 'Box name') + '</label>' +
                     '<label class="st-fld st-narrow"><span class="st-lb">Pieces in the box</span>' + num('bsets', i, 'pieces', 'min="1" max="12" step="1"') + '</label>' +
+                    '<label class="check st-fl-on"><input type="checkbox" data-a="bsets" data-i="' + i + '" data-f="on"' + (b.on !== false ? ' checked' : '') + '> <b>Available</b> <small>(untick = customers see "Coming soon")</small></label>' +
                     (ST.bsets.length > 1 ? '<button type="button" class="adm-btn ghost sm danger" data-rm="bsets" data-i="' + i + '">Remove this box</button>' : '') + '</div>' +
                     '<div class="st-live" data-bl="' + i + '"></div>' +
                     '<p class="st-help">Quantity options customers can choose for this box. Type the quantity and the price for ONE box (or one piece); the total is calculated for you. The smallest quantity is the minimum order.</p>' +
@@ -617,6 +620,7 @@
             return '<div class="st-flavs">' + ST.flav.map(function (f, i) {
                 return '<div class="st-fl' + (f.on ? '' : ' off') + '"><div class="st-fl-n"><label class="st-qc-l">Flavour name</label><input type="text" maxlength="60" data-a="flav" data-i="' + i + '" data-f="name" value="' + esc(f.name) + '" aria-label="Flavour name"></div>' +
                     (cake ? '' : '<div class="st-fl-t"><label class="st-qc-l">Thickness</label><select data-a="flav" data-i="' + i + '" data-f="thick" aria-label="Thickness for this flavour"><option value="">Customer chooses</option>' + ST.thick.map(function (t) { var mm = String(Math.round(n(t.mm) || 0)); return '<option value="' + mm + '"' + (String(f.thick) === mm ? ' selected' : '') + '>' + esc((t.label || mm + ' mm')) + ' (' + mm + ' mm)</option>'; }).join('') + '</select></div>') +
+                    '<div class="st-fl-g"><label class="st-qc-l">Ingredients (shown to customers)</label><textarea rows="2" maxlength="400" data-a="flav" data-i="' + i + '" data-f="ingredients" placeholder="e.g. Camel milk, cocoa butter, sugar" aria-label="Ingredients">' + esc(f.ingredients || '') + '</textarea><label class="st-qc-l">Allergens</label><input type="text" maxlength="160" data-a="flav" data-i="' + i + '" data-f="allergens" value="' + esc(f.allergens || '') + '" placeholder="e.g. Milk, nuts" aria-label="Allergens"></div>' +
                     '<div class="st-fl-x"><label class="st-qc-l">Extra price per piece</label><div class="st-qc-p"><span>AED</span><input type="number" inputmode="decimal" min="0" step="0.01" data-a="flav" data-i="' + i + '" data-f="extra" value="' + esc(f.extra) + '" aria-label="Extra price per piece"></div></div>' +
                     '<label class="check st-fl-on"><input type="checkbox" data-a="flav" data-i="' + i + '" data-f="on"' + (f.on ? ' checked' : '') + '> <b>' + (f.on ? 'Available' : 'Sold out') + '</b></label>' +
                     (ST.flav.length > 1 ? '<button type="button" class="st-x" data-rm="flav" data-i="' + i + '" aria-label="Remove this flavour">&times;</button>' : '') + '</div>';
@@ -631,10 +635,11 @@
             h += sec(2, 'Box colours', 'The boxes the customer can pick. If a colour costs more, type the extra price for each piece (use 0 for no extra charge).', '<div id="s-boxes">' + boxesHtml() + '</div>');
             h += sec(3, 'Flavours', 'The flavours the customer can choose (for example Plain and Pistachio). Untick <b>Available</b> when a flavour is finished: customers will see it as <b>Sold out</b> and cannot pick it. Add new flavours any time. If a flavour costs more, type the extra price for each piece.', '<div id="s-flav">' + flavHtml() + '</div>');
         } else {
-            h += sec(1, 'Box types, minimum order and quantity options', 'Customers pick a box, then one of the quantity options below it (like the cake page). <b>The smallest quantity is the minimum order</b> for that box. For example: single chocolate from 50 pieces, 3-piece set from 20 boxes. Prices include delivery in the UAE.', '<div id="s-bsets">' + bsetsHtml() + '</div>');
+            h += sec(1, 'Box types, minimum order and quantity options', 'Customers pick a box, then one of the quantity options below it. <b>The smallest quantity is the minimum order</b>: type 1 to allow a single box at the retail price, then add bigger quantities with lower wholesale prices. Untick <b>Available</b> on a box that is not ready yet. Prices include delivery in the UAE.', '<div id="s-bsets">' + bsetsHtml() + '</div>');
             h += sec(2, 'Thickness', 'Add every thickness you can make (for example 5 mm and 12 mm). The extra price is added for <b>each piece</b>; use 0 if the price is already in the box price. In the <b>Flavours</b> section below you can tie a thickness to a flavour (for example Pistachio kunafa = 12 mm).', '<div id="s-thick">' + thickHtml() + '</div>');
-            h += sec(3, 'Flavours and custom box', 'Flavours and custom box are managed here. Every available flavour can be chosen at any quantity. The <b>custom box</b> unlocks from the number of pieces below.',
-                field('Custom box unlocks from this many pieces in total', 'Example: 300.', '<input type="number" min="1" step="1" id="s-moq" value="' + esc(v.customMinQty || 300) + '">') +
+            h += sec(3, 'Flavours and custom box', 'Flavours and custom box are managed here. Every available flavour can be chosen at any quantity. The <b>custom box</b> can be switched on or off below.',
+                '<label class="check"><input type="checkbox" id="s-cbon"' + (v.customBoxOn !== false ? ' checked' : '') + '> Offer a custom box (customers can ask for their own box design)</label>' +
+                field('Custom box unlocks from this many BOXES', 'Example: 500. Customers who order at least this many boxes can describe their own box. The custom box is not in the price: you send the price after seeing their idea.', '<input type="number" min="1" step="1" id="s-moq" value="' + esc(v.customMinQty || 500) + '">') +
                 '<h5 class="st-h5">Flavours</h5><p class="st-help">The first available flavour is the standard one. The others need the quantity above. Untick <b>Available</b> when a flavour is finished: customers will see it as <b>Sold out</b>. Add new flavours any time.</p><div id="s-flav">' + flavHtml() + '</div>');
         }
         h += sec(4, 'Words on the page', 'The headline, introduction and short highlights at the top of the design page.',
@@ -649,7 +654,7 @@
             '<div class="st-two">' + field(cake ? 'Cake surface width (mm)' : 'Chocolate surface width (mm)', 'Size of the printed area.', '<input type="number" min="10" step="0.5" id="s-sw" value="' + esc(sf.w) + '">') +
             field(cake ? 'Cake surface height (mm)' : 'Chocolate surface height (mm)', 'Size of the printed area.', '<input type="number" min="10" step="0.5" id="s-sh" value="' + esc(sf.h) + '">') +
             field('Print and cut tolerance (mm)', 'Shown to customers as the allowed difference.', '<input type="number" min="0" step="0.1" id="s-tol" value="' + esc(v.tolerance || 1.5) + '">') +
-            (cake ? field('Clear zone around the edge (mm)', 'Nothing may go past this edge.', '<input type="number" min="0" step="0.5" id="s-mar" value="' + esc(v.margin != null ? v.margin : 5) + '">') : '') +
+            field('Clear zone around the edge (mm)', 'The design can never go closer to the edge than this.', '<input type="number" min="0" step="0.5" id="s-mar" value="' + esc(v.margin != null ? v.margin : (cake ? 5 : 1)) + '">') +
             (cake ? field('Price reduction when the customer chooses NO box (AED per piece)', 'Customers can choose a gift box or plastic pack only. Type 0 for no difference in price.', '<input type="number" min="0" step="0.01" id="s-nobox" value="' + esc(v.noBoxOff != null ? v.noBoxOff : 0) + '">') : '') + '</div></details>';
         h += '<p class="adm-err" id="s-err" hidden></p><div class="st-savebar"><button type="button" class="adm-btn" id="s-save">Save changes</button> <button type="button" class="adm-btn ghost" id="s-reset">Back to website defaults</button></div>';
         form.innerHTML = h;
@@ -678,7 +683,7 @@
                 var k = a.dataset.add, arr = k === 'btiers' ? arrOf(k, +a.dataset.b) : ST[k], L = arr[arr.length - 1] || {};
                 if (k === 'tiers' || k === 'btiers') { var q2 = Math.round(n(L.qty || 50) * 2), u2 = Math.round(n(L.unit || 20) * 0.9 * 100) / 100; arr.push({ qty: q2, unit: u2, price: Math.round(q2 * u2 * 100) / 100 }); }
                 if (k === 'boxes') ST.boxes.push({ id: 'colour-' + (ST.boxes.length + 1), label: 'New colour', extra: 3, color: '#cccccc', on: false });
-                if (k === 'bsets') ST.bsets.push({ id: 'b' + (ST.bsets.length + 1) + '-' + Date.now().toString(36).slice(-3), pieces: 6, label: '6-piece gift box', price: 180, tiers: [{ qty: 20, unit: 160, price: 3200 }, { qty: 50, unit: 150, price: 7500, popular: true }, { qty: 100, unit: 140, price: 14000 }] });
+                if (k === 'bsets') ST.bsets.push({ on: true, id: 'b' + (ST.bsets.length + 1) + '-' + Date.now().toString(36).slice(-3), pieces: 6, label: '6-piece gift box', price: 180, tiers: [{ qty: 20, unit: 160, price: 3200 }, { qty: 50, unit: 150, price: 7500, popular: true }, { qty: 100, unit: 140, price: 14000 }] });
                 if (k === 'flav') ST.flav.push({ name: 'New flavour', on: true, extra: 0 });
                 if (k === 'thick') ST.thick.push({ id: '8', mm: 8, label: '8 mm', extra: 0 });
                 redraw(REDRAW[k][0], REDRAW[k][1]);
@@ -698,7 +703,6 @@
                 if (!out.boxes.length) return bad('Please keep at least one box colour.');
                 if (!out.boxes.some(function (b) { return b.on; })) return bad('Please keep at least one box colour available.');
                 if (!out.boxes.some(function (b) { return b.standard; })) out.boxes[0].standard = true;
-                out.margin = Math.max(0, n($('#s-mar').value));
                 out.noBoxOff = Math.max(0, n($('#s-nobox').value));
             } else {
                 var ids = {};
@@ -720,11 +724,12 @@
                 var tids = {};
                 out.thickness = ST.thick.map(function (t, i) { var mm = Math.max(1, Math.round(n(t.mm) || 5)); var id = String(mm); while (tids[id]) id += '0'; tids[id] = 1; return { id: id, label: String(t.label || '').trim() || mm + ' mm', extra: Math.max(0, n(t.extra)) }; });
                 if (!out.thickness.length) return bad('Please keep at least one thickness.');
-                out.customMinQty = Math.max(1, parseInt($('#s-moq').value, 10) || 300);
+                out.customMinQty = Math.max(1, parseInt($('#s-moq').value, 10) || 500); out.customBoxOn = !!$('#s-cbon').checked;
             }
+            out.margin = Math.max(0, n($('#s-mar').value));
             out.surface = { w: Math.max(10, n($('#s-sw').value) || sf.w), h: Math.max(10, n($('#s-sh').value) || sf.h) };
             out.tolerance = Math.max(0, n($('#s-tol').value)) || 1.5;
-            out.flavours = ST.flav.map(function (f) { var o = { name: String(f.name || '').trim(), on: !!f.on, extra: Math.max(0, n(f.extra)) }; if (!cake) o.thick = f.thick == null ? '' : String(f.thick); return o; }).filter(function (f) { return f.name; });
+            out.flavours = ST.flav.map(function (f) { var o = { name: String(f.name || '').trim(), on: !!f.on, extra: Math.max(0, n(f.extra)), ingredients: String(f.ingredients || '').trim(), allergens: String(f.allergens || '').trim() }; if (!cake) o.thick = f.thick == null ? '' : String(f.thick); return o; }).filter(function (f) { return f.name; });
             if (!out.flavours.length) return bad('Please add at least one flavour.');
             if (!out.flavours.some(function (f) { return f.on; })) return bad('At least one flavour must be available.');
             out.designerFee = Math.max(0, n($('#s-fee').value));
@@ -741,6 +746,8 @@
 
     function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'item'; }
 
+    var FOOD = [['Ingredients', 'Ingredients', 'e.g. Wheat flour, fresh cream, sugar, eggs'], ['Allergens', 'Allergens', 'e.g. Contains milk, egg, wheat'], ['Net weight', 'Net weight', 'e.g. 450 g'], ['Shelf life', 'Shelf life', 'e.g. 6 months sealed'], ['Storage', 'Storage', 'e.g. Keep frozen at -18 C']];
+    function splitFood(details) { var food = {}, rest = []; (details || []).forEach(function (d) { var hit = FOOD.filter(function (f) { return String(d).indexOf(f[0] + ': ') === 0; })[0]; if (hit) food[hit[0]] = String(d).slice(hit[0].length + 2); else rest.push(d); }); return { food: food, rest: rest }; }
     function editProduct(p) {
         var isNew = !p; p = p || { brand: 'katanukiya', name: '', short: '', desc: '', details: [], price: 0, img: '', active: true, sort: (PRODUCTS.length + 1) * 10 + 10, customize: null };
         var d = doc.createElement('div'); d.className = 'adm-modal open'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true');
@@ -751,7 +758,9 @@
             '<label>Price (AED)<input name="price" type="number" min="0" step="0.5" value="' + esc(p.price) + '" required></label>' +
             '<label class="full">Short line (shown on the card)<input name="short" value="' + esc(p.short) + '"></label>' +
             '<label class="full">Full description<textarea name="desc" rows="3">' + esc(p.desc) + '</textarea></label>' +
-            '<label class="full">Highlights (one per line)<textarea name="details" rows="3">' + esc((p.details || []).join('\n')) + '</textarea></label>' +
+            '<label class="full">Highlights (one per line)<textarea name="details" rows="3">' + esc(splitFood(p.details).rest.join('\n')) + '</textarea></label>' +
+            '<h4 class="full" style="margin:6px 0 0">Food information (shown to customers on the product)</h4>' +
+            FOOD.map(function (f, fi) { var val = splitFood(p.details).food[f[0]] || ''; return fi < 2 ? '<label class="full">' + f[1] + '<textarea name="food' + fi + '" rows="2" maxlength="500" placeholder="' + esc(f[2]) + '">' + esc(val) + '</textarea></label>' : '<label>' + f[1] + '<input name="food' + fi + '" maxlength="120" value="' + esc(val) + '" placeholder="' + esc(f[2]) + '"></label>'; }).join('') +
             '<div class="full pic"><img id="pe-img" src="' + esc(p.img) + '" alt=""><div><label class="adm-btn ghost file">Upload a photo<input type="file" accept="image/*" id="pe-file" hidden></label><p class="adm-hint" id="pe-hint">Square or landscape photos look best. They are resized for you.</p></div></div>' +
             '<label>Position in the list<input name="sort" type="number" step="1" value="' + esc(p.sort) + '"></label>' +
             '<label class="check"><input name="active" type="checkbox"' + (p.active ? ' checked' : '') + '> Visible in the shop</label>' +
@@ -787,7 +796,7 @@
             if (isNew) { var base = f.brand.value.charAt(0) + '-' + slug(name), n = 1; id = base; while (PRODUCTS.some(function (x) { return x.id === id; })) id = base + '-' + (++n); }
             var out = {
                 id: id, brand: f.brand.value, name: name, short: f.short.value.trim(), desc: f.desc.value.trim(),
-                details: f.details.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean), price: price, img: img,
+                details: f.details.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean).concat(FOOD.map(function (fd, fi) { var v = f['food' + fi].value.replace(/\s+/g, ' ').trim(); return v ? fd[0] + ': ' + v : ''; }).filter(Boolean)), price: price, img: img,
                 active: f.active.checked, featured: f.feat.checked, sort: parseInt(f.sort.value, 10) || 100,
                 customize: f.cust.checked ? (p.customize || { builder: f.brand.value }) : null
             };
@@ -860,10 +869,13 @@
 
     /* ============================ SETTINGS ============================ */
     function viewSettings() {
-        root.innerHTML = '<div class="adm-bar"><h2>Top bar and bank details</h2></div><div id="s-box"><p class="adm-loading">Loading...</p></div>';
+        root.innerHTML = '<div class="adm-bar"><h2>Shop on/off, top bar and bank details</h2></div><div id="s-box"><p class="adm-loading">Loading...</p></div>';
         B.content().then(function (c) {
             CONTENT = c || {}; var st = CONTENT.settings || {};
             $('#s-box').innerHTML = '<form class="adm-card" id="s-form"><div class="adm-form">' +
+                '<div class="full adm-note" style="margin:0"><label class="check" style="font-size:1.05rem"><input name="shopopen" type="checkbox"' + (st.shop_open === true ? ' checked' : '') + '> <b>The online shop is OPEN to customers</b></label>' +
+                '<p class="adm-fine" style="margin:6px 0 0">The shop is CLOSED until you tick this. While it is closed, customers see an "Online ordering is paused" page instead of the shop, the design pages and checkout. You and your team stay signed in and can still see and test everything (a red bar tells you it is closed). Tick it again to go live.</p></div>' +
+                '<label class="full">Message shown to customers while the shop is closed (optional)<input name="shopmsg" maxlength="220" value="' + esc(st.shop_message || '') + '" placeholder="Our online shop is opening soon. For orders or questions, please message us on WhatsApp."></label>' +
                 '<label class="full">Announcement bar (shown at the top of every page, leave empty for none)<input name="announcement" maxlength="140" value="' + esc(st.announcement || '') + '" placeholder="e.g. Free delivery in Dubai on orders over AED 300"></label>' +
                 '<label class="full">Bank details (shown to customers who choose bank transfer, leave empty to hide that option)<textarea name="bank" rows="5" placeholder="Bank name&#10;Account name&#10;IBAN&#10;Swift">' + esc(st.bank_details || '') + '</textarea></label>' +
                 '</div><div class="adm-row"><span class="grow"></span><button class="adm-btn" type="submit">Save settings</button></div></form>' +
@@ -871,7 +883,7 @@
             $('#s-form').addEventListener('submit', function (e) {
                 e.preventDefault();
                 var f = e.target;
-                B.saveContent('settings', { announcement: f.announcement.value.trim(), bank_details: f.bank.value.trim() }).then(function () { try { localStorage.removeItem('gt-content-v1'); } catch (x) {} toast('Settings saved'); }).catch(fail);
+                B.saveContent('settings', { announcement: f.announcement.value.trim(), bank_details: f.bank.value.trim(), shop_open: f.shopopen.checked, shop_message: f.shopmsg.value.trim() }).then(function () { try { localStorage.removeItem('gt-content-v1'); } catch (x) {} toast('Settings saved'); }).catch(fail);
             });
         });
     }
@@ -1063,7 +1075,7 @@
         ['products', 'Products', 'Items, photos and prices in the shop.'],
         ['studio', 'Custom design prices', 'Prices and quantities for the cake and chocolate design pages.'],
         ['website', 'Edit website', 'Texts, fonts and pictures.'],
-        ['settings', 'Top bar and bank', 'Announcement bar and bank details.'],
+        ['settings', 'Shop on/off and bank', 'Open or close the shop, announcement bar and bank details.'],
         ['business', 'Business info', 'Contact, TRN, VAT and delivery prices.'],
         ['legal', 'Legal pages', 'Terms, privacy and copyright texts.']
     ];

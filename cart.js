@@ -54,6 +54,26 @@
     });
 
     /* ------------------------------ cart API ------------------------------ */
+    /* a box set is saved as one line per print; customers see ONE line ("9-piece gift box x 25 boxes") */
+    function groupedLines() {
+        var rows = [], idx = {};
+        cart.forEach(function (l) {
+            if (!l.group) { rows.push({ line: l, parts: [l], grouped: false, boxes1: !!(l.art && l.art.same_all) }); return; }
+            if (idx[l.group] == null) { idx[l.group] = rows.length; rows.push({ parts: [], grouped: true }); }
+            rows[idx[l.group]].parts.push(l);
+        });
+        rows.forEach(function (r) {
+            if (!r.grouped) return;
+            var lead = r.parts.filter(function (l) { return !l.included; })[0] || r.parts[0];
+            r.line = lead;
+            r.name = String(lead.name || '').replace(/\s*\u00b7[^\u00b7]*\d+\s*\/\s*\d+\s*$/, '');
+            r.boxes = (lead.art && lead.art.qty) || 1;
+            r.meta = (lead.meta || []).filter(function (m, i) { return i !== 1 && i !== 3; });
+            if (r.parts.length > 1) r.meta.push(['Prints', r.parts.length + ' different designs']);
+            r.total = r.parts.reduce(function (s, l) { return s + lineTotal(l); }, 0);
+        });
+        return rows;
+    }
     function lineTotal(l) { return (l.unit || 0) * l.qty + (l.fee || 0); }
 
     function totals() {
@@ -152,18 +172,19 @@
             return;
         }
 
-        body.innerHTML = cart.map(function (l) {
-            var meta = (l.meta || []).map(function (m) {
+        body.innerHTML = groupedLines().map(function (r) {
+            var l = r.line;
+            var meta = (r.grouped ? r.meta : (l.meta || [])).map(function (m) {
                 return '<li><span>' + esc(m[0]) + '</span> ' + esc(m[1]) + '</li>';
             }).join('');
-            var price = l.included ? 'Included' : (l.quote && !l.unit && !l.fee ? 'Quoted' : money(lineTotal(l)));
+            var price = r.grouped ? (r.line.quote && !r.total ? 'Quoted' : money(r.total)) : (l.included ? 'Included' : (l.quote && !l.unit && !l.fee ? 'Quoted' : money(lineTotal(l))));
             return '<div class="gt-line-item">' +
                 '<img src="' + esc(l.img) + '" alt="">' +
                 '<div class="gt-li-main">' +
-                '<h4>' + esc(l.name) + '</h4>' +
+                '<h4>' + esc(r.grouped ? r.name : l.name) + '</h4>' +
                 (meta ? '<ul class="gt-li-meta">' + meta + '</ul>' : '') +
                 '<div class="gt-li-row">' +
-                (l.fixed ? '<span class="gt-fixedqty">' + (l.included ? 'in box set' : '1 order') + '</span>' :
+                (l.fixed ? '<span class="gt-fixedqty">' + (r.grouped ? r.boxes + ' boxes' : (r.boxes1 ? l.art.qty + ' boxes' : (l.included ? 'in box set' : '1 order'))) + '</span>' :
                 '<div class="gt-qty" role="group" aria-label="Quantity">' +
                 '<button type="button" data-act="dec" data-key="' + l.key + '" aria-label="Decrease">&minus;</button>' +
                 '<span>' + l.qty + '</span>' +
@@ -254,7 +275,7 @@
     window.GT.cart = {
         items: function () { return cart.slice(); },
         add: add, setQty: setQty, remove: remove, clear: clear,
-        totals: totals, lineTotal: lineTotal,
+        totals: totals, lineTotal: lineTotal, grouped: groupedLines,
         onChange: function (fn) { listeners.push(fn); },
         open: openCart, close: closeCart
     };

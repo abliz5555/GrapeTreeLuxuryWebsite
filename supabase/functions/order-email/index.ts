@@ -28,8 +28,28 @@ function dateNice(s) {
   return isNaN(d) ? esc(s) : d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+function groupItems(items: any[]) {
+  const rows: any[] = [], idx: any = {};
+  for (const l of items || []) {
+    if (!l) continue;
+    const g = l.art && l.art.group;
+    if (!g) { rows.push(l.art && l.art.same_all ? { ...l, qty: l.art.qty || l.qty, parts: [l] } : { ...l, parts: [l] }); continue; }
+    if (idx[g] == null) { idx[g] = rows.length; rows.push({ grouped: true, parts: [] }); }
+    rows[idx[g]].parts.push(l);
+  }
+  return rows.map((r) => {
+    if (!r.grouped) return r;
+    const lead = r.parts.find((l: any) => l.art && Number(l.art.piece) === 1) || r.parts[0];
+    const meta = (lead.meta || []).filter((_m: any, i: number) => i !== 1 && i !== 3);
+    if (r.parts.length > 1) meta.push(['Prints', r.parts.length + ' different designs']);
+    return { ...lead, name: String(lead.name || '').replace(/\s*\u00b7[^\u00b7]*\d+\s*\/\s*\d+\s*$/, ''), qty: (lead.art && lead.art.qty) || lead.qty || 1,
+      total: r.parts.reduce((s: number, l: any) => s + (Number(l.total) || 0), 0), quote: r.parts.some((l: any) => l.quote), meta,
+      note: r.parts.map((l: any) => l.note || '').filter(Boolean).join(' '), art: lead.art ? { ...lead.art, folder: r.parts.every((l: any) => l.art && l.art.folder) ? lead.art.folder : '' } : lead.art };
+  });
+}
+
 function itemsRows(o) {
-  return (o.items || []).map((l) => {
+  return groupItems(o.items).map((l: any) => {
     const meta = (l.meta || []).map((m) => `<div style="font-size:13px;color:${MUTED};padding-top:2px">${esc(m[0])}: ${esc(m[1])}</div>`).join('');
     const note = l.note ? `<div style="font-size:13px;color:${MUTED};font-style:italic;padding-top:2px">${esc(l.note)}</div>` : '';
     const artNote = l.art ? `<div style="font-size:13px;color:${INK};padding-top:6px"><strong>Design files:</strong> ${l.art.folder ? 'attached to the shop email and saved in admin' : 'NOT uploaded: ask the customer'}${l.art.designer ? ' &middot; <strong style="color:#B0483A">designer: create a cartoon character and send a proof</strong>' : ''}</div>` : '';

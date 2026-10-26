@@ -257,8 +257,8 @@
                 return esc(money(P.total)) + (open ? ' + ' + esc(T('quoted items')) : '') + (o.has_quote && !open ? ' <small>(' + esc(T('estimate')) + ')</small>' : '');
             }
             box.innerHTML = rows.map(function (o) {
-                var items = (o.items || []).map(function (l) {
-                    return '<li><span>' + esc(l.name) + '</span><em>x ' + esc(l.qty) + '</em></li>';
+                var items = (window.GT.pricing ? window.GT.pricing.groupItems(o.items) : (o.items || [])).map(function (l) {
+                    return '<li><span>' + esc(l.name) + '</span><em>x ' + esc(l.qty) + ((l.grouped || l.boxes) ? ' ' + esc(T('boxes')) : '') + '</em></li>';
                 }).join('');
                 var canRe = (o.items || []).some(function (l) { return !l.custom && prods.some(function (p) { return p.id === l.id; }); });
                 return '<article class="ord"><header><div><strong>Order #' + esc(o.order_no) + '</strong><span>' + esc(dateText(o.created_at)) + '</span></div>' +

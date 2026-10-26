@@ -583,3 +583,7 @@ body[data-product=cake] #st-scene, body[data-product=cake] #st-preview{ backgrou
 
 .st-chip-toggle.off{ opacity:.55; } 
 .gt-noai .st-tile[data-pane=ai],.gt-noai .st-pane[data-pane=ai],.gt-noai .st-ai-head,.gt-noai #ai-btns,.gt-noai #ai-note,.gt-noai #ai-status{display:none!important}
+.st-ing{ margin:8px 0 0 !important; padding:10px 12px; background:#fbf6ea; border-radius:10px; line-height:1.5 }
+.st-bset.off{ opacity:.55; cursor:not-allowed } .st-bset.off input{ pointer-events:none }
+@media (max-width:760px){ .st-bsets{ grid-template-columns:minmax(0,1fr) } }
+.st-bset{ min-width:0; overflow-wrap:anywhere }

@@ -27,12 +27,14 @@
     function docNo(o) { return 'GT-' + (o.order_no || '0000'); }
 
     function itemsHtml(o, job) {
-        return (o.items || []).map(function (l, i) {
+        var rows = job ? (o.items || []).map(function (l) { return { name: l.name, qty: l.qty, total: Number(l.total) || 0, quote: !!l.quote, meta: l.meta || [], note: l.note || '', grouped: false }; }) : G.pricing.groupItems(o.items, function (l) { return Number(l.total) || 0; });
+        return rows.map(function (l, i) {
             var meta = (l.meta || []).map(function (m) { return '<span class="sub">' + esc(m[0]) + ': <b>' + esc(m[1]) + '</b></span>'; }).join('');
             var note = l.note ? '<span class="sub it">' + esc(l.note) + '</span>' : '';
-            var unit = !(l.quote && !(Number(l.total) > 0)) && l.qty > 0 ? '<span class="sub">' + esc(money(Number(l.total) / Number(l.qty))) + ' each</span>' : '';
+            var open = l.quote && !(Number(l.total) > 0);
+            var unit = !open && l.qty > 0 ? '<span class="sub">' + esc(money(Number(l.total) / Number(l.qty))) + ((l.grouped || l.boxes) ? ' per box' : ' each') + '</span>' : '';
             return '<tr><td class="n">' + pad(i + 1) + '</td><td><span class="nm" dir="auto">' + esc(l.name) + '</span>' + meta + note + (job ? '' : unit) + '</td>' +
-                '<td class="c">' + esc(l.qty) + '</td><td class="r">' + (l.quote && !(Number(l.total) > 0) ? '<span class="quote">Quote</span>' : esc(money(l.total)) + (l.quote ? ' <small>est.</small>' : '')) + '</td></tr>';
+                '<td class="c">' + esc(l.qty) + '</td><td class="r">' + (open ? '<span class="quote">Quote</span>' : esc(money(l.total)) + (l.quote ? ' <small>est.</small>' : '')) + '</td></tr>';
         }).join('');
     }
 

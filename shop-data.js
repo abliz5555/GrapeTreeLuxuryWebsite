@@ -52,24 +52,25 @@ window.GT_DATA = {
         chocolate: {
             title: 'Your logo, printed on gold',
             lead: 'A premium gifting option for companies and special occasions. Print your company logo, a monogram, a message or a photograph in black ink on real gold chocolate. Choose a single chocolate, a 3-piece gift set or a 9-piece box. Every piece can carry its own print.',
-            chips: ['Gold surface 50 \u00d7 50 mm, full-area print', '1, 3 or 9 pieces per box', 'Custom box from 300 pieces'],
+            chips: ['Gold surface 50 \u00d7 50 mm, 1 mm clear edge', '1, 3 or 9 pieces per box', 'Custom box for orders of 500+ boxes'],
             surface: { w: 50, h: 50 },              // gold chocolate surface in mm (SAMPLE: please confirm)
-            margin: 0,                              // chocolate is printed over the full area: no clear zone
+            margin: 1,                              // clear zone on every side: the design never touches the edge (mm)
             unprinted: 0,
             tolerance: 1.5,
             leadBusinessDays: 14,
             designerFee: 0,
-            customMinQty: 300,                      // total pieces from which the customer can ask for their own flavour and box
+            customMinQty: 500,                      // number of BOXES from which the customer can ask for a custom box
+            customBoxOn: true,                      // false = the custom box option is hidden
             /* Each box type has its own quantity options. qty = number of boxes, price = TOTAL for that quantity (SAMPLE prices).
                The first option is the minimum order. 'popular: true' shows a Popular tag.
                All of this can be changed in Admin > Custom design prices. */
             boxSets: [
-                { id: '1', pieces: 1, label: 'Single chocolate', price: 35, tiers: [
-                    { qty: 50, price: 1750 }, { qty: 100, price: 3200, popular: true }, { qty: 200, price: 5800 }, { qty: 500, price: 13000 }, { qty: 1000, price: 23000 } ] },
-                { id: '3', pieces: 3, label: '3-piece gift set', price: 95, tiers: [
-                    { qty: 20, price: 1900 }, { qty: 50, price: 4400, popular: true }, { qty: 100, price: 8200 }, { qty: 200, price: 15200 }, { qty: 500, price: 35000 } ] },
-                { id: '9', pieces: 9, label: '9-piece gift box', price: 260, tiers: [
-                    { qty: 10, price: 2600 }, { qty: 25, price: 6000, popular: true }, { qty: 50, price: 11100 }, { qty: 100, price: 20500 }, { qty: 200, price: 38000 } ] }
+                { id: '1', pieces: 1, on: false, label: 'Single chocolate', price: 40, tiers: [
+                    { qty: 1, price: 40 }, { qty: 10, price: 380 }, { qty: 50, price: 1750 }, { qty: 100, price: 3200, popular: true }, { qty: 200, price: 5800 }, { qty: 500, price: 13000 }, { qty: 1000, price: 23000 } ] },
+                { id: '3', pieces: 3, on: true, label: '3-piece gift set', price: 110, tiers: [
+                    { qty: 1, price: 110 }, { qty: 5, price: 525 }, { qty: 20, price: 1900 }, { qty: 50, price: 4400, popular: true }, { qty: 100, price: 8200 }, { qty: 200, price: 15200 }, { qty: 500, price: 35000 } ] },
+                { id: '9', pieces: 9, on: true, label: '9-piece gift box', price: 290, tiers: [
+                    { qty: 1, price: 290 }, { qty: 5, price: 1375 }, { qty: 10, price: 2600 }, { qty: 25, price: 6000, popular: true }, { qty: 50, price: 11100 }, { qty: 100, price: 20500 }, { qty: 200, price: 38000 } ] }
             ],
             thickness: [
                 { id: '5', label: '5 mm', extra: 0 },

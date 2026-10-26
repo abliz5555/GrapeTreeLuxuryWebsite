@@ -16,7 +16,7 @@ begin
     'delivery_date', o.delivery_date, 'first_name', split_part(o.name, ' ', 1), 'emirate', o.emirate, 'subtotal', o.subtotal, 'has_quote', o.has_quote, 'total', o.total, 'delivery_fee', o.delivery_fee, 'vat_rate', o.vat_rate, 'vat_amount', o.vat_amount, 'prices_include_vat', o.prices_include_vat,
     'quote_open', exists (select 1 from jsonb_array_elements(o.items) q where coalesce((q->>'quote')::boolean,false) and coalesce((q->>'total')::numeric,0) <= 0),
     'art_review', o.art_review, 'art_review_note', case when o.art_review in ('changes','rejected') then o.art_review_note else '' end,
-    'items', (select coalesce(jsonb_agg(jsonb_build_object('name', i->>'name', 'qty', i->>'qty')), '[]'::jsonb) from jsonb_array_elements(o.items) i),
+    'items', (select coalesce(jsonb_agg(jsonb_build_object('name', i->>'name', 'qty', i->>'qty', 'group', i->'art'->>'group', 'boxes', i->'art'->>'qty', 'piece', i->'art'->>'piece')), '[]'::jsonb) from jsonb_array_elements(o.items) i),
     'timeline', pub);
 end $$;
 revoke all on function public.track_order(bigint, text) from public;

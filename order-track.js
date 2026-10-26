@@ -73,6 +73,15 @@
             (est ? '<p class="trk-fine">' + esc(T(open ? 'Quoted items are added once we confirm them.' : 'Estimate: the final price is confirmed after we review your design.')) + '</p>' : '');
     }
 
+    function trackItems(items) {
+        var out = [], seen = {};
+        (items || []).forEach(function (i) {
+            if (!i.group) { out.push(i); return; }
+            if (seen[i.group]) return; seen[i.group] = 1;
+            out.push({ name: String(i.name || '').replace(/\s*\u00b7[^\u00b7]*\d+\s*\/\s*\d+\s*$/, ''), qty: i.boxes || i.qty, boxes: true });
+        });
+        return out;
+    }
     function resultView(o, no, contact) {
         var cancelled = o.status === 'cancelled', order = STEPS.map(function (s) { return s[0]; }), cur = order.indexOf(o.status);
         var tl = (o.timeline || []).slice().reverse().map(function (x) { return { t: x.t, title: NAME[x.status] || x.status, msg: x.msg }; });
@@ -85,7 +94,7 @@
             '<p class="trk-now">' + (cancelled ? '' : esc(T('Status')) + ': ') + '<strong>' + esc(T(NAME[o.status] || o.status)) + '</strong></p>' +
             '<p class="trk-eta">' + esc(T(SAYS[o.status] || '')) + '</p>' + steps +
             (cancelled ? '<div class="trk-cancel">' + esc(T(SAYS.cancelled)) + '</div>' : '') + review +
-            '<div class="trk-two"><div><h3>' + esc(T('Items')) + '</h3><ul class="trk-items">' + (o.items || []).map(function (i) { return '<li><span>' + esc(i.name) + '</span><em>&times; ' + esc(i.qty) + '</em></li>'; }).join('') + '</ul></div>' +
+            '<div class="trk-two"><div><h3>' + esc(T('Items')) + '</h3><ul class="trk-items">' + trackItems(o.items).map(function (i) { return '<li><span>' + esc(i.name) + '</span><em>&times; ' + esc(i.qty) + (i.boxes ? ' ' + esc(T('boxes')) : '') + '</em></li>'; }).join('') + '</ul></div>' +
             '<div><h3>' + esc(T('Delivery')) + '</h3><p>' + esc(o.emirate || '') + '</p><p class="trk-eta">' + esc(T('Estimated delivery')) + ': ' + esc(T('3-5 days after we confirm your order')) + '</p></div></div>' +
             totalsBlock(o) + '</section>' +
             '<section class="trk-card"><h3>' + esc(T('Updates')) + '</h3><ul class="trk-tl">' +

@@ -50,6 +50,14 @@
             '</div></article>';
     }
 
+    var FOOD_KEYS = ['Ingredients', 'Allergens', 'Net weight', 'Shelf life', 'Storage'];
+    function foodHtml(p) {
+        var rest = [], food = {};
+        (p.details || []).forEach(function (d) { var k = FOOD_KEYS.filter(function (x) { return String(d).indexOf(x + ': ') === 0; })[0]; if (k) food[k] = String(d).slice(k.length + 2); else rest.push(d); });
+        var rows = FOOD_KEYS.filter(function (k) { return food[k]; });
+        return (rest.length ? '<ul class="gt-modal-list">' + rest.map(function (d) { return '<li>' + esc(d) + '</li>'; }).join('') + '</ul>' : '') +
+            (rows.length ? '<dl class="gt-food">' + rows.map(function (k) { return '<dt>' + esc(k) + '</dt><dd>' + esc(food[k]) + '</dd>'; }).join('') + '</dl>' : '');
+    }
     function render(animate) {
         var list = PRODUCTS.filter(function (p) { return filter === 'all' || p.brand === filter; });
         grid.innerHTML = list.length ? list.map(cardHTML).join('') : '<p class="pc-empty" style="grid-column:1/-1;text-align:center;padding:40px 12px">' + (PRODUCTS.length ? 'No products in this group yet.' : 'Our shop is temporarily unavailable. Please refresh in a minute, or message us on WhatsApp to order.') + '</p>';
@@ -143,9 +151,7 @@
             '<h3>' + esc(p.name) + '</h3>' +
             '<div class="gt-modal-price">' + esc(priceText(p)) + '</div>' +
             '<p class="gt-modal-desc">' + esc(p.desc || p.short) + '</p>' +
-            ((p.details && p.details.length)
-                ? '<ul class="gt-modal-list">' + p.details.map(function (d) { return '<li>' + esc(d) + '</li>'; }).join('') + '</ul>'
-                : '') +
+            foodHtml(p) +
             '<div class="gt-modal-buy">' +
             '<div class="gt-qty" role="group" aria-label="Quantity">' +
             '<button type="button" data-m="dec" aria-label="Decrease">&minus;</button><span>1</span>' +

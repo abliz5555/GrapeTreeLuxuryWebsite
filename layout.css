@@ -342,3 +342,15 @@ html[dir="rtl"] .gt-home-cta span{ display:inline-block; transform:scaleX(-1); }
 .gt-assure-sec{ padding:28px 16px 0; } .gt-assure-in{ max-width:960px; margin:0 auto; }
 @media (min-width:760px){ .gt-assure-in .gt-assure ul{ grid-template-columns:repeat(2,1fr); } }
 .trk-sum{margin:10px 0 0;display:grid;gap:4px}.trk-sum div{display:flex;justify-content:space-between;gap:12px}.trk-sum dt,.trk-sum dd{margin:0}.trk-sum .tot{font-weight:700;border-top:1px solid rgba(128,128,128,.3);padding-top:6px;margin-top:2px}.trk-fine{font-size:.85em;opacity:.75;margin:6px 0 0}
+
+.gt-assure{ background:linear-gradient(180deg,#fffdf8,#fbf6ea); border:1px solid rgba(138,106,31,.28); border-radius:18px; padding:20px 20px 18px; box-shadow:0 6px 22px rgba(60,40,10,.06) }
+.gt-assure .ga-eyebrow{ margin:0 0 2px; font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:#8a6a1f }
+.gt-assure h3{ margin:0 0 14px; font-size:1.25rem }
+.gt-assure ul{ gap:12px }
+.gt-assure li{ display:flex; gap:12px; align-items:flex-start; padding:12px; padding-inline-start:12px; background:#fff; border:1px solid rgba(138,106,31,.16); border-radius:14px }
+.gt-assure li::before{ content:none }
+.gt-assure .ga-ic{ flex:0 0 40px; width:40px; height:40px; border-radius:50%; background:#f3e7c8; display:grid; place-items:center }
+.gt-assure .ga-ic svg{ width:22px; height:22px; fill:none; stroke:#8a6a1f; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round }
+.gt-assure li b{ font-size:.98rem; margin-bottom:2px }
+.gt-assure li span{ font-size:.86rem; line-height:1.45 }
+@media (min-width:640px){ .gt-assure ul{ grid-template-columns:repeat(2,1fr) } }

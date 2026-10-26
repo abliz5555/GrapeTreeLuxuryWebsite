@@ -239,6 +239,7 @@
 
     /* put the admin-chosen images/text onto the page */
     function applyContent(c) {
+        if (c && c.settings) { lastContent = c; try { shopGate(); } catch (e) {} }
         try { doc.dispatchEvent(new CustomEvent('gt:content', { detail: c || {} })); } catch (e) {}
         var imgs = (c && c.images) || {};
         $$('[data-slot]').forEach(function (el) {
@@ -256,8 +257,49 @@
         }
     }
     B.applyContent = applyContent;
+
+    /* ------------------------------ shop open / closed (Admin > Top bar) ------------------------------
+       While the shop is closed, customers see a "opening soon" page instead of the shop, the design studios and checkout.
+       Signed-in staff still see everything (with a bar on top) so they can test. */
+    var GATED = /(^|\/)(shop|cake-studio|chocolate-studio|checkout|customize|katanukiya|gildart)\.html$|\/p\/[^\/]+\.html$/;
+    var lastContent = null;
+    function isStaffNow() { return !!(B.profile && (B.profile.role === 'admin' || B.profile.role === 'staff')); }
+    function shopIsClosed() { var st = ((lastContent || cached()).settings) || {}; return st.shop_open !== true; }       // closed unless the admin has switched the shop ON
+    B.shopClosedForMe = function () { return shopIsClosed() && !isStaffNow(); };
+    function shopGate() {
+        if (!GATED.test(location.pathname) || !doc.body) return;
+        var st = ((lastContent || cached()).settings) || {}, closed = st.shop_open !== true, staff = isStaffNow();
+        var ov = doc.getElementById('gt-closed'), bar = doc.getElementById('gt-closed-bar');
+        if (closed && !staff) {
+            if (!ov) {
+                var biz = ((lastContent || cached()).business) || {}, wa = String(biz.whatsapp || (CFG && CFG.whatsapp) || '971555577478').replace(/\D/g, '');
+                var msg = st.shop_message || 'Online ordering is temporarily paused while we get everything ready. For questions, please message us on WhatsApp.';
+                ov = doc.createElement('div'); ov.id = 'gt-closed'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+                ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#f6f1e8;display:grid;place-items:center;padding:24px;overflow:auto;font-family:inherit';
+                ov.innerHTML = '<div style="max-width:460px;text-align:center;background:#fff;border:1px solid rgba(138,106,31,.25);border-radius:20px;padding:34px 26px;box-shadow:0 10px 40px rgba(60,40,10,.1)">' +
+                    '<p style="margin:0 0 6px;font-size:.75rem;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:#8a6a1f">Grape Tree</p>' +
+                    '<h1 style="margin:0 0 12px;font-size:1.6rem;line-height:1.2">Online ordering is paused</h1>' +
+                    '<p id="gt-closed-msg" style="margin:0 0 22px;line-height:1.6;color:#4a3d33"></p>' +
+                    '<p style="margin:0;display:grid;gap:10px"><a href="https://wa.me/' + wa + '" style="display:block;padding:13px;border-radius:999px;background:#1f1812;color:#fff;text-decoration:none;font-weight:600">Message us on WhatsApp</a>' +
+                    '<a href="index.html" style="display:block;padding:12px;border-radius:999px;border:1px solid rgba(0,0,0,.2);color:#1f1812;text-decoration:none">Back to the home page</a>' +
+                    '<a href="account.html" style="font-size:.85rem;color:#6b5d52">Team sign in</a></p></div>';
+                doc.body.appendChild(ov); doc.getElementById('gt-closed-msg').textContent = msg;
+                doc.documentElement.style.overflow = 'hidden';
+            }
+        } else {
+            if (ov) { ov.remove(); doc.documentElement.style.overflow = ''; }
+            if (closed && staff && !bar) {
+                bar = doc.createElement('div'); bar.id = 'gt-closed-bar';
+                bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99998;background:#b3261e;color:#fff;text-align:center;padding:9px 12px;font-size:.85rem;font-weight:600';
+                bar.textContent = 'The shop is CLOSED to customers. You can see and test it because you are signed in as staff.';
+                doc.body.appendChild(bar);
+            } else if ((!closed || !staff) && bar) bar.remove();
+        }
+    }
+    B.onAuth(function () { shopGate(); });
+
     function runContent() {
-        applyContent(cached());
+        applyContent(cached()); shopGate();
         if (B.enabled) B.content().then(applyContent);
     }
     if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', runContent); else runContent();
@@ -266,6 +308,7 @@
     B.placeOrder = function (payload) {
         return B.ready.then(function (on) {
             if (!on) throw new Error('backend off');
+            if (B.shopClosedForMe()) throw new Error('shop closed');
             return withTimeout(B.client.rpc('place_order', { payload: payload }).then(ok), 12000);
         });
     };

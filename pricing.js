@@ -43,5 +43,30 @@
     if (!G.money) G.money = function (n) { n = Number(n) || 0; return 'AED ' + n.toLocaleString('en-US', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }); };
     /* a quote line with no price is "open" (price on request); a quote line WITH a price is only an estimate that is already inside the total */
     function openQuote(o) { if (o && o.quote_open != null) return !!o.quote_open; return !!(o && o.items || []).some(function (l) { return l && l.quote && !(Number(l.total) > 0); }); }
-    G.pricing = { slug: slug, cfg: cfg, calc: calc, ofOrder: ofOrder, openQuote: openQuote };
+    /* A chocolate box set is stored as one line per print (so staff get every file), but a customer should see ONE line:
+       "9-piece gift box x 25". rows = [{ name, qty, total, quote, meta, note, parts, grouped, art }] */
+    function groupItems(items, totalFn) {
+        var rows = [], idx = {}; totalFn = totalFn || function (l) { return Number(l.total) || 0; };
+        (items || []).forEach(function (l) {
+            if (!l) return;
+            var g = (l.art && l.art.group) || l.group;
+            if (!g) { var bx = !!(l.art && l.art.same_all); rows.push({ boxes: bx, name: l.name, qty: bx ? (l.art.qty || l.qty) : l.qty, total: totalFn(l), quote: !!l.quote, meta: l.meta || [], note: l.note || '', parts: [l], grouped: false, art: l.art, line: l }); return; }
+            if (idx[g] == null) { idx[g] = rows.length; rows.push({ parts: [], grouped: true, group: g }); }
+            rows[idx[g]].parts.push(l);
+        });
+        rows.forEach(function (r) {
+            if (!r.grouped) return;
+            var lead = r.parts.filter(function (l) { return l.art ? Number(l.art.piece) === 1 : !l.included; })[0] || r.parts[0];
+            r.line = lead; r.art = lead.art;
+            r.name = String(lead.name || '').replace(/\s*\u00b7[^\u00b7]*\d+\s*\/\s*\d+\s*$/, '');
+            r.qty = (lead.art && lead.art.qty) || lead.qty || 1;
+            r.total = r.parts.reduce(function (s, l) { return s + totalFn(l); }, 0);
+            r.quote = r.parts.some(function (l) { return !!l.quote; });
+            r.note = r.parts.map(function (l) { return l.note || ''; }).filter(Boolean).join(' ');
+            r.meta = (lead.meta || []).filter(function (m, i) { return i !== 1 && i !== 3; });      // drop "Piece 1 / 9" and the single artwork label
+            if (r.parts.length > 1) r.meta.push(['Prints', r.parts.length + ' different designs']);
+        });
+        return rows;
+    }
+    G.pricing = { slug: slug, cfg: cfg, calc: calc, ofOrder: ofOrder, openQuote: openQuote, groupItems: groupItems };
 })();

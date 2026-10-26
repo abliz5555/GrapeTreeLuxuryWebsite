@@ -71,15 +71,17 @@
         done.hidden = true;
         $('#checkout').classList.toggle('is-empty', !items.length);
 
-        $('#co-lines').innerHTML = items.map(function (l) {
-            var meta = (l.meta || []).map(function (m) {
+        $('#co-lines').innerHTML = cartApi().grouped().map(function (r) {
+            var l = r.line;
+            var meta = (r.grouped ? r.meta : (l.meta || [])).map(function (m) {
                 return '<li><span>' + esc(m[0]) + '</span> ' + esc(m[1]) + '</li>';
             }).join('');
             return '<div class="co-line">' +
                 '<img src="' + esc(l.img) + '" alt="">' +
                 '<div>' +
-                '<h4>' + esc(l.name) + '</h4>' +
+                '<h4>' + esc(r.grouped ? r.name : l.name) + '</h4>' +
                 (meta ? '<ul class="gt-li-meta">' + meta + '</ul>' : '') +
+                ((r.grouped || r.boxes1) ? '<span class="gt-fixedqty">' + esc(r.grouped ? r.boxes : l.art.qty) + ' boxes</span>' : '') +
                 (l.fixed ? '' :
                 '<div class="gt-qty" role="group" aria-label="Quantity">' +
                 '<button type="button" data-act="dec" data-key="' + l.key + '" aria-label="Decrease">&minus;</button>' +
@@ -87,7 +89,7 @@
                 '<button type="button" data-act="inc" data-key="' + l.key + '" aria-label="Increase">+</button></div>') +
                 '<button type="button" class="gt-rm" data-act="rm" data-key="' + l.key + '" style="display:block">Remove</button>' +
                 '</div>' +
-                '<span class="co-price">' + esc(linePrice(l)) + '</span></div>';
+                '<span class="co-price">' + esc(r.grouped ? (CFG.showPrices === false ? 'Price on request' : (l.quote && !r.total ? 'Quoted' : money(r.total))) : linePrice(l)) + '</span></div>';
         }).join('');
 
         var t = cartApi().totals();
@@ -144,11 +146,12 @@
             'Phone: ' + c.phone];
         if (c.email) out.push('Email: ' + c.email);
         out.push('Emirate: ' + c.emirate, 'Address: ' + c.address, 'Estimated delivery: ' + ETA, '', '*Items*');
-        items.forEach(function (l, i) {
-            var price = CFG.showPrices === false ? '' : ' - ' + (l.included ? 'included' : l.quote && !l.unit && !l.fee ? 'quoted' : money(cartApi().lineTotal(l)));
-            out.push((i + 1) + '. ' + l.name + ' x ' + l.qty + price);
-            (l.meta || []).forEach(function (m) { out.push('   - ' + m[0] + ': ' + m[1]); });
-            if (l.note) out.push('   - Notes: ' + l.note);
+        cartApi().grouped().forEach(function (r, i) {
+            var l = r.line, tt = r.grouped ? r.total : cartApi().lineTotal(l);
+            var price = CFG.showPrices === false ? '' : ' - ' + (l.quote && !tt ? 'quoted' : money(tt));
+            out.push((i + 1) + '. ' + (r.grouped ? r.name + ' x ' + r.boxes + ' boxes' : l.name + ' x ' + l.qty) + price);
+            (r.grouped ? r.meta : (l.meta || [])).forEach(function (m) { out.push('   - ' + m[0] + ': ' + m[1]); });
+            if (r.grouped ? r.parts.some(function (p) { return p.note; }) : l.note) out.push('   - Notes: ' + (r.grouped ? r.parts.map(function (p) { return p.note || ''; }).filter(Boolean).join(' ') : l.note));
         });
         if (CFG.showPrices !== false) {
             var P = window.GT.pricing.calc(t.subtotal, c.emirate);

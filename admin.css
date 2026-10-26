@@ -416,3 +416,11 @@ body[data-admin] header.adm-top .adm-tabs [hidden], body[data-admin] header.adm-
 .st-fl-t select{ width:100%; box-sizing:border-box; padding:9px 10px; border:1px solid rgba(0,0,0,.2); border-radius:10px; background:#fff; font:inherit; }
 body[data-admin] .st-fl:has(.st-fl-t){ grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr) auto auto; }
 @media (max-width:1100px){ body[data-admin] .st-fl:has(.st-fl-t){ grid-template-columns:1fr 1fr; } body[data-admin] .st-fl:has(.st-fl-t) .st-fl-n{ grid-column:1 / -1; } }
+
+.o-quick{ padding:0 16px 12px; display:flex; justify-content:flex-end }
+.o-quick label{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:#6b5d52 }
+.o-quick select{ font:inherit; padding:7px 10px; border:1.5px solid #d8cfc3; border-radius:10px; background:#fff; min-height:38px }
+@media (max-width:760px){ .o-quick{ justify-content:stretch } .o-quick label{ width:100%; justify-content:space-between } .o-quick select{ flex:1; max-width:60% } }
+.o-prints{ margin-top:8px } .o-prints summary{ cursor:pointer; font-weight:600; color:#8a6528 } .o-print{ border-top:1px solid #eee; padding:8px 0 }
+
+.st-fl-g{ display:grid; gap:6px; flex:1 1 100% } .st-fl-g textarea,.st-fl-g input{ font:inherit; padding:9px 11px; border:1.5px solid #d8cfc3; border-radius:10px; width:100%; box-sizing:border-box }
