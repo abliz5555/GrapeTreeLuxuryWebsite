@@ -110,7 +110,7 @@
     }
     function forceOut(msg) {
         if (!B.session) return Promise.resolve();
-        lsSet(sKey(), null);
+        lsSet(sKey(), null); lsSet(ACT, null);
         return B.client.auth.signOut({ scope: 'local' }).catch(function () {}).then(function () { B.session = null; B.profile = null; emitAuth(); notice(msg); });
     }
     function idleLimit() { return B.isStaff() ? IDLE_TEAM : IDLE_CUSTOMER; }
@@ -129,6 +129,7 @@
     }
     function sessionGuard(event) {
         if (!B.session || !B.client) return Promise.resolve();
+        if (B.fresh || event === 'PASSWORD_RECOVERY') lsSet(ACT, String(Date.now()));      /* a sign-in just now = active now (an old timestamp must never sign the person straight out again) */
         return idleCheck().then(function (out) {
             if (out) return;
             var fresh = B.fresh || event === 'PASSWORD_RECOVERY' || !lsGet(sKey());
