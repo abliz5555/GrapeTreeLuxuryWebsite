@@ -28,7 +28,7 @@
     function backend() { return window.GT && window.GT.backend; }
 
     /* ------------------------------ 1. settings ------------------------------ */
-    var CUSTOMBOX = true, NOBOX_OFF = 0, SURF, MARGIN, BORDER, SAFE, TOL, LEAD, DESIGNER_FEE, TIERS, BOXES, THICK, FLAVOURS, MOQ, BOXSETS, DISCOUNTS, MINBOX, MINPCS;
+    var LARGE = 500, CUSTOMBOX = true, NOBOX_OFF = 0, SURF, MARGIN, BORDER, SAFE, TOL, LEAD, DESIGNER_FEE, TIERS, BOXES, THICK, FLAVOURS, MOQ, BOXSETS, DISCOUNTS, MINBOX, MINPCS;
     function mergeCfg(base, over) { var o = {}, k; for (k in base) o[k] = base[k]; for (k in (over || {})) if (over[k] != null && over[k] !== '') o[k] = over[k]; return o; }
     function applyCfg(over) {
         ST = mergeCfg(ALL[PRODUCT] || {}, over && over[PRODUCT]);
@@ -38,6 +38,7 @@
         SAFE = ST.safe || 2;                     // safe margin inside the cut line
         TOL = ST.tolerance || 1.5;
         LEAD = ST.leadBusinessDays || 14;
+        LARGE = +ST.largeOrderQty || (ISCAKE ? 500 : 200);        // from this quantity the delivery date is agreed with the customer, not promised
         NOBOX_OFF = Math.max(0, +ST.noBoxOff || 0);
         DESIGNER_FEE = ST.designerFee || 0;
         TIERS = ST.tiers || (ISCAKE
@@ -201,6 +202,7 @@
         var gen0 = !!(S.versions[0] && S.versions[0].gen);
         $('#ai-retry').hidden = !last || last.kind === 'original' || last.kind === 'made' || gen0;
         $('#ai-btns').hidden = !!(S.versions[0] && (S.versions[0].kind === 'made' || gen0));
+        var dw = $('#ai-descwrap'); if (dw) dw.hidden = $('#ai-btns').hidden;
         if (!ISCAKE) renderSlots();
     }
 
@@ -1479,8 +1481,14 @@
             rows = [[T('Box'), T(boxSet().label)], [T('Designs ready'), done + ' / ' + pieces()], [T('Boxes'), S.qtyPicked ? nbox() : T('Not chosen yet')], [T('Pieces in total'), S.qtyPicked ? totalPieces() : '\u2014'], [T('Thickness'), thick().label], [T('Per box'), started && S.qtyPicked ? money(boxUnit()) : '\u2014']];
         }
         $('#sum-list').innerHTML = rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('');
-        $('#sum-ship').textContent = ((window.GT_DATA && window.GT_DATA.config && window.GT_DATA.config.deliveryEstimate)) || '3-5 days';
-        $('#sum-ship-n').textContent = T('after we confirm your order');
+        var bigQty = S.qtyPicked ? (ISCAKE ? tier().qty : nbox()) : 0, big = bigQty >= LARGE;
+        $('#sum-ship').textContent = big ? T('To be agreed') : (((window.GT_DATA && window.GT_DATA.config && window.GT_DATA.config.deliveryEstimate)) || '3-5 days');
+        $('#sum-ship-n').textContent = big ? T('Large order: we agree the delivery date with you before you pay.') : T('after we confirm your order');
+        var vt = $('#sum-vat');
+        if (vt) {
+            var bz = ((backend() && backend().contentCached && backend().contentCached()) || {}).business || {}, rate = parseFloat(bz.vat_percent); if (!isFinite(rate)) rate = 5;
+            vt.textContent = bz.prices_include_vat === 'yes' ? T('Prices include VAT.') : T('Prices are before VAT.') + ' ' + T('VAT is added at checkout') + ' (' + rate + '%).';
+        }
     }
     function updateAddBtn() { var b = $('#st-add'); b.disabled = !S.qtyPicked || !$$('.st-ap').every(function (c) { return c.checked; }); var n = $('#st-qty-note'); if (n) n.hidden = S.qtyPicked; }
 
@@ -2124,29 +2132,14 @@
     /* ------------------------------ AI with your own words (after a picture is uploaded) ------------------------------ */
     function setupAiDesc() {
         var btns = $('#ai-btns'); if (!btns) return;
-        var wrap = doc.createElement('div'); wrap.className = 'st-ai-desc';
-        wrap.innerHTML = '<label class="st-lbl" for="ai-desc">' + esc(T('Tell the AI what you want (optional)')) + '</label>' +
-            '<textarea id="ai-desc" rows="2" maxlength="200" placeholder="' + esc(T('e.g. turn my photo into a cute cartoon girl with a pink dress')) + '"></textarea>' +
-            '<p class="st-fine">' + esc(T('Write in your own words, then choose a button below. You can try as many times as you like.')) + '</p>';
+        /* this box works on the picture the customer uploaded: picture + words -> new picture.
+           (Making a picture from words alone is a different thing: the "Describe it" start option.) */
+        var wrap = doc.createElement('div'); wrap.className = 'st-ai-desc'; wrap.id = 'ai-descwrap';
+        wrap.innerHTML = '<label class="st-lbl" for="ai-desc">' + esc(T('Change your picture with words')) + '</label>' +
+            '<div class="st-genrow"><textarea id="ai-desc" rows="2" maxlength="200" placeholder="' + esc(T('e.g. turn my photo into a cute cartoon girl with a pink dress')) + '"></textarea>' +
+            '<button type="button" class="st-btn st-btn-primary st-genbtn st-ai" id="ai-gen" data-kind="custom">' + esc(T('Generate')) + '</button></div>' +
+            '<p class="st-fine">' + esc(T('The AI starts from the picture you uploaded and follows your words. You can try as many times as you like.')) + '</p>';
         btns.parentNode.insertBefore(wrap, btns);
-        var b1 = doc.createElement('button'); b1.type = 'button'; b1.className = 'st-btn st-ai'; b1.dataset.kind = 'custom';
-        b1.innerHTML = '<b>' + esc(T('Create from my description')) + '</b><small>' + esc(T('AI redraws your picture using your words')) + '</small>';
-        var b2 = doc.createElement('button'); b2.type = 'button'; b2.className = 'st-btn st-ai'; b2.id = 'ai-new';
-        b2.innerHTML = '<b>' + esc(T('Draw a new picture')) + '</b><small>' + esc(T('AI draws from your words only')) + '</small>';
-        btns.appendChild(b1); btns.appendChild(b2);
-        b2.addEventListener('click', function () {
-            var q = aiDesc(); if (S.busy) return;
-            if (q.length < 3) { toastMsg(T('Please describe what you would like to see.')); $('#ai-desc').focus(); return; }
-            if (blockedSubject(q)) { toastMsg(T('We cannot draw protected brands, cartoon characters, real people, religious figures or sensitive subjects. Please describe something original, for example a landmark, an animal or an object.')); return; }
-            if (needLogin()) { showAiNote(true); return; }
-            if (!aiOn()) { toastMsg(T('AI drawing is not available right now. Please upload your own picture, or choose "Write a message or monogram".')); return; }
-            S.busy = true; setBusy('custom');
-            B_ready().then(function () { return backend().studioGenerate(q, ISCAKE ? 'cute' : 'sketch', PRODUCT); }).then(blobToCanvas).then(function (c) {
-                if (!ISCAKE) c = bwToAlpha(c);
-                addVersion({ kind: 'custom', label: 'AI drawing', src: c, ai: true, gen: true, transparent: true });
-            }).catch(function (e) { toastMsg(T(/limit|describe|sign in|used your|busy/i.test(e && e.message) ? e.message : 'We could not draw this right now. Please try different words.')); })
-              .then(function () { S.busy = false; setBusy(null); });
-        });
     }
     /* ------------------------------ start ------------------------------ */
     function init() {

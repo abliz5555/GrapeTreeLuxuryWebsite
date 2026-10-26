@@ -9,6 +9,16 @@ window.GT_I18N = window.GT_I18N || {};
 window.GT_I18N.zh = {
   meta: { name: "中文", short: "ZH", dir: 'ltr' },
   strings: {
+    "To be agreed": "双方商定",
+    "Large order: we agree the delivery date with you before you pay.": "大批量订单：送达日期将在您付款前与您商定。",
+    "Large order:": "大批量订单：",
+    "the delivery date depends on production capacity. We agree the date with you before you pay.": "送达日期取决于生产能力。我们会在您付款前与您商定日期。",
+    "Prices include VAT.": "价格已含增值税。",
+    "Prices are before VAT.": "价格不含增值税。",
+    "VAT is added at checkout": "增值税在结账时加收",
+    "Generate": "生成",
+    "Change your picture with words": "用文字修改您的图片",
+    "The AI starts from the picture you uploaded and follows your words. You can try as many times as you like.": "AI 会以您上传的图片为基础，并按照您的描述生成。可以尝试任意多次。",
     "(set by the flavour you chose)": "（由您所选口味决定）",
     "(final price confirmed after we review your design)": "（最终价格在我们审核设计后确认）",
     /* ---- added 2026-10-26: paused shop, studios, tracking, account ---- */

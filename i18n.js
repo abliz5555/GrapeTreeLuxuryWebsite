@@ -36,7 +36,7 @@
     /* load the dictionary now (synchronously, before the page is built) */
     window.GT_I18N = window.GT_I18N || {};
     if (current !== 'en' && !window.GT_I18N[current]) {
-        doc.write('<script src="lang/' + current + '.js?v=16"><\/script>');
+        doc.write('<script src="lang/' + current + '.js?v=18"><\/script>');
     }
     if (current !== 'en') {
         var f = doc.createElement('link');
@@ -223,7 +223,7 @@
         if (!find(code) || code === current) return;
         var go = function () { current = code; store(code); apply(); };
         if (code !== 'en' && !window.GT_I18N[code]) {
-            var s = doc.createElement('script'); s.src = 'lang/' + code + '.js?v=16'; s.onload = go; doc.head.appendChild(s);
+            var s = doc.createElement('script'); s.src = 'lang/' + code + '.js?v=18'; s.onload = go; doc.head.appendChild(s);
         } else go();
     }
 

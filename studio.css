@@ -587,3 +587,11 @@ body[data-product=cake] #st-scene, body[data-product=cake] #st-preview{ backgrou
 .st-bset.off{ opacity:.55; cursor:not-allowed } .st-bset.off input{ pointer-events:none }
 @media (max-width:760px){ .st-bsets{ grid-template-columns:minmax(0,1fr) } }
 .st-bset{ min-width:0; overflow-wrap:anywhere }
+
+/* text bar with its Generate button right beside it (stacks under the bar on a phone) */
+.st-genrow{ display:flex; gap:10px; align-items:stretch; }
+.st-genrow textarea{ flex:1 1 auto; min-width:0; }
+.st-genrow .st-genbtn{ flex:0 0 auto; align-self:stretch; min-width:116px; font-weight:600; }
+@media (max-width:560px){ .st-genrow{ flex-direction:column; } .st-genrow .st-genbtn{ width:100%; min-height:48px; } }
+.st-ai-desc[hidden]{ display:none; }
+.gt-noai .st-ai-desc{ display:none!important; }

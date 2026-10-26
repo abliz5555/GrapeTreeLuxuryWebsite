@@ -105,7 +105,9 @@
                 '<p class="gt-fine">' + esc(CFG.deliveryNote || '') + '</p>';
         }
 
-        /* default the date to the latest custom-order date, if there is one */
+        /* big custom orders: the date is agreed with the customer, not promised */
+        var bigEl = $('#co-big');
+        if (bigEl) bigEl.hidden = !items.some(function (l) { return l.art && ((l.art.qty || l.qty) >= (CFG.largeOrderQty || (l.art.product === 'chocolate' ? 200 : 500))); });
 
     }
 

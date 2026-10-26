@@ -9,6 +9,16 @@ window.GT_I18N = window.GT_I18N || {};
 window.GT_I18N.ja = {
   meta: { name: "日本語", short: "JA", dir: 'ltr' },
   strings: {
+    "To be agreed": "ご相談のうえ決定",
+    "Large order: we agree the delivery date with you before you pay.": "大口のご注文：お届け日は、お支払い前にご相談のうえ決定します。",
+    "Large order:": "大口のご注文：",
+    "the delivery date depends on production capacity. We agree the date with you before you pay.": "お届け日は生産能力によって異なります。お支払い前にご相談のうえ日程を決定します。",
+    "Prices include VAT.": "価格にはVATが含まれています。",
+    "Prices are before VAT.": "価格はVAT別です。",
+    "VAT is added at checkout": "VATはお会計時に加算されます",
+    "Generate": "生成する",
+    "Change your picture with words": "言葉で画像を変える",
+    "The AI starts from the picture you uploaded and follows your words. You can try as many times as you like.": "AIはアップロードした画像をもとに、あなたの言葉に沿って仕上げます。何度でも試せます。",
     "(set by the flavour you chose)": "（選んだフレーバーで決まります）",
     "(final price confirmed after we review your design)": "（最終価格はデザイン確認後に確定します）",
     /* ---- added 2026-10-26: paused shop, studios, tracking, account ---- */

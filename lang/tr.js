@@ -9,6 +9,16 @@ window.GT_I18N = window.GT_I18N || {};
 window.GT_I18N.tr = {
   meta: { name: "Türkçe", short: "TR", dir: 'ltr' },
   strings: {
+    "To be agreed": "Birlikte belirlenecek",
+    "Large order: we agree the delivery date with you before you pay.": "Büyük sipariş: teslimat tarihini ödeme öncesinde seninle birlikte belirleriz.",
+    "Large order:": "Büyük sipariş:",
+    "the delivery date depends on production capacity. We agree the date with you before you pay.": "teslimat tarihi üretim kapasitesine bağlıdır. Tarihi ödeme öncesinde seninle birlikte belirleriz.",
+    "Prices include VAT.": "Fiyatlara KDV dahildir.",
+    "Prices are before VAT.": "Fiyatlara KDV dahil değildir.",
+    "VAT is added at checkout": "KDV ödeme sırasında eklenir",
+    "Generate": "Oluştur",
+    "Change your picture with words": "Görselini sözlerle değiştir",
+    "The AI starts from the picture you uploaded and follows your words. You can try as many times as you like.": "Yapay zeka yüklediğin görselden yola çıkar ve sözlerini takip eder. İstediğin kadar deneyebilirsin.",
     "(set by the flavour you chose)": "(seçtiğin lezzete göre belirlenir)",
     "(final price confirmed after we review your design)": "(nihai fiyat tasarımını inceledikten sonra netleşir)",
     /* ---- added 2026-10-26: paused shop, studios, tracking, account ---- */

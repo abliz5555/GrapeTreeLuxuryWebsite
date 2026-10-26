@@ -10,6 +10,16 @@ window.GT_I18N = window.GT_I18N || {};
 window.GT_I18N.ar = {
   meta: { name: 'العربية', short: 'AR', dir: 'rtl' },
   strings: {
+    "To be agreed": "يُتفق عليه",
+    "Large order: we agree the delivery date with you before you pay.": "طلب كبير: نتفق معك على موعد التسليم قبل الدفع.",
+    "Large order:": "طلب كبير:",
+    "the delivery date depends on production capacity. We agree the date with you before you pay.": "يعتمد موعد التسليم على الطاقة الإنتاجية. نتفق معك على الموعد قبل الدفع.",
+    "Prices include VAT.": "الأسعار شاملة ضريبة القيمة المضافة.",
+    "Prices are before VAT.": "الأسعار قبل ضريبة القيمة المضافة.",
+    "VAT is added at checkout": "تُضاف ضريبة القيمة المضافة عند الدفع",
+    "Generate": "إنشاء",
+    "Change your picture with words": "غيّر صورتك بالكلمات",
+    "The AI starts from the picture you uploaded and follows your words. You can try as many times as you like.": "يبدأ الذكاء الاصطناعي من الصورة التي رفعتها ويتبع كلماتك. يمكنك المحاولة قدر ما تشاء.",
     "(set by the flavour you chose)": "(يُحدَّد حسب النكهة التي اخترتها)",
     "(final price confirmed after we review your design)": "(يُؤكَّد السعر النهائي بعد مراجعة تصميمك)",
     /* ---- added 2026-10-26: paused shop, studios, tracking, account ---- */

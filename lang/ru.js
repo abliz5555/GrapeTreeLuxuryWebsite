@@ -9,6 +9,16 @@ window.GT_I18N = window.GT_I18N || {};
 window.GT_I18N.ru = {
   meta: { name: "Русский", short: "RU", dir: 'ltr' },
   strings: {
+    "To be agreed": "Согласуем",
+    "Large order: we agree the delivery date with you before you pay.": "Крупный заказ: дату доставки согласуем с вами до оплаты.",
+    "Large order:": "Крупный заказ:",
+    "the delivery date depends on production capacity. We agree the date with you before you pay.": "дата доставки зависит от производственных мощностей. Дату согласуем с вами до оплаты.",
+    "Prices include VAT.": "Цены включают НДС.",
+    "Prices are before VAT.": "Цены указаны без НДС.",
+    "VAT is added at checkout": "НДС добавляется при оформлении",
+    "Generate": "Создать",
+    "Change your picture with words": "Измените картинку словами",
+    "The AI starts from the picture you uploaded and follows your words. You can try as many times as you like.": "ИИ берёт за основу загруженную картинку и следует вашему описанию. Можно пробовать сколько угодно раз.",
     "(set by the flavour you chose)": "(определяется выбранным вкусом)",
     "(final price confirmed after we review your design)": "(итоговая цена подтверждается после проверки макета)",
     /* ---- added 2026-10-26: paused shop, studios, tracking, account ---- */

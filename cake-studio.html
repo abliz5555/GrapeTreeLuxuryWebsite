@@ -25,14 +25,14 @@
     <script src="shop-data.js?v=26"></script>
     <script src="layout.js?v=20"></script>
     <script src="legal.js?v=20"></script>
-    <script src="i18n.js?v=23"></script>
+    <script src="i18n.js?v=25"></script>
     <script src="track.js?v=20"></script>
     <link rel="stylesheet" href="style.css?v=20">
     <link rel="stylesheet" href="shop.css?v=22">
     <link rel="stylesheet" href="animations.css?v=20">
     <link rel="stylesheet" href="theme.css?v=20">
     <link rel="stylesheet" href="layout.css?v=24">
-    <link rel="stylesheet" href="studio.css?v=24x">
+    <link rel="stylesheet" href="studio.css?v=25">
 </head>
 
 <body class="theme-kat" data-shop data-studio data-product="cake">
@@ -79,7 +79,7 @@
 <span class="st-hidden-open"><button type="button" class="st-create st-create-ai" id="st-aidraw-open"><span class="st-create-ic" aria-hidden="true">&#10024;</span><span><b>Describe it &ndash; AI draws it for you</b><small>Colourful, clean and ready to cut and print on the cake. Try &ldquo;a smiling astronaut bear&rdquo;.</small></span></button></span>
 <div class="st-aidraw" id="st-aidraw" hidden>
 <label class="st-lbl" for="st-aidraw-text">What should we draw?</label>
-<textarea id="st-aidraw-text" rows="3" maxlength="240" placeholder="e.g. a happy dinosaur holding a birthday balloon"></textarea>
+<div class="st-genrow"><textarea id="st-aidraw-text" rows="3" maxlength="240" placeholder="e.g. a happy dinosaur holding a birthday balloon"></textarea><button type="button" class="st-btn st-btn-primary st-genbtn" id="st-aidraw-go">Generate</button></div>
 <div class="st-aidraw-ex" id="st-aidraw-ex"><button type="button" class="st-chip">Happy dinosaur with a balloon</button><button type="button" class="st-chip">Astronaut bear on the moon</button><button type="button" class="st-chip">Princess with a golden crown</button><button type="button" class="st-chip">Football star in a stadium</button><button type="button" class="st-chip">Arabian oryx with a party hat</button></div>
 <p class="st-pick-l">Drawing style</p>
 <div class="st-aidraw-styles" id="st-aidraw-styles" role="radiogroup">
@@ -88,7 +88,6 @@
 <button type="button" class="st-sty" data-style="pastel" role="radio" aria-checked="false"><b>Soft pastel</b><small>Gentle colours, dreamy look</small></button>
 <button type="button" class="st-sty" data-style="elegant" role="radio" aria-checked="false"><b>Elegant illustration</b><small>Refined, for grown-up occasions</small></button>
 </div>
-<button type="button" class="st-btn st-btn-primary" id="st-aidraw-go">Draw it</button>
 <p class="st-fine" id="st-aidraw-note">Always a clean shape on a transparent background, with flat colours and no tiny details, so it cuts and prints well. Takes about 20&ndash;40 seconds.</p>
 <p class="st-ai-status" id="st-aidraw-status" role="status" hidden></p>
 <p class="st-error" id="st-aidraw-err" role="alert" hidden></p>
@@ -210,6 +209,7 @@
 <aside class="st-side" aria-label="Order summary"><div class="st-sum">
 <p class="st-sum-k">Current estimate</p><strong class="st-sum-t" id="sum-total">AED 0</strong>
 <p class="st-fine" id="sum-note">Final price confirmed by our team</p>
+<p class="st-fine" id="sum-vat"></p>
 <dl class="st-dl" id="sum-list"></dl>
 <div class="st-ship"><small>Estimated delivery</small><b id="sum-ship">3-5 days</b><span id="sum-ship-n">after we confirm your order</span></div>
 <a class="st-link" href="#" id="st-guide-open">Tolerance, returns &amp; replacements</a>
@@ -255,7 +255,7 @@
 <script src="backend.js?v=32"></script>
 <script src="script.js?v=20"></script>
 <script src="animations.js?v=20"></script>
-<script src="studio.js?v=29"></script>
+<script src="studio.js?v=31"></script>
 <script src="studio-ui.js?v=21"></script>
 
 </body>
