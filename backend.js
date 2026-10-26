@@ -327,6 +327,8 @@
         return B.ready.then(function (on) {
             if (!on) throw new Error('backend off');
             if (B.shopClosedForMe()) throw new Error('shop closed');
+            /* while the shop is closed, only staff can order: those are practice orders and are marked so nobody makes or ships them */
+            if (shopIsClosed() && isStaffNow() && payload && !/^\[TEST ORDER/.test(String(payload.notes || ''))) payload.notes = '[TEST ORDER - do not make or ship] ' + String(payload.notes || '').trim();
             return withTimeout(B.client.rpc('place_order', { payload: payload }).then(ok), 12000);
         });
     };

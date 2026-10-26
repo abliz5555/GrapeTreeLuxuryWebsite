@@ -36,7 +36,7 @@
     /* load the dictionary now (synchronously, before the page is built) */
     window.GT_I18N = window.GT_I18N || {};
     if (current !== 'en' && !window.GT_I18N[current]) {
-        doc.write('<script src="lang/' + current + '.js?v=14"><\/script>');
+        doc.write('<script src="lang/' + current + '.js?v=16"><\/script>');
     }
     if (current !== 'en') {
         var f = doc.createElement('link');
@@ -173,6 +173,7 @@
 
     function walk(node) {
         if (node.nodeType === 3) { if (!SKIP[node.parentNode && node.parentNode.nodeName]) doText(node); return; }
+        if (node.nodeType === 1 && node.nodeName === 'TEXTAREA') { doAttrs(node); return; }   /* a textarea's own text is the customer's; its placeholder is ours */
         if (node.nodeType !== 1 || SKIP[node.nodeName]) return;
         if (node.hasAttribute && node.hasAttribute('data-no-i18n')) return;
         doAttrs(node);
@@ -222,7 +223,7 @@
         if (!find(code) || code === current) return;
         var go = function () { current = code; store(code); apply(); };
         if (code !== 'en' && !window.GT_I18N[code]) {
-            var s = doc.createElement('script'); s.src = 'lang/' + code + '.js?v=14'; s.onload = go; doc.head.appendChild(s);
+            var s = doc.createElement('script'); s.src = 'lang/' + code + '.js?v=16'; s.onload = go; doc.head.appendChild(s);
         } else go();
     }
 
